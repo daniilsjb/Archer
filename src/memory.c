@@ -4,6 +4,8 @@
 #include "compiler.h"
 #include "vm.h"
 
+#include <stdio.h>
+
 #if DEBUG_LOG_GC
 #include <stdio.h>
 #include "debug.h"
@@ -43,7 +45,7 @@ static void free_object(Obj* object)
     switch (object->type) {
         case OBJ_STRING: {
             ObjString* string = (ObjString*)object;
-            reallocate(object, sizeof(ObjString) + string->length + 1, 0);
+            reallocate(string, sizeof(ObjString) + string->length + 1, 0);
             break;
         }
         case OBJ_FUNCTION: {
@@ -53,12 +55,12 @@ static void free_object(Obj* object)
             break;
         }
         case OBJ_CLOSURE: {
-            FREE(ObjClosure, object);
+            ObjClosure* closure = (ObjClosure*)object;
+            FREE_ARRAY(ObjUpvalue*, closure->upvalues, closure->upvalueCount);
+            FREE(ObjClosure, closure);
             break;
         }
         case OBJ_UPVALUE: {
-            ObjClosure* closure = (ObjClosure*)object;
-            FREE_ARRAY(ObjUpvalue*, closure->upvalues, closure->upvalueCount);
             FREE(ObjUpvalue, object);
             break;
         }
@@ -256,4 +258,6 @@ void free_objects()
         free_object(object);
         object = next;
     }
+
+    free(vm.grayStack);
 }

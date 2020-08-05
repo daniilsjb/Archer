@@ -1,0 +1,24 @@
+class Foo {}
+
+print Foo; //Expected: Foo
+var foo = Foo();
+print foo; //Expected: Foo instance
+
+foo.bar = "Bar";
+print foo.bar; //Expected: Bar
+
+print foo.quux = 10;   //Expected: 10
+print foo.zuux = true; //Expected: true
+
+foo.bar = "Foo";
+
+print foo.bar;  //Expected: Foo
+print foo.quux; //Expected: 10
+print foo.zuux; //Expected: true
+
+print foo == foo; //Expected: true
+print foo != foo; //Expected: false
+
+var other = Foo();
+print foo == other; //Expected: false
+print foo != other; //Expected: true

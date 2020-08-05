@@ -1,0 +1,36 @@
+var a = "global";
+print a; //Expected: global
+
+{
+    var a = "middle";
+    print a; //Expected: middle
+    
+    {
+        var a = "inner";
+        print a; //Expected: inner
+    }
+    
+    print a; //Expected: middle
+}
+
+print a; //Expected: global
+
+{
+    a = "inner";
+    print a; //Expected: inner
+}
+
+print a; //Expected: inner
+
+{
+    var b = "Hello from first scope!";
+    print b; //Expected: Hello from first scope!
+}
+
+{
+    var b = "Hello from second scope!";
+    print b; //Expected: Hello from second scope!
+}
+
+var b = "Hello from global scope!";
+print b; //Expected: Hello from global scope!

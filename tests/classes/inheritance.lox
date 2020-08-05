@@ -1,0 +1,28 @@
+class Animal {
+    
+    isAnimal() {
+        return true;
+    }
+    
+    makeSound() {
+        print this.sound;
+    }
+    
+}
+
+class Cat < Animal {
+    
+    init(sound) {
+        this.sound = sound;
+    }
+    
+    isCat() {
+        return true;
+    }
+    
+}
+
+var cat = Cat("Meow");
+print cat.isCat();    //Expected: true
+print cat.isAnimal(); //Expected: true
+cat.makeSound();      //Expected: Meow

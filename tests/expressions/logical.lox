@@ -1,0 +1,31 @@
+print !true;           //Expected: false
+print !false;          //Expected: true
+print !!true;          //Expected: true
+print !!false;         //Expected: false
+
+print true and true;   //Expected: true
+print true and false;  //Expected: false
+print false and true;  //Expected: false
+print false and false; //Expected: false
+
+print true or true;    //Expected: true
+print true or false;   //Expected: true
+print false or true;   //Expected: true
+print false or false;  //Expected: false
+
+print true or nil;     //Expected: true
+print false or nil;    //Expected: nil
+print nil or true;     //Expected: true
+print nil or false;    //Expected: false
+
+print true and nil;    //Expected: nil
+print false and nil;   //Expected: false
+print nil and true;    //Expected: nil
+print nil and false;   //Expected: nil
+
+print !(5 >= 6);                    //Expected: true
+print 10 == 10 and "abc" != "ABC";  //Expected: true
+print 5 < 3 or "def" == "def";      //Expected: true
+print 9 == "abc" and true;          //Expected: false
+print "abc" or false;               //Expected: abc
+print true and 10;                  //Expected: 10

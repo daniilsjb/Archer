@@ -12,6 +12,7 @@ typedef struct {
     ObjClosure* closure;
     uint8_t* ip;
     Value* slots;
+    size_t slotIndex;
 } CallFrame;
 
 typedef struct {

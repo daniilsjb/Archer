@@ -1,0 +1,39 @@
+print 10 == 10;     //Expected: true
+print 10 == 11;     //Expected: false
+print 10.5 == 10.5; //Expected: true
+print 5 == -5;      //Expected: false
+
+print 10 != 10;     //Expected: false
+print 10 != 11;     //Expected: true
+print 10.5 != 10.5; //Expected: false
+print 5 != -5;      //Expected: true
+
+print "Hello" == "Hello";     //Expected: true
+print "Hello" == "hello";     //Expected: false
+print "" == "";               //Expected: true
+print "Foo Bar" == "Foo Bar"; //Expected: true
+
+print "Hello" != "Hello";     //Expected: false
+print "Hello" != "hello";     //Expected: true
+print "" != "";               //Expected: false
+print "Foo Bar" != "Foo Bar"; //Expected: false
+
+print true == true;   //Expected: true
+print true == false;  //Expected: false
+print false == true;  //Expected: false
+print false == false; //Expected: true
+
+print true != true;   //Expected: false
+print true != false;  //Expected: true
+print false != true;  //Expected: true
+print false != false; //Expected: false
+
+print nil == nil;     //Expected: true
+print nil != nil;     //Expected: false
+
+print 10 == true;     //Expected: false
+print 10 == "Abc";    //Expected: false
+print 10 == nil;      //Expected: false
+print true == "Abc";  //Expected: false
+print true == nil;    //Expected: false
+print nil == "Abc";   //Expected: false

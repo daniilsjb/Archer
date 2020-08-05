@@ -1,0 +1,41 @@
+print ~0;           //Expected: -1
+print ~~0;          //Expected: 0
+print ~7.13;        //Expected: -8
+print ~92;          //Expected: -93
+print ~-13.0;       //Expected: 12
+
+print 12 & 8;       //Expected: 8
+print 5 & 1;        //Expected: 1
+print 7 & 8;        //Expected: 0
+print 13.12 & 1.43; //Expected: 1
+print -1 & 1234;    //Expected: 1234
+
+print 6 | 1;        //Expected: 7
+print 0 | 10;       //Expected: 10
+print 2 | 6;        //Expected: 6
+print 15.13 | 2.12; //Expected: 15
+print 52.0 | 31.0;  //Expected: 63
+
+print 10 ^ 10;      //Expected: 0
+print 2 ^ 4;        //Expected: 6
+print 25 ^ 0;       //Expected: 25
+print 31.23 ^ 5.91; //Expected: 26
+print 5 ^ 1;        //Expected: 4
+
+print 2 << 1;       //Expected: 4
+print 2.14 << 2.3;  //Expected: 8
+print 10 << 0.0;    //Expected: 10
+print 0 << 5;       //Expected: 0
+print 8 << 8;       //Expected: 2048
+
+print 8 >> 1;       //Expected: 4
+print 12.32 >> 2.1; //Expected: 3
+print 10 >> 0.0;    //Expected: 10
+print 0 >> 5;       //Expected: 0
+print 2048 >> 8;    //Expected: 8
+
+print 54 & ~2;          //Expected: 52
+print (5 & 1) | 4;      //Expected: 5
+print (1 << 8) & ~256;  //Expected: 0
+print 100 >> 5 << 5;    //Expected: 96
+print 15 & (~0 << 1);   //Expected: 14

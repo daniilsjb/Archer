@@ -1,0 +1,4 @@
+//This file doesn't contain any code or expected output. Although
+//it won't be displayed as part of the test summary, this test makes
+//sure the language implementation doesn't throw any errors if a program
+//is empty.

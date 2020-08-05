@@ -1,0 +1,16 @@
+print 5;       //Expected: 5
+print 8.23;    //Expected: 8.23
+print 0;       //Expected: 0
+print 1589124; //Expected: 1.58912e+06
+print 16.0;    //Expected: 16
+print 15.;     //Expected: 15
+
+print "Hello"; //Expected: Hello
+print "This string contains multiple words"; //Expected: This string contains multiple words
+print "a";     //Expected: a
+print "";      //Expected: 
+
+print true;    //Expected: true
+print false;   //Expected: false
+
+print nil;     //Expected: nil

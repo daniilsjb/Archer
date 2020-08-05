@@ -1,0 +1,50 @@
+class Foo {
+    
+    init() {
+        print "Hello from initializer!";
+    }
+    
+}
+
+Foo(); //Expected: Hello from initializer!
+
+class Book {
+    
+    init(title, author, genre) {
+        this.title = title;
+        this.author = author;
+        this.genre = genre;
+    }
+    
+    read() {
+        print "Reading '" + this.title + "', a " + this.genre + " book written by " + this.author + ".";
+    }
+    
+}
+
+var book = Book("The Witcher", "A. Sapkowski", "Fantasy");
+book.read();       //Expected: Reading 'The Witcher', a Fantasy book written by A. Sapkowski.
+print book.title;  //Expected: The Witcher
+print book.author; //Expected: A. Sapkowski
+print book.genre;  //Expected: Fantasy
+
+class Bar {
+    
+    init() {
+        this.name = "Bar";
+        this.sayHello();
+        return;
+        this.sayGoodbye();
+    }
+    
+    sayHello() {
+        print "Hello from " + this.name + "!";
+    }
+    
+    sayGoodbye() {
+        print "Goodbye from " + this.name + "!";
+    }
+    
+}
+
+Bar(); //Expected: Hello from Bar!

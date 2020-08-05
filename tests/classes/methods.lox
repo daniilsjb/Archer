@@ -1,0 +1,27 @@
+class Person {
+     
+    talk() {
+        print "Hello there";
+    }
+    
+    do(stuff) {
+        print "Doing " + stuff;
+    }
+    
+    show() {
+        print "This person's name is " + this.getName();
+    }
+    
+    getName() {
+        return this.name;
+    }
+
+}
+
+var person = Person();
+person.name = "Jack";
+
+person.talk();          //Expected: Hello there
+person.do("cleaning");  //Expected: Doing cleaning
+print person.getName(); //Expected: Jack
+person.show();          //Expected: This person's name is Jack

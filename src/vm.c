@@ -51,10 +51,6 @@ static bool pow_native(size_t argCount, Value* args)
     return true;
 }
 
-static bool inner_native(size_t argCount, Value* args)
-{
-}
-
 static void define_native(const char* name, NativeFn function, int arity)
 {
     vm_push(OBJ_VAL(copy_string(name, strlen(name))));
@@ -68,16 +64,14 @@ static void reset_stack()
 {
     stack_free(&vm.stack);
     vm.frameCount = 0;
+    vm.openUpvalues = NULL;
 }
 
 void vm_init()
 {
-    stack_init(&vm.stack);
-    table_init(&vm.globals);
-    table_init(&vm.strings);
+    reset_stack();
 
     vm.objects = NULL;
-    vm.openUpvalues = NULL;
 
     vm.bytesAllocated = 0;
     vm.nextGC = 1024 * 1024;
@@ -85,6 +79,9 @@ void vm_init()
     vm.grayCount = 0;
     vm.grayCapacity = 0;
     vm.grayStack = NULL;
+
+    table_init(&vm.globals);
+    table_init(&vm.strings);
 
     vm.initString = NULL;
     vm.initString = copy_string("init", 4);
@@ -96,13 +93,14 @@ void vm_init()
 
 void vm_free()
 {
-    free(vm.grayStack);
-    table_free(&vm.strings);
     table_free(&vm.globals);
+    table_free(&vm.strings);
+
     vm.initString = NULL;
+
     free_objects();
+
     reset_stack();
-    free(vm.stack.values);
 }
 
 void vm_push(Value value)
@@ -159,7 +157,7 @@ static InterpretStatus runtime_error(const char* format, ...)
 
 static bool call(ObjClosure* closure, uint8_t argCount)
 {
-    if (closure->function->arity != argCount) {
+    if (argCount != closure->function->arity) {
         runtime_error("Expected %d arguments but got %d", closure->function->arity, argCount);
         return false;
     }
@@ -173,6 +171,7 @@ static bool call(ObjClosure* closure, uint8_t argCount)
     frame->closure = closure;
     frame->ip = closure->function->chunk.code;
     frame->slots = &vm.stack.values[vm.stack.count - argCount - 1];
+    frame->slotIndex = vm.stack.count - argCount - 1;
     return true;
 }
 
@@ -328,17 +327,22 @@ static void concatenate()
 
     ObjString* interned = table_find_string(&vm.strings, string->chars, length, string->hash);
     if (interned != NULL) {
-        FREE(ObjString, string);
+        vm.objects = vm.objects->next;
+        reallocate(string, sizeof(ObjString) + string->length + 1, 0);
+
         vm_pop();
         vm_pop();
 
         vm_push(OBJ_VAL(interned));
     } else {
+        vm_push(OBJ_VAL(string));
+        table_put(&vm.strings, string, NIL_VAL());
+        vm_pop();
+
         vm_pop();
         vm_pop();
 
         vm_push(OBJ_VAL(string));
-        table_put(&vm.strings, string, NIL_VAL());
     }
 }
 
@@ -716,10 +720,7 @@ static InterpretStatus run()
             case OP_RETURN: {
                 Value result = vm_pop();
 
-                CallFrame* top = &vm.frames[vm.frameCount - 1];
-                size_t argCount = top->closure->function->arity;
-
-                close_upvalues(top->slots);
+                close_upvalues(frame->slots);
 
                 vm.frameCount--;
                 if (vm.frameCount == 0) {
@@ -727,7 +728,7 @@ static InterpretStatus run()
                     return INTERPRET_OK;
                 }
 
-                vm.stack.count -= argCount + 1;
+                vm.stack.count = frame->slotIndex;
                 vm_push(result);
 
                 frame = &vm.frames[vm.frameCount - 1];

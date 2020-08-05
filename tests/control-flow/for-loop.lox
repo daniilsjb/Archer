@@ -1,0 +1,41 @@
+for (var i = 0; i < 5; i = i + 1) {
+    print i;
+}
+
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 3
+//Expected: 4
+
+var j = 0;
+for ( ; j < 5; ) {
+    print j;
+    j = j + 1;
+}
+
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 3
+//Expected: 4
+
+for (var i = 0; i < 3; i = i + 1) {
+    for (var j = 0; j < 3; j = j + 1) {
+        print j;
+    }
+    print i;
+}
+
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 0
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 1
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 2

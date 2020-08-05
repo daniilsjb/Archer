@@ -1,0 +1,23 @@
+print 10 > 5;       //Expected: true
+print 5 > 10;       //Expected: false
+print -0.5 > -1;    //Expected: true
+print 23.5 > 23.4;  //Expected: true
+print 3 > 3;        //Expected: false
+
+print 10 >= 5;       //Expected: true
+print 9 >= 10;       //Expected: false
+print -0.5 >= -1;    //Expected: true
+print 23.5 >= 23.53; //Expected: false
+print 3 >= 3;        //Expected: true
+
+print 10 < 5;       //Expected: false
+print 5 < 10;       //Expected: true
+print -0.5 < -1;    //Expected: false
+print 23.5 < 23.4;  //Expected: false
+print 3 < 3;        //Expected: false
+
+print 10 <= 5;       //Expected: false
+print 9 <= 10;       //Expected: true
+print 23 <= 32;      //Expected: true
+print 23.5 <= 23.53; //Expected: true
+print 3 <= 3;        //Expected: true

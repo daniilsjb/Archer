@@ -1,0 +1,45 @@
+var i = 0;
+while (i < 10) {
+    print i;
+    i = i + 1;
+}
+
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 3
+//Expected: 4
+//Expected: 5
+//Expected: 6
+//Expected: 7
+//Expected: 8
+//Expected: 9
+
+while (false) {
+    print "This will not be printed";
+}
+
+var j = 0;
+while (j < 3) {
+    var k = 0;
+    while (k < 3) {
+        print k;
+        k = k + 1;
+    }
+    
+    print j;
+    j = j + 1;
+}
+
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 0
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 1
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 2

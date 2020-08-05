@@ -1,0 +1,78 @@
+fun outer() {
+    
+    fun inner() {
+        print "inner";
+    }
+    
+    inner();
+    print "outer";
+}
+
+outer();
+//Expected: inner
+//Expected: outer
+
+fun funcA() {
+    
+    fun funcB() {
+        
+        fun funcC() {
+            print "C";
+        }
+        
+        print "B";
+        return funcC;
+    }
+    
+    print "A";
+    return funcB;
+}
+
+funcA();
+//Expected: A
+funcA()();
+//Expected: A
+//Expected: B
+funcA()()();
+//Expected: A
+//Expected: B
+//Expected: C
+
+fun makeCounter() {
+    var i = 0;
+    
+    fun counter() {
+        return i = i + 1;
+    }
+    
+    return counter;
+}
+
+var counter = makeCounter();
+print counter(); //Expected: 1
+print counter(); //Expected: 2
+print counter(); //Expected: 3
+
+{
+    var a = "initial";
+    fun showA() {
+        print a;
+    }
+    
+    {
+        showA(); //Expected: initial
+        var a = "changed";
+        showA(); //Expected: initial  
+    }
+}
+
+{
+    var a = "initial";
+    fun showA() {
+        print a;
+    }
+    
+    showA(); //Expected: initial
+    a = "changed";
+    showA(); //Expected: changed
+}

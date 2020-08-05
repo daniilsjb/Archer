@@ -1,0 +1,68 @@
+class Foo {
+    
+    init() {
+        print "Hello from Foo!";
+    }
+    
+}
+
+class Bar < Foo {
+    
+    init() {
+        super.init();
+        print "Hello from Bar!";
+    }
+    
+}
+
+class Quux < Bar {
+    
+    init() {
+        super.init();
+        print "Hello from Quux!";
+    }
+    
+}
+
+Quux();
+//Expected: Hello from Foo!
+//Expected: Hello from Bar!
+//Expected: Hello from Quux!
+
+class Object {
+    
+    init(type) {
+        this.type = type;
+    }
+    
+    show() {
+        print "[Object]";
+        print "Type: " + this.type;
+    }
+    
+}
+
+class Character < Object {
+    
+    init(name) {
+        super.init("character");
+        this.name = name;
+    }
+    
+    show() {
+        super.show();
+        print "Name: " + this.name;
+    }
+    
+}
+
+var object = Object("generic");
+object.show();
+//Expected: [Object]
+//Expected: Type: generic
+
+var character = Character("Arthur");
+character.show();
+//Expected: [Object]
+//Expected: Type: character
+//Expected: Name: Arthur

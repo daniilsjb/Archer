@@ -1,0 +1,29 @@
+fun nothing() { }
+
+print nothing(); //Expected: nil
+
+fun talk() {
+    print "Hello from talk.";
+}
+
+talk(); //Expected: Hello from talk.
+
+fun five() {
+    return 5;
+}
+
+print five(); //Expected: 5
+
+fun sum(a, b) {
+    return a + b;
+}
+
+print sum(3, 5); //Expected: 8
+
+fun terminate() {
+    print "Before return";
+    return;
+    print "After return";
+}
+
+terminate(); //Expected: Before return

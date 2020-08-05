@@ -1,0 +1,42 @@
+var a;
+print a; //Expected: nil
+
+a = "Hello from A";
+print a; //Expected: Hello from A
+
+a = 10;
+print a; //Expected: 10
+
+a = true;
+print a; //Expected: true
+
+a = nil;
+print a; //Expected: nil
+
+var b = "Hello from B";
+print b; //Expected: Hello from B
+
+var c = 20;
+print c; //Expected: 20
+
+var d = true;
+print d; //Expected: true
+
+var e = nil;
+print e; //Expected: nil
+
+var f;
+print f = "Hello from F"; //Expected: Hello from F
+print f = 30;             //Expected: 30
+print f = false;          //Expected: false
+print f = nil;            //Expected: nil
+
+var x1 = 3;
+var x2 = 6;
+var y = x1 + x2;
+print y; //Expected: 9
+
+x1 = "Hello ";
+x2 = "there.";
+y = x1 + x2;
+print y; //Expected: Hello there.

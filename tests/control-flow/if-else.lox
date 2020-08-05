@@ -1,0 +1,64 @@
+if (true)
+    print "This will be printed (0)"; //Expected: This will be printed (0)
+    
+if (false)
+    print "This will not be printed (1)";
+
+if (10 == 10)
+    print "This will be printed (2)"; //Expected: This will be printed (2)
+else
+    print "This will not be printed (2)";
+    
+if (10 == 11)
+    print "This will not be printed (3)";
+else
+    print "This will be printed (3)"; //Expected: This will be printed (3)
+
+if (true and true)
+    print "This will be printed (4)"; //Expected: This will be printed (4)
+else if (true or false)
+    print "This will not be printed (4)";
+else
+    print "This will not be printed (4)";
+
+if (true and nil)
+    print "This will not be printed (5)";
+else if (true or false)
+    print "This will be printed (5)"; //Expected: This will be printed (5)
+else
+    print "This will not be printed (5)";
+    
+if (true and nil)
+    print "This will not be printed (6)";
+else if (true and false)
+    print "This will not be printed (6)";
+else
+    print "This will be printed (6)"; //Expected: This will be printed (6)
+    
+if (true)
+    if (true)
+        print "This will be printed (7)"; //Expected: This will be printed (7)
+        
+if (true)
+    if ("abc" == "ABC")
+        print "This will not be printed (8)";
+    else
+        print "This will be printed (8)"; //Expected: This will be printed (8)
+        
+if (true == false)
+    if (nil)
+        print "This will not be printed (9)";
+    else
+        print "This will not be printed (9)";
+else
+    print "This will be printed (9)"; //Expected: This will be printed (9)
+    
+if ("abc" == "abc") {
+    print "This message will is printed inside block first (10)"; //Expected: This message will is printed inside block first (10)
+    print "This message will is printed inside block second (10)"; //Expected: This message will is printed inside block second (10)
+    print "This message will is printed inside block third (10)"; //Expected: This message will is printed inside block third (10)
+} else {
+    print "This will not be printed inside block first (10)";
+    print "This will not be printed inside block second (10)";
+    print "This will not be printed inside block third (10)";
+}
