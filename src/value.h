@@ -17,22 +17,22 @@ typedef struct sObjString ObjString;
 
 typedef uint64_t Value;
 
-#define NIL_VAL() ((Value)(uint64_t)(QNAN | TAG_NIL))
-#define FALSE_VAL()  ((Value)(uint64_t)(QNAN | TAG_FALSE))
-#define TRUE_VAL()  ((Value)(uint64_t)(QNAN | TAG_TRUE))
+#define NIL_VAL()        ((Value)(uint64_t)(QNAN | TAG_NIL))
+#define FALSE_VAL()      ((Value)(uint64_t)(QNAN | TAG_FALSE))
+#define TRUE_VAL()       ((Value)(uint64_t)(QNAN | TAG_TRUE))
+                         
+#define BOOL_VAL(b)      ((b) ? TRUE_VAL() : FALSE_VAL())
+#define NUMBER_VAL(num)  (num_to_value(num))
+#define OBJ_VAL(obj)     ((Value)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(obj)))
 
-#define BOOL_VAL(b) ((b) ? TRUE_VAL() : FALSE_VAL())
-#define NUMBER_VAL(num) num_to_value(num)
-#define OBJ_VAL(obj) ((Value)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(obj)))
-
-#define IS_NIL(value) ((value) == NIL_VAL())
-#define IS_BOOL(value) (((value) | 1) == TRUE_VAL())
+#define IS_NIL(value)    ((value) == NIL_VAL())
+#define IS_BOOL(value)   (((value) | 1) == TRUE_VAL())
 #define IS_NUMBER(value) (((value) & QNAN) != QNAN)
-#define IS_OBJ(value) (((value) & (SIGN_BIT | QNAN)) == (SIGN_BIT | QNAN))
+#define IS_OBJ(value)    (((value) & (SIGN_BIT | QNAN)) == (SIGN_BIT | QNAN))
 
-#define AS_BOOL(value) ((value) == TRUE_VAL())
-#define AS_NUMBER(value) value_to_num(value)
-#define AS_OBJ(value) ((Obj*)(uintptr_t)((value) & ~(SIGN_BIT | QNAN)))
+#define AS_BOOL(value)   ((value) == TRUE_VAL())
+#define AS_NUMBER(value) (value_to_num(value))
+#define AS_OBJ(value)    ((Obj*)(uintptr_t)((value) & ~(SIGN_BIT | QNAN)))
 
 static inline double value_to_num(Value value)
 {

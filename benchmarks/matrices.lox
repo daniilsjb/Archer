@@ -1,0 +1,57 @@
+class Matrix {
+    
+    init(
+        x00, x01, x02,
+        x10, x11, x12,
+        x20, x21, x22
+    ) {
+        this.x00 = x00; this.x01 = x01; this.x02 = x02;
+        this.x10 = x10; this.x11 = x11; this.x12 = x12;
+        this.x20 = x20; this.x21 = x21; this.x22 = x22;
+    }
+    
+    multiply(other) {
+        return Matrix(
+            this.x00 * other.x00 + this.x01 * other.x10 + this.x02 * other.x20,
+            this.x00 * other.x01 + this.x01 * other.x11 + this.x02 * other.x21,
+            this.x00 * other.x02 + this.x01 * other.x12 + this.x02 * other.x22,
+            
+            this.x10 * other.x00 + this.x11 * other.x10 + this.x12 * other.x20,
+            this.x10 * other.x01 + this.x11 * other.x11 + this.x12 * other.x21,
+            this.x10 * other.x02 + this.x11 * other.x12 + this.x12 * other.x22,
+            
+            this.x20 * other.x00 + this.x21 * other.x10 + this.x22 * other.x20,
+            this.x20 * other.x01 + this.x21 * other.x11 + this.x22 * other.x21,
+            this.x20 * other.x02 + this.x21 * other.x12 + this.x22 * other.x22
+        );
+    }
+    
+}
+
+var matA = Matrix(
+    5, 6, 2,
+    3, 9, 3,
+    2, 1, 5
+);
+
+var matB = Matrix(
+    9, 3, 1,
+    6, 2, 5,
+    7, 8, 1
+);
+
+var begin = clock();
+
+var result = false;
+for (var i = 0; i < 100000; i = i + 1) {
+    var matC = matA.multiply(matB);
+    
+    result = (
+        matC.x00 == 95  and matC.x01 == 43 and matC.x02 == 37 and
+        matC.x10 == 102 and matC.x11 == 51 and matC.x12 == 51 and
+        matC.x20 == 59  and matC.x21 == 48 and matC.x22 == 12
+    );
+}
+print result;
+
+print clock() - begin;

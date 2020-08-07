@@ -1,0 +1,98 @@
+class Node {
+    
+    init(value) {
+        this.value = value;
+        this.next = nil;
+    }
+    
+    append(value) {
+        if (this.next == nil) {
+            this.next = Node(value);
+        } else {
+            this.next.append(value);
+        } 
+    }
+    
+    search(value) {
+        if (this.value == value) {
+            return this;
+        }
+        
+        if (this.next == nil) {
+            return nil;
+        }
+        
+        return this.next.search(value);
+    }
+    
+}
+
+var list = Node(100);
+list.append(5);
+list.append(15);
+list.append(23);
+list.append(1);
+list.append(3);
+list.append(51);
+list.append(89);
+list.append(31);
+list.append(16);
+list.append(75);
+list.append(36);
+list.append(0);
+list.append(6);
+list.append(67);
+list.append(66);
+list.append(95);
+list.append(4);
+list.append(98);
+list.append(19);
+list.append(13);
+list.append(58);
+list.append(32);
+list.append(14);
+list.append(89);
+list.append(15);
+list.append(69);
+list.append(24);
+list.append(23);
+list.append(54);
+list.append(5);
+list.append(15);
+list.append(123);
+list.append(111);
+list.append(113);
+list.append(151);
+list.append(189);
+list.append(131);
+list.append(23);
+list.append(175);
+list.append(136);
+list.append(10);
+list.append(160);
+list.append(167);
+list.append(166);
+list.append(195);
+list.append(140);
+list.append(198);
+list.append(119);
+list.append(113);
+list.append(158);
+list.append(132);
+list.append(114);
+list.append(189);
+list.append(115);
+list.append(169);
+list.append(124);
+list.append(123);
+list.append(154);
+
+var begin = clock();
+
+var node;
+for (var i = 0; i < 100000; i = i + 1) {
+    node = list.search(i % 200);
+}
+print node;
+
+print clock() - begin;

@@ -1,0 +1,16 @@
+fun remainder(x, y) {
+    while (x >= y) {
+        x = x - y;
+    }
+    return x;
+}
+
+var begin = clock();
+
+var result;
+for (var i = 0; i < 20000; i = i + 1) {
+    result = remainder(i, 5);
+}
+print result;
+
+print clock() - begin;

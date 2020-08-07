@@ -55,14 +55,14 @@ static void define_native(const char* name, NativeFn function, int arity)
 {
     vm_push(OBJ_VAL(copy_string(name, strlen(name))));
     vm_push(OBJ_VAL(new_native(function, arity)));
-    table_put(&vm.globals, AS_STRING(vm.stack.values[0]), vm.stack.values[1]);
+    table_put(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
     vm_pop();
     vm_pop();
 }
 
 static void reset_stack()
 {
-    stack_free(&vm.stack);
+    vm.stackTop = vm.stack;
     vm.frameCount = 0;
     vm.openUpvalues = NULL;
 }
@@ -105,17 +105,19 @@ void vm_free()
 
 void vm_push(Value value)
 {
-    stack_push(&vm.stack, value);
+    *vm.stackTop = value;
+    vm.stackTop++;
 }
 
 Value vm_pop()
 {
-    return stack_pop(&vm.stack);
+    vm.stackTop--;
+    return *vm.stackTop;
 }
 
 static Value peek(int distance)
 {
-    return vm.stack.values[vm.stack.count - 1 - distance];
+    return vm.stackTop[- 1 - distance];
 }
 
 static bool is_falsey(Value value)
@@ -170,8 +172,7 @@ static bool call(ObjClosure* closure, uint8_t argCount)
     CallFrame* frame = &vm.frames[vm.frameCount++];
     frame->closure = closure;
     frame->ip = closure->function->chunk.code;
-    frame->slots = &vm.stack.values[vm.stack.count - argCount - 1];
-    frame->slotIndex = vm.stack.count - argCount - 1;
+    frame->slots = vm.stackTop - argCount - 1;
     return true;
 }
 
@@ -181,7 +182,7 @@ static bool call_value(Value callee, uint8_t argCount)
         switch (OBJ_TYPE(callee)) {
             case OBJ_BOUND_METHOD: {
                 ObjBoundMethod* bound = AS_BOUND_METHOD(callee);
-                vm.stack.values[vm.stack.count - argCount - 1] = bound->receiver;
+                vm.stackTop[- argCount - 1] = bound->receiver;
                 return call(bound->method, argCount);
             }
             case OBJ_CLOSURE: {
@@ -194,18 +195,17 @@ static bool call_value(Value callee, uint8_t argCount)
                     return false;
                 }
 
-                size_t frameStart = vm.stack.count - argCount;
-                if (native->function(argCount, &vm.stack.values[frameStart])) {
-                    vm.stack.count = frameStart;
+                if (native->function(argCount, vm.stackTop - argCount)) {
+                    vm.stackTop -= (uint64_t)argCount;
                     return true;
                 } else {
-                    runtime_error(AS_CSTRING(vm.stack.values[frameStart - 1]));
+                    runtime_error(AS_CSTRING(vm.stackTop[-argCount]));
                     return false;
                 }
             }
             case OBJ_CLASS: {
                 ObjClass* loxClass = AS_CLASS(callee);
-                vm.stack.values[vm.stack.count - argCount - 1] = OBJ_VAL(new_instance(loxClass));
+                vm.stackTop[- argCount - 1] = OBJ_VAL(new_instance(loxClass));
 
                 Value initializer;
                 if (table_get(&loxClass->methods, vm.initString, &initializer)) {
@@ -247,7 +247,7 @@ static bool invoke(ObjString* name, uint8_t argCount)
 
     Value value;
     if (table_get(&instance->fields, name, &value)) {
-        vm.stack.values[vm.stack.count - argCount - 1] = value;
+        vm.stackTop[- argCount - 1] = value;
         return call_value(value, argCount);
     }
 
@@ -359,9 +359,9 @@ static InterpretStatus run()
     while (true) {
 #if DEBUG_TRACE_EXECUTION
         printf("\t");
-        for (uint32_t i = 0; i < vm.stack.count; i++) {
+        for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
             printf("[ ");
-            print_value(vm.stack.values[i]);
+            print_value(*slot);
             printf(" ]");
         }
         printf("\n");
@@ -439,7 +439,7 @@ static InterpretStatus run()
                 break;
             }
             case OP_NOT: {
-                vm.stack.values[vm.stack.count - 1] = BOOL_VAL(is_falsey(vm.stack.values[vm.stack.count - 1]));
+                vm.stackTop[-1] = BOOL_VAL(is_falsey(vm.stackTop[-1]));
                 break;
             }
             case OP_NEGATE: {
@@ -447,7 +447,7 @@ static InterpretStatus run()
                     return runtime_error("Operand must be a number.");
                 }
 
-                vm.stack.values[vm.stack.count - 1] = NUMBER_VAL(-AS_NUMBER(vm.stack.values[vm.stack.count - 1]));
+                vm.stackTop[-1] = NUMBER_VAL(-AS_NUMBER(vm.stackTop[-1]));
                 break;
             }
             case OP_ADD: {
@@ -507,7 +507,7 @@ static InterpretStatus run()
                     return runtime_error("Operand must be a number.");
                 }
 
-                vm.stack.values[vm.stack.count - 1] = NUMBER_VAL((double)(~(int64_t)AS_NUMBER(vm.stack.values[vm.stack.count - 1])));
+                vm.stackTop[-1] = NUMBER_VAL((double)(~(int64_t)AS_NUMBER(vm.stackTop[-1])));
                 break;
             }
             case OP_BITWISE_AND: {
@@ -622,13 +622,11 @@ static InterpretStatus run()
                 break;
             }
             case OP_SET_UPVALUE: {
-                uint8_t slot = READ_BYTE();
-                *frame->closure->upvalues[slot]->location = peek(0);
+                *frame->closure->upvalues[READ_BYTE()]->location = peek(0);
                 break;
             }
             case OP_GET_UPVALUE: {
-                uint8_t slot = READ_BYTE();
-                vm_push(*frame->closure->upvalues[slot]->location);
+                vm_push(*frame->closure->upvalues[READ_BYTE()]->location);
                 break;
             }
             case OP_SET_PROPERTY: {
@@ -688,7 +686,7 @@ static InterpretStatus run()
                 break;
             }
             case OP_CLOSE_UPVALUE: {
-                close_upvalues(&vm.stack.values[vm.stack.count - 1]);
+                close_upvalues(vm.stackTop - 1);
                 vm_pop();
                 break;
             }
@@ -728,7 +726,7 @@ static InterpretStatus run()
                     return INTERPRET_OK;
                 }
 
-                vm.stack.count = frame->slotIndex;
+                vm.stackTop = frame->slots;
                 vm_push(result);
 
                 frame = &vm.frames[vm.frameCount - 1];

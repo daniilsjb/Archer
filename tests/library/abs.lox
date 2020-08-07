@@ -1,0 +1,4 @@
+print abs(-10);  //Expected: 10
+print abs(51.1); //Expected: 51.1
+print abs(0);    //Expected: 0
+print abs(-0);   //Expected: 0

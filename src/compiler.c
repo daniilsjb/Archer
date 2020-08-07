@@ -102,30 +102,30 @@ static void variable_declaration();
 static void compiler_init(Compiler* compiler, FunctionType type)
 {
     compiler->enclosing = current;
+    current = compiler;
 
-    compiler->function = NULL;
-    compiler->type = type;
+    current->function = NULL;
+    current->type = type;
 
-    compiler->localCount = 0;
-    compiler->scopeDepth = 0;
+    current->localCount = 0;
+    current->scopeDepth = 0;
 
-    Local* local = &compiler->locals[compiler->localCount++];
+    current->function = new_function();
+
+    if (type != TYPE_SCRIPT) {
+        current->function->name = copy_string(parser.previous.start, parser.previous.length);
+    }
+
+    Local* local = &current->locals[current->localCount++];
     local->depth = 0;
     local->isCaptured = false;
+
     if (type != TYPE_FUNCTION) {
         local->identifier.start = "this";
         local->identifier.length = 4;
     } else {
         local->identifier.start = "";
         local->identifier.length = 0;
-    }
-
-    compiler->function = new_function();
-
-    current = compiler;
-
-    if (type != TYPE_SCRIPT) {
-        current->function->name = copy_string(parser.previous.start, parser.previous.length);
     }
 }
 
@@ -874,9 +874,6 @@ static void method()
 
 static void class_declaration()
 {
-    ClassCompiler classCompiler = { .name = parser.previous, .enclosing = currentClass };
-    currentClass = &classCompiler;
-
     consume(TOKEN_IDENTIFIER, "Expected class name.");
     Token className = parser.previous;
     uint8_t nameConstant = identifier_constant(&parser.previous);
@@ -884,6 +881,9 @@ static void class_declaration()
 
     emit_bytes(OP_CLASS, nameConstant);
     define_variable(nameConstant);
+
+    ClassCompiler classCompiler = { .name = parser.previous, .enclosing = currentClass, .hasSuperclass = false };
+    currentClass = &classCompiler;
 
     if (match(TOKEN_LESS)) {
         consume(TOKEN_IDENTIFIER, "Expected superclass name.");

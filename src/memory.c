@@ -180,8 +180,8 @@ static void blacken_object(Obj* object)
 
 static void mark_roots()
 {
-    for (size_t i = 0; i < vm.stack.count; i++) {
-        mark_value(vm.stack.values[i]);
+    for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
+        mark_value(*slot);
     }
 
     for (size_t i = 0; i < vm.frameCount; i++) {

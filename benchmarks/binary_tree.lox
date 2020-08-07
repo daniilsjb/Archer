@@ -1,0 +1,115 @@
+class Node {
+    
+    init(value) {
+        this.value = value;
+        this.left = nil;
+        this.right = nil;
+    }
+    
+    search(value) {
+        if (value == this.value) {
+            return this;
+        }
+        
+        if (value < this.value) {
+            if (this.left == nil) {
+                return nil;
+            }
+            
+            return this.left.search(value);
+        } else {
+            if (this.right == nil) {
+                return nil;
+            }
+            
+            return this.right.search(value);
+        }
+    }
+    
+    insert(value) {
+        if (value <= this.value) {
+            if (this.left != nil) {
+                this.left.insert(value);
+            } else {
+                this.left = Node(value);
+            }
+        } else if (value > this.value) {
+            if (this.right != nil) {
+                this.right.insert(value);
+            } else {
+                this.right = Node(value);
+            }
+        }
+    }
+    
+}
+
+var tree = Node(100);
+tree.insert(5);
+tree.insert(15);
+tree.insert(23);
+tree.insert(1);
+tree.insert(3);
+tree.insert(51);
+tree.insert(89);
+tree.insert(31);
+tree.insert(16);
+tree.insert(75);
+tree.insert(36);
+tree.insert(0);
+tree.insert(6);
+tree.insert(67);
+tree.insert(66);
+tree.insert(95);
+tree.insert(4);
+tree.insert(98);
+tree.insert(19);
+tree.insert(13);
+tree.insert(58);
+tree.insert(32);
+tree.insert(14);
+tree.insert(89);
+tree.insert(15);
+tree.insert(69);
+tree.insert(24);
+tree.insert(23);
+tree.insert(54);
+tree.insert(5);
+tree.insert(15);
+tree.insert(123);
+tree.insert(111);
+tree.insert(113);
+tree.insert(151);
+tree.insert(189);
+tree.insert(131);
+tree.insert(23);
+tree.insert(175);
+tree.insert(136);
+tree.insert(10);
+tree.insert(160);
+tree.insert(167);
+tree.insert(166);
+tree.insert(195);
+tree.insert(140);
+tree.insert(198);
+tree.insert(119);
+tree.insert(113);
+tree.insert(158);
+tree.insert(132);
+tree.insert(114);
+tree.insert(189);
+tree.insert(115);
+tree.insert(169);
+tree.insert(124);
+tree.insert(123);
+tree.insert(154);
+
+var begin = clock();
+
+var node;
+for (var i = 0; i < 1000000; i = i + 1) {
+    node = tree.search(i % 200);
+}
+print node;
+
+print clock() - begin;

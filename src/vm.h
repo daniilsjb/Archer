@@ -1,18 +1,17 @@
 #pragma once
 
 #include "chunk.h"
-#include "stack.h"
 #include "value.h"
 #include "object.h"
 #include "table.h"
 
+#define STACK_MAX 512
 #define FRAMES_MAX 64
 
 typedef struct {
     ObjClosure* closure;
     uint8_t* ip;
     Value* slots;
-    size_t slotIndex;
 } CallFrame;
 
 typedef struct {
@@ -20,7 +19,9 @@ typedef struct {
     size_t frameCount;
     ObjUpvalue* openUpvalues;
 
-    Stack stack;
+    Value stack[STACK_MAX];
+    Value* stackTop;
+
     Obj* objects;
     Table globals;
     Table strings;
