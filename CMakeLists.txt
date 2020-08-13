@@ -27,4 +27,5 @@ add_executable (clox
     "src/value.h"
     "src/vm.c"
     "src/vm.h"
+    "src/token.h"
 )

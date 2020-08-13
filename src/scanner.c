@@ -262,16 +262,16 @@ Token scan_token()
     }
 
     switch (c) {
-        case '(': return make_token(TOKEN_LEFT_PARENTHESIS);
-        case ')': return make_token(TOKEN_RIGHT_PARENTHESIS);
-        case '{': return make_token(TOKEN_LEFT_BRACE);
-        case '}': return make_token(TOKEN_RIGHT_BRACE);
-        case '[': return make_token(TOKEN_LEFT_BRACKET);
-        case ']': return make_token(TOKEN_RIGHT_BRACKET);
+        case '(': return make_token(TOKEN_L_PAREN);
+        case ')': return make_token(TOKEN_R_PAREN);
+        case '{': return make_token(TOKEN_L_BRACE);
+        case '}': return make_token(TOKEN_R_BRACE);
+        case '[': return make_token(TOKEN_L_BRACKET);
+        case ']': return make_token(TOKEN_R_BRACKET);
         case ';': return make_token(TOKEN_SEMICOLON);
         case ',': return make_token(TOKEN_COMMA);
         case '.': return make_token(TOKEN_DOT);
-        case '?': return make_token(TOKEN_QUESTION_MARK);
+        case '?': return make_token(TOKEN_QUESTION);
         case ':': return make_token(TOKEN_COLON);
         case '-': return make_token(match('=') ? TOKEN_MINUS_EQUAL : TOKEN_MINUS);
         case '+': return make_token(match('=') ? TOKEN_PLUS_EQUAL : TOKEN_PLUS);
@@ -280,8 +280,8 @@ Token scan_token()
         case '%': return make_token(match('=') ? TOKEN_PERCENT_EQUAL : TOKEN_PERCENT);
         case '!': return make_token(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
         case '=': return make_token(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
-        case '>': return make_token(match('=') ? TOKEN_GREATER_EQUAL : (match('>') ? (match('=') ? TOKEN_GREATER_GREATER_EQUAL : TOKEN_GREATER_GREATER) : TOKEN_GREATER));
-        case '<': return make_token(match('=') ? TOKEN_LESS_EQUAL : (match('<') ? (match('=') ? TOKEN_LESS_LESS_EQUAL : TOKEN_LESS_LESS) : TOKEN_LESS));
+        case '>': return make_token(match('=') ? TOKEN_GREATER_EQUAL : (match('>') ? (match('=') ? TOKEN_R_SHIFT_EQUAL : TOKEN_R_SHIFT) : TOKEN_GREATER));
+        case '<': return make_token(match('=') ? TOKEN_LESS_EQUAL : (match('<') ? (match('=') ? TOKEN_L_SHIFT_EQUAL : TOKEN_L_SHIFT) : TOKEN_LESS));
         case '~': return make_token(TOKEN_TILDE);
         case '&': return make_token(match('=') ? TOKEN_AMPERSAND_EQUAL : TOKEN_AMPERSAND);
         case '|': return make_token(match('=') ? TOKEN_PIPE_EQUAL : TOKEN_PIPE);
