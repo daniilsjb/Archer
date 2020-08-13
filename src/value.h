@@ -84,8 +84,8 @@ typedef struct {
 #endif
 
 typedef struct {
-    uint32_t count;
-    uint32_t capacity;
+    size_t count;
+    size_t capacity;
     Value* values;
 } ValueArray;
 
