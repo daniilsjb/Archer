@@ -2,6 +2,10 @@
 
 project ("clox")
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    add_compile_definitions(_CRT_SECURE_NO_DEPRECATE)
+endif()
+
 add_executable (clox
     "src/main.c"
     "src/opcode.h"

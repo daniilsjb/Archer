@@ -44,12 +44,12 @@ uint8_t chunk_add_constant(Chunk* chunk, Value constant)
     return (uint8_t)(chunk->constants.count - 1);
 }
 
-int chunk_get_line(Chunk* chunk, int offset)
+int chunk_get_line(Chunk* chunk, size_t offset)
 {
     LineArray* array = &chunk->lines;
 
-    int index = 0;
-    int span = 0;
+    size_t index = 0;
+    size_t span = 0;
 
     while (true) {
         span += array->lines[index].count;

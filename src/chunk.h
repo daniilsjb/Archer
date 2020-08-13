@@ -21,6 +21,6 @@ void chunk_free(Chunk* chunk);
 void chunk_write(Chunk* chunk, uint8_t byte, int line);
 uint8_t chunk_add_constant(Chunk* chunk, Value constant);
 
-int chunk_get_line(Chunk* chunk, int offset);
+int chunk_get_line(Chunk* chunk, size_t offset);
 
 #endif

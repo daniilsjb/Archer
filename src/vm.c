@@ -140,7 +140,7 @@ static InterpretStatus runtime_error(const char* format, ...)
     fputs("\n", stderr);
     va_end(args);
 
-    for (int i = vm.frameCount - 1; i >= 0; i--) {
+    for (int i = (int)vm.frameCount - 1; i >= 0; i--) {
         CallFrame* frame = &vm.frames[i];
         ObjFunction* function = frame->closure->function;
 

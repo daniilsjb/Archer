@@ -16,7 +16,7 @@ void value_array_init(ValueArray* array)
 void value_array_write(ValueArray* array, Value value)
 {
     if (array->count >= array->capacity) {
-        int oldCapacity = array->capacity;
+        size_t oldCapacity = array->capacity;
         array->capacity = GROW_CAPACITY(oldCapacity);
         array->values = GROW_ARRAY(Value, array->values, oldCapacity, array->capacity);
     }
