@@ -6,23 +6,23 @@
 #include "value.h"
 #include "table.h"
 
-#define OBJ_TYPE(object) (AS_OBJ(object)->type)
+#define OBJ_TYPE(object)        (AS_OBJ(object)->type)
 
-#define IS_STRING(object) isObjType(object, OBJ_STRING)
-#define IS_FUNCTION(object) isObjType(object, OBJ_FUNCTION)
-#define IS_CLOSURE(object) isObjType(object, OBJ_CLOSURE)
-#define IS_NATIVE(object) isObjType(object, OBJ_NATIVE)
-#define IS_CLASS(object) isObjType(object, OBJ_CLASS)
-#define IS_INSTANCE(object) isObjType(object, OBJ_INSTANCE)
+#define IS_STRING(object)       isObjType(object, OBJ_STRING)
+#define IS_FUNCTION(object)     isObjType(object, OBJ_FUNCTION)
+#define IS_CLOSURE(object)      isObjType(object, OBJ_CLOSURE)
+#define IS_NATIVE(object)       isObjType(object, OBJ_NATIVE)
+#define IS_CLASS(object)        isObjType(object, OBJ_CLASS)
+#define IS_INSTANCE(object)     isObjType(object, OBJ_INSTANCE)
 #define IS_BOUND_METHOD(object) isObjType(object, OBJ_BOUND_METHOD)
 
-#define AS_STRING(object) ((ObjString*)AS_OBJ(object))
-#define AS_CSTRING(object) (((ObjString*)AS_OBJ(object))->chars)
-#define AS_FUNCTION(object) ((ObjFunction*)AS_OBJ(object))
-#define AS_CLOSURE(object) ((ObjClosure*)AS_OBJ(object))
-#define AS_NATIVE(object) ((ObjNative*)AS_OBJ(object))
-#define AS_CLASS(object) ((ObjClass*)AS_OBJ(object))
-#define AS_INSTANCE(object) ((ObjInstance*)AS_OBJ(object))
+#define AS_STRING(object)       ((ObjString*)AS_OBJ(object))
+#define AS_CSTRING(object)      (((ObjString*)AS_OBJ(object))->chars)
+#define AS_FUNCTION(object)     ((ObjFunction*)AS_OBJ(object))
+#define AS_CLOSURE(object)      ((ObjClosure*)AS_OBJ(object))
+#define AS_NATIVE(object)       ((ObjNative*)AS_OBJ(object))
+#define AS_CLASS(object)        ((ObjClass*)AS_OBJ(object))
+#define AS_INSTANCE(object)     ((ObjInstance*)AS_OBJ(object))
 #define AS_BOUND_METHOD(object) ((ObjBoundMethod*)AS_OBJ(object))
 
 typedef enum {
@@ -36,11 +36,11 @@ typedef enum {
     OBJ_BOUND_METHOD
 } ObjType;
 
-struct sObj {
-    struct sObj* next;
+typedef struct Obj {
+    struct Obj* next;
     ObjType type;
     bool marked;
-};
+} Obj;
 
 typedef struct {
     Obj obj;
@@ -90,7 +90,7 @@ typedef struct {
     int arity;
 } ObjNative;
 
-typedef struct sObjString {
+typedef struct ObjString {
     Obj obj;
     uint32_t hash;
     size_t length;

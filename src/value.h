@@ -3,8 +3,10 @@
 
 #include "common.h"
 
-typedef struct sObj Obj;
-typedef struct sObjString ObjString;
+#define NAN_BOXING 1
+
+typedef struct Obj Obj;
+typedef struct ObjString ObjString;
 
 #if NAN_BOXING
 #include <string.h>
@@ -90,8 +92,9 @@ typedef struct {
 } ValueArray;
 
 void value_array_init(ValueArray* array);
-void value_array_write(ValueArray* array, Value value);
 void value_array_free(ValueArray* array);
+
+void value_array_write(ValueArray* array, Value value);
 
 bool values_equal(Value a, Value b);
 

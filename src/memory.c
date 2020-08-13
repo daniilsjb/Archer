@@ -4,8 +4,6 @@
 #include "compiler.h"
 #include "vm.h"
 
-#include <stdio.h>
-
 #if DEBUG_LOG_GC
 #include <stdio.h>
 #include "debug.h"

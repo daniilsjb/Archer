@@ -3,9 +3,10 @@
 #include <string.h>
 
 #include "compiler.h"
+#include "common.h"
+#include "chunk.h"
 #include "vm.h"
 #include "scanner.h"
-#include "object.h"
 #include "table.h"
 #include "memory.h"
 

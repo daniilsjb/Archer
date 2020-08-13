@@ -1,9 +1,7 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
-#include "object.h"
 #include "value.h"
+#include "object.h"
 #include "memory.h"
 
 void value_array_init(ValueArray* array)

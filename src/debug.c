@@ -2,7 +2,6 @@
 
 #include "debug.h"
 #include "object.h"
-#include "value.h"
 
 static uint32_t simple_instruction(const char* name, uint32_t offset)
 {
