@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TABLE_H
+#define TABLE_H
 
 #include "common.h"
 #include "value.h"
@@ -28,3 +29,5 @@ ObjString* table_find_string(Table* table, const char* chars, size_t length, uin
 
 void table_remove_white(Table* table);
 void mark_table(Table* table);
+
+#endif

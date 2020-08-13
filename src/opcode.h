@@ -1,0 +1,39 @@
+#ifndef OPCODE_H
+#define OPCODE_H
+
+typedef enum {
+    /* Constants */
+    OP_CONSTANT, OP_TRUE, OP_FALSE, OP_NIL,
+
+    /* Equality */
+    OP_NOT_EQUAL, OP_EQUAL,
+
+    /* Comparison */
+    OP_GREATER, OP_GREATER_EQUAL, OP_LESS, OP_LESS_EQUAL,
+
+    /* Arithmetic */
+    OP_NOT, OP_NEGATE, OP_ADD, OP_SUBTRACT, OP_MULTIPLY, OP_DIVIDE, OP_MODULO,
+
+    /* Bitwise */
+    OP_BITWISE_NOT, OP_BITWISE_AND, OP_BITWISE_OR, OP_BITWISE_XOR, OP_BITWISE_LEFT_SHIFT, OP_BITWISE_RIGHT_SHIFT,
+
+    /* Control Flow */
+    OP_JUMP, OP_JUMP_IF_FALSE, OP_JUMP_IF_NOT_EQUAL, OP_LOOP,
+
+    /* Globals */
+    OP_DEFINE_GLOBAL, OP_SET_GLOBAL, OP_GET_GLOBAL,
+
+    /* Locals */
+    OP_SET_LOCAL, OP_GET_LOCAL,
+
+    /* Functions */
+    OP_CALL, OP_RETURN, OP_CLOSURE, OP_CLOSE_UPVALUE, OP_SET_UPVALUE, OP_GET_UPVALUE,
+
+    /* Classes */
+    OP_CLASS, OP_INHERIT, OP_SET_PROPERTY, OP_GET_PROPERTY, OP_METHOD, OP_INVOKE, OP_GET_SUPER, OP_SUPER_INVOKE,
+
+    /* Miscellaneous */
+    OP_POP, OP_PRINT
+} OpCode;
+
+#endif

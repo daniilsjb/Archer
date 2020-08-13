@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SCANNER_H
+#define SCANNER_H
 
 typedef enum {
     TOKEN_LEFT_PARENTHESIS, TOKEN_RIGHT_PARENTHESIS, TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_BRACKET,
@@ -37,3 +38,5 @@ typedef struct {
 
 void scanner_init(char const* source);
 Token scan_token();
+
+#endif

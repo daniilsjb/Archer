@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ERRCODE_H
+#define ERRCODE_H
 
 typedef enum {
     ERR_USAGE = 64,
@@ -6,3 +7,5 @@ typedef enum {
     ERR_SOFTWARE = 70,
     ERR_IO = 74
 } ErrorCode;
+
+#endif

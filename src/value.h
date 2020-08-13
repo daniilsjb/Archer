@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VALUE_H
+#define VALUE_H
 
 #include "common.h"
 
@@ -20,7 +21,7 @@ typedef uint64_t Value;
 #define NIL_VAL()        ((Value)(uint64_t)(QNAN | TAG_NIL))
 #define FALSE_VAL()      ((Value)(uint64_t)(QNAN | TAG_FALSE))
 #define TRUE_VAL()       ((Value)(uint64_t)(QNAN | TAG_TRUE))
-                         
+
 #define BOOL_VAL(b)      ((b) ? TRUE_VAL() : FALSE_VAL())
 #define NUMBER_VAL(num)  (num_to_value(num))
 #define OBJ_VAL(obj)     ((Value)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(obj)))
@@ -95,3 +96,5 @@ void value_array_free(ValueArray* array);
 bool values_equal(Value a, Value b);
 
 void print_value(Value value);
+
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VM_H
+#define VM_H
 
 #include "chunk.h"
 #include "value.h"
@@ -50,3 +51,5 @@ void vm_push(Value value);
 Value vm_pop();
 
 InterpretStatus vm_interpret(const char* source);
+
+#endif

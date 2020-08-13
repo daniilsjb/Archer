@@ -4,7 +4,7 @@
 
 #include "common.h"
 #include "vm.h"
-#include "error_code.h"
+#include "errcode.h"
 
 static void run_file(const char* fileName);
 char* read_file(const char* fileName);

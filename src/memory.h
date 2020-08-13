@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MEMORY_H
+#define MEMORY_H
 
 #include "common.h"
 #include "object.h"
@@ -22,3 +23,5 @@ void mark_value(Value value);
 void collect_garbage();
 
 void free_objects();
+
+#endif
