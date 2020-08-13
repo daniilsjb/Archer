@@ -16,9 +16,12 @@
 typedef struct {
     Token current;
     Token previous;
+
     bool error;
     bool panic;
 } Parser;
+
+Scanner scanner;
 
 typedef enum {
     PREC_NONE,
@@ -173,7 +176,7 @@ static void advance()
     parser.previous = parser.current;
 
     while (true) {
-        parser.current = scan_token();
+        parser.current = scanner_scan_token(&scanner);
         if (!check(TOKEN_ERROR)) {
             break;
         }
@@ -1100,7 +1103,7 @@ static ParseRule* get_rule(TokenType type)
 
 ObjFunction* compile(const char* source)
 {
-    scanner_init(source);
+    scanner_init(&scanner, source);
     parser.error = false;
     parser.panic = false;
 

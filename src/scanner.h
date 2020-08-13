@@ -3,7 +3,13 @@
 
 #include "token.h"
 
-void scanner_init(char const* source);
-Token scan_token();
+typedef struct {
+    const char* start;
+    const char* current;
+    int line;
+} Scanner;
+
+void scanner_init(Scanner* scanner, char const* source);
+Token scanner_scan_token(Scanner* scanner);
 
 #endif
