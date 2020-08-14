@@ -118,11 +118,6 @@ static Value peek(int distance)
     return vm.stackTop[- 1 - distance];
 }
 
-static bool is_falsey(Value value)
-{
-    return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
-}
-
 static InterpretStatus runtime_error(const char* format, ...)
 {
     CallFrame* frame = &vm.frames[vm.frameCount - 1];
@@ -310,40 +305,6 @@ static bool bind_method(ObjClass* loxClass, ObjString* name)
     return true;
 }
 
-static void concatenate()
-{
-    ObjString* b = AS_STRING(peek(0));
-    ObjString* a = AS_STRING(peek(1));
-
-    size_t length = a->length + b->length;
-    ObjString* string = make_string(length);
-
-    memcpy(string->chars, a->chars, a->length);
-    memcpy(string->chars + a->length, b->chars, b->length);
-    string->chars[length] = '\0';
-    string->hash = hash_string(string->chars, length);
-
-    ObjString* interned = table_find_string(&vm.strings, string->chars, length, string->hash);
-    if (interned != NULL) {
-        vm.objects = vm.objects->next;
-        reallocate(string, sizeof(ObjString) + string->length + 1, 0);
-
-        vm_pop();
-        vm_pop();
-
-        vm_push(OBJ_VAL(interned));
-    } else {
-        vm_push(OBJ_VAL(string));
-        table_put(&vm.strings, string, NIL_VAL());
-        vm_pop();
-
-        vm_pop();
-        vm_pop();
-
-        vm_push(OBJ_VAL(string));
-    }
-}
-
 static InterpretStatus run()
 {
     CallFrame* frame = &vm.frames[vm.frameCount - 1];
@@ -437,7 +398,7 @@ static InterpretStatus run()
                 break;
             }
             case OP_NOT: {
-                vm.stackTop[-1] = BOOL_VAL(is_falsey(vm.stackTop[-1]));
+                vm.stackTop[-1] = BOOL_VAL(value_is_falsey(vm.stackTop[-1]));
                 break;
             }
             case OP_NEGATE: {
@@ -450,7 +411,13 @@ static InterpretStatus run()
             }
             case OP_ADD: {
                 if (IS_STRING(peek(0)) && IS_STRING(peek(1))) {
-                    concatenate();
+                    ObjString* b = AS_STRING(peek(0));
+                    ObjString* a = AS_STRING(peek(1));
+                    ObjString* result = concatenate_strings(a, b);
+
+                    vm_pop();
+                    vm_pop();
+                    vm_push(OBJ_VAL(result));
                 } else if (IS_NUMBER(peek(0)) || IS_NUMBER(peek(1))) {
                     double b = AS_NUMBER(vm_pop());
                     double a = AS_NUMBER(vm_pop());
@@ -570,7 +537,7 @@ static InterpretStatus run()
             }
             case OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
-                if (is_falsey(peek(0))) {
+                if (value_is_falsey(peek(0))) {
                     ip += offset;
                 }
                 break;

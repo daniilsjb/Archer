@@ -127,6 +127,31 @@ ObjString* copy_string(const char* chars, size_t length)
     return string;
 }
 
+ObjString* concatenate_strings(ObjString* a, ObjString* b)
+{
+    size_t length = a->length + b->length;
+    ObjString* string = make_string(length);
+
+    memcpy(string->chars, a->chars, a->length);
+    memcpy(string->chars + a->length, b->chars, b->length);
+    string->chars[length] = '\0';
+    string->hash = hash_string(string->chars, length);
+
+    ObjString* interned = table_find_string(&vm.strings, string->chars, length, string->hash);
+    if (interned != NULL) {
+        vm.objects = vm.objects->next;
+        reallocate(string, sizeof(ObjString) + string->length + 1, 0);
+
+        return interned;
+    } else {
+        vm_push(OBJ_VAL(string));
+        table_put(&vm.strings, string, NIL_VAL());
+        vm_pop();
+
+        return string;
+    }
+}
+
 uint32_t hash_string(const char* key, size_t length)
 {
     uint32_t hash = 2166136261U;

@@ -29,6 +29,11 @@ void value_array_free(ValueArray* array)
     value_array_init(array);
 }
 
+bool value_is_falsey(Value value)
+{
+    return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
+
 bool values_equal(Value a, Value b)
 {
 #if NAN_BOXING

@@ -96,6 +96,7 @@ void value_array_free(ValueArray* array);
 
 void value_array_write(ValueArray* array, Value value);
 
+bool value_is_falsey(Value value);
 bool values_equal(Value a, Value b);
 
 void print_value(Value value);

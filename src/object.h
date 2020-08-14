@@ -109,6 +109,7 @@ ObjBoundMethod* new_bound_method(Value receiver, ObjClosure* method);
 
 ObjString* make_string(size_t length);
 ObjString* copy_string(const char* chars, size_t length);
+ObjString* concatenate_strings(ObjString* a, ObjString* b);
 
 uint32_t hash_string(const char* key, size_t length);
 
