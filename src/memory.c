@@ -101,7 +101,12 @@ void mark_object(Obj* object)
 
     if (vm.grayCapacity < vm.grayCount + 1) {
         vm.grayCapacity = GROW_CAPACITY(vm.grayCapacity);
-        vm.grayStack = realloc(vm.grayStack, sizeof(Obj*) * vm.grayCapacity);
+        void* reallocated = realloc(vm.grayStack, sizeof(Obj*) * vm.grayCapacity);
+        if (!reallocated) {
+            exit(1);
+        }
+
+        vm.grayStack = reallocated;
     }
 
     vm.grayStack[vm.grayCount++] = object;

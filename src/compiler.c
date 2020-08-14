@@ -7,7 +7,6 @@
 #include "chunk.h"
 #include "vm.h"
 #include "scanner.h"
-#include "table.h"
 #include "memory.h"
 
 #if DEBUG_PRINT_CODE
@@ -458,7 +457,7 @@ static void number(bool canAssign)
 
 static void string(bool canAssign)
 {
-    emit_constant(OBJ_VAL(copy_string(parser.previous.start + 1, parser.previous.length - 2)));
+    emit_constant(OBJ_VAL(copy_string(parser.previous.start + 1, (size_t)parser.previous.length - 2)));
 }
 
 static void named_variable(Token identifier, bool canAssign)

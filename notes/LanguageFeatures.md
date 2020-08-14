@@ -154,7 +154,7 @@ if (x != nil) {
 }
 ```
 
-Notice the pattern: we go step at a time and assign a single value to `x` on each step, then check if the newly assigned value is `nil`. If it is,we stop going, leaving the x with value `nil`. Otherwise we eventually assign the desired value from the method `getValue` to it. It's really clumsy to type all of this out, however. In a functional language like Haskell, this problem would be solved with a Maybe Monad. This language doesn't support monads (at least not yet), but there is a simpler solution, inspired by Kotlin. Consider this:
+Notice the pattern: we go step at a time and assign a single value to `x` on each step, then check if the newly assigned value is `nil`. If it is, we stop going, leaving the x with value `nil`. Otherwise we eventually assign the desired value from the method `getValue` to it. It's really clumsy to type all of this out, however. In a functional language like Haskell, this problem would be solved with a Maybe Monad. This language doesn't support monads (at least not yet), but there is a simpler solution, inspired by Kotlin. Consider this:
 
 ```js
 var x = foo?.bar?.baz?.qux?.getValue();
