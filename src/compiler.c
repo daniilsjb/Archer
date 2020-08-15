@@ -6,20 +6,12 @@
 #include "vm.h"
 #include "common.h"
 #include "chunk.h"
-#include "scanner.h"
+#include "parser.h"
 #include "memory.h"
 
 #if DEBUG_PRINT_CODE
 #include "debug.h"
 #endif
-
-typedef struct {
-    Token current;
-    Token previous;
-
-    bool error;
-    bool panic;
-} Parser;
 
 typedef struct {
     Token identifier;
@@ -44,7 +36,6 @@ typedef struct Compiler {
 
     struct Compiler* enclosing;
 
-    Scanner* scanner;
     Parser* parser;
 
     ObjFunction* function;
@@ -108,7 +99,6 @@ static void compiler_init(Compiler* compiler, VM* vm, FunctionType type)
 
     if (compiler->enclosing) {
         compiler->vm = compiler->enclosing->vm;
-        compiler->scanner = compiler->enclosing->scanner;
         compiler->parser = compiler->enclosing->parser;
     }
 
@@ -157,11 +147,10 @@ static void error_at(Compiler* compiler, Token* token, const char* message)
     }
 
     fprintf(stderr, ": %s\n", message);
-    compiler->parser->error = true;
-    compiler->parser->panic = true;
+    parser_enter_error_mode(compiler->parser);
 }
 
-static void error_at_compiler(Compiler* compiler, const char* message)
+static void error_at_current(Compiler* compiler, const char* message)
 {
     error_at(compiler, &compiler->parser->current, message);
 }
@@ -173,16 +162,15 @@ static void error(Compiler* compiler, const char* message)
 
 static bool check(Compiler* compiler, TokenType type)
 {
-    return compiler->parser->current.type == type;
+    return parser_check(compiler->parser, type);
 }
 
 static void advance(Compiler* compiler)
 {
-    compiler->parser->previous = compiler->parser->current;
+    parser_move_previous(compiler->parser);
 
     while (true) {
-        compiler->parser->current = scanner_scan_token(compiler->scanner);
-        if (!check(compiler, TOKEN_ERROR)) {
+        if (parser_advance(compiler->parser)) {
             break;
         }
 
@@ -193,7 +181,7 @@ static void advance(Compiler* compiler)
 static void consume(Compiler* compiler, TokenType type, const char* message)
 {
     if (!check(compiler, type)) {
-        error_at_compiler(compiler, message);
+        error_at_current(compiler, message);
     } else {
         advance(compiler);
     }
@@ -207,33 +195,6 @@ static bool match(Compiler* compiler, TokenType type)
 
     advance(compiler);
     return true;
-}
-
-static void synchronize(Compiler* compiler)
-{
-    compiler->parser->panic = false;
-
-    while (!check(compiler, TOKEN_EOF)) {
-        if (compiler->parser->previous.type == TOKEN_SEMICOLON) {
-            return;
-        }
-
-        switch (compiler->parser->current.type) {
-            case TOKEN_CLASS: return;
-            case TOKEN_STATIC: return;
-            case TOKEN_FUN: return;
-            case TOKEN_VAR: return;
-            case TOKEN_FOR: return;
-            case TOKEN_IF: return;
-            case TOKEN_WHILE: return;
-            case TOKEN_PRINT: return;
-            case TOKEN_BREAK: return;
-            case TOKEN_CONTINUE: return;
-            case TOKEN_RETURN: return;
-        }
-
-        advance(compiler);
-    }
 }
 
 static void emit_byte(Compiler* compiler, uint8_t byte)
@@ -951,7 +912,7 @@ static void variable_declaration(Compiler* compiler)
 static void declaration(Compiler* compiler)
 {
     if (compiler->parser->panic) {
-        synchronize(compiler);
+        parser_synchronize(compiler->parser);
     }
 
     if (match(compiler, TOKEN_CLASS)) {
@@ -1111,16 +1072,11 @@ ObjFunction* compile(VM* vm, const char* source)
     vm->compiler = NULL;
     vm->classCompiler = NULL;
 
-    Scanner scanner;
-    scanner_init(&scanner, source);
-
     Parser parser;
-    parser.error = false;
-    parser.panic = false;
+    parser_init(&parser, source);
 
     Compiler compiler;
     compiler.vm = vm;
-    compiler.scanner = &scanner;
     compiler.parser = &parser;
     compiler_init(&compiler, vm, TYPE_SCRIPT);
 

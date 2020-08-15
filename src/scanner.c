@@ -4,7 +4,7 @@
 #include "scanner.h"
 #include "common.h"
 
-void scanner_init(Scanner* scanner, char const* source)
+void scanner_init(Scanner* scanner, const char* source)
 {
     scanner->start = source;
     scanner->current = source;
@@ -132,7 +132,7 @@ static Token string(Scanner* scanner)
     }
 
     if (reached_end(scanner)) {
-        error_token("Unterminated string.", scanner->line);
+        return error_token("Unterminated string.", scanner->line);
     }
 
     advance(scanner);
