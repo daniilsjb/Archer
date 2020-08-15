@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 #define DEBUG_PRINT_CODE 0
 #define DEBUG_TRACE_EXECUTION 1
 #define DEBUG_STRESS_GC 0
