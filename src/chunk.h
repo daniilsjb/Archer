@@ -6,6 +6,8 @@
 #include "value.h"
 #include "line.h"
 
+struct VM;
+
 typedef struct {
     size_t count;
     size_t capacity;
@@ -16,10 +18,10 @@ typedef struct {
 } Chunk;
 
 void chunk_init(Chunk* chunk);
-void chunk_free(Chunk* chunk);
+void chunk_free(struct VM* vm, Chunk* chunk);
 
-void chunk_write(Chunk* chunk, uint8_t byte, int line);
-uint8_t chunk_add_constant(Chunk* chunk, Value constant);
+void chunk_write(struct VM* vm, Chunk* chunk, uint8_t byte, int line);
+uint8_t chunk_add_constant(struct VM* vm, Chunk* chunk, Value constant);
 
 int chunk_get_line(Chunk* chunk, size_t offset);
 

@@ -1,6 +1,7 @@
 #ifndef VM_H
 #define VM_H
 
+#include "compiler.h"
 #include "chunk.h"
 #include "value.h"
 #include "object.h"
@@ -15,7 +16,10 @@ typedef struct {
     Value* slots;
 } CallFrame;
 
-typedef struct {
+typedef struct VM {
+    struct Compiler* compiler;
+    struct ClassCompiler* classCompiler;
+
     CallFrame frames[FRAMES_MAX];
     size_t frameCount;
     ObjUpvalue* openUpvalues;
@@ -42,14 +46,12 @@ typedef enum {
     INTERPRET_RUNTIME_ERROR
 } InterpretStatus;
 
-extern VM vm;
+void vm_init(VM* vm);
+void vm_free(VM* vm);
 
-void vm_init();
-void vm_free();
+void vm_push(VM* vm, Value value);
+Value vm_pop(VM* vm);
 
-void vm_push(Value value);
-Value vm_pop();
-
-InterpretStatus vm_interpret(const char* source);
+InterpretStatus vm_interpret(VM* vm, const char* source);
 
 #endif

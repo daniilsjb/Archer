@@ -6,6 +6,8 @@
 #include "value.h"
 #include "table.h"
 
+struct VM;
+
 #define OBJ_TYPE(object)        (AS_OBJ(object)->type)
 
 #define IS_STRING(object)       isObjType(object, OBJ_STRING)
@@ -82,7 +84,7 @@ typedef struct {
     ObjClosure* method;
 } ObjBoundMethod;
 
-typedef bool (*NativeFn)(size_t argCount, Value* args);
+typedef bool (*NativeFn)(struct VM* vm, size_t argCount, Value* args);
 
 typedef struct {
     Obj obj;
@@ -97,19 +99,19 @@ typedef struct ObjString {
     char chars[];
 } ObjString;
 
-Obj* allocate_object(size_t size, ObjType type);
+Obj* allocate_object(struct VM* vm, size_t size, ObjType type);
 
-ObjFunction* new_function();
-ObjClosure* new_closure(ObjFunction* function);
-ObjUpvalue* new_upvalue(Value* slot);
-ObjNative* new_native(NativeFn function, int arity);
-ObjClass* new_class(ObjString* name);
-ObjInstance* new_instance(ObjClass* loxClass);
-ObjBoundMethod* new_bound_method(Value receiver, ObjClosure* method);
+ObjFunction* new_function(struct VM* vm);
+ObjClosure* new_closure(struct VM* vm, ObjFunction* function);
+ObjUpvalue* new_upvalue(struct VM* vm, Value* slot);
+ObjNative* new_native(struct VM* vm, NativeFn function, int arity);
+ObjClass* new_class(struct VM* vm, ObjString* name);
+ObjInstance* new_instance(struct VM* vm, ObjClass* loxClass);
+ObjBoundMethod* new_bound_method(struct VM* vm, Value receiver, ObjClosure* method);
 
-ObjString* make_string(size_t length);
-ObjString* copy_string(const char* chars, size_t length);
-ObjString* concatenate_strings(ObjString* a, ObjString* b);
+ObjString* make_string(struct VM* vm, size_t length);
+ObjString* copy_string(struct VM* vm, const char* chars, size_t length);
+ObjString* concatenate_strings(struct VM* vm, ObjString* a, ObjString* b);
 
 uint32_t hash_string(const char* key, size_t length);
 

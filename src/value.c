@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#include "vm.h"
 #include "value.h"
 #include "object.h"
 #include "memory.h"
@@ -11,21 +12,21 @@ void value_array_init(ValueArray* array)
     array->values = NULL;
 }
 
-void value_array_write(ValueArray* array, Value value)
+void value_array_write(VM* vm, ValueArray* array, Value value)
 {
     if (array->count >= array->capacity) {
         size_t oldCapacity = array->capacity;
         array->capacity = GROW_CAPACITY(oldCapacity);
-        array->values = GROW_ARRAY(Value, array->values, oldCapacity, array->capacity);
+        array->values = GROW_ARRAY(vm, Value, array->values, oldCapacity, array->capacity);
     }
 
     array->values[array->count] = value;
     array->count++;
 }
 
-void value_array_free(ValueArray* array)
+void value_array_free(VM* vm, ValueArray* array)
 {
-    array->values = FREE_ARRAY(Value, array->values, array->count);
+    array->values = FREE_ARRAY(vm, Value, array->values, array->count);
     value_array_init(array);
 }
 

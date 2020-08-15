@@ -5,6 +5,8 @@
 
 #define NAN_BOXING 1
 
+struct VM;
+
 typedef struct Obj Obj;
 typedef struct ObjString ObjString;
 
@@ -92,9 +94,9 @@ typedef struct {
 } ValueArray;
 
 void value_array_init(ValueArray* array);
-void value_array_free(ValueArray* array);
+void value_array_free(struct VM* vm, ValueArray* array);
 
-void value_array_write(ValueArray* array, Value value);
+void value_array_write(struct VM* vm, ValueArray* array, Value value);
 
 bool value_is_falsey(Value value);
 bool values_equal(Value a, Value b);

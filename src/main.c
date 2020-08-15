@@ -6,32 +6,33 @@
 #include "vm.h"
 #include "errcode.h"
 
-static void run_file(const char* fileName);
+static void run_file(VM* vm, const char* fileName);
 char* read_file(const char* fileName);
-static void run_prompt();
+static void run_prompt(VM* vm);
 
 int main(int argc, const char* argv[])
 {
-    vm_init();
+    VM vm;
+    vm_init(&vm);
 
     if (argc > 2) {
         fprintf(stderr, "Usage: clox [script]\n");
         exit(ERR_USAGE);
     } else if (argc == 2) {
-        run_file(argv[1]);
+        run_file(&vm, argv[1]);
     } else {
-        run_prompt();
+        run_prompt(&vm);
     }
 
-    vm_free();
+    vm_free(&vm);
 
     return 0;
 }
 
-static void run_file(const char* fileName)
+static void run_file(VM* vm, const char* fileName)
 {
     char* source = read_file(fileName);
-    InterpretStatus status = vm_interpret(source);
+    InterpretStatus status = vm_interpret(vm, source);
     free(source);
 
     if (status == INTERPRET_COMPILE_ERROR) {
@@ -72,7 +73,7 @@ char* read_file(const char* fileName)
     return buffer;
 }
 
-static void run_prompt()
+static void run_prompt(VM* vm)
 {
     char line[1024];
     while (true) {
@@ -83,6 +84,6 @@ static void run_prompt()
             break;
         }
 
-        vm_interpret(line);
+        vm_interpret(vm, line);
     }
 }

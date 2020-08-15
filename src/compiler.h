@@ -3,8 +3,12 @@
 
 #include "object.h"
 
-ObjFunction* compile(const char* source);
+struct VM;
+struct Compiler;
+struct ClassCompiler;
 
-void mark_compiler_roots();
+ObjFunction* compile(struct VM* vm, const char* source);
+
+void mark_compiler_roots(struct VM* vm);
 
 #endif

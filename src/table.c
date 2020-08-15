@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "table.h"
+#include "vm.h"
 #include "memory.h"
 #include "object.h"
 
@@ -13,9 +14,9 @@ void table_init(Table* table)
     table->entries = NULL;
 }
 
-void table_free(Table* table)
+void table_free(VM* vm, Table* table)
 {
-    FREE_ARRAY(Entry, table->entries, table->capacityMask + 1);
+    FREE_ARRAY(vm, Entry, table->entries, table->capacityMask + 1);
     table_init(table);
 }
 
@@ -41,9 +42,9 @@ static Entry* find_entry(Entry* entries, int capacityMask, ObjString* key)
     }
 }
 
-static void adjust_capacity(Table* table, int capacityMask)
+static void adjust_capacity(VM* vm, Table* table, int capacityMask)
 {
-    Entry* entries = ALLOCATE(Entry, capacityMask + 1);
+    Entry* entries = ALLOCATE(vm, Entry, capacityMask + 1);
     for (int i = 0; i <= capacityMask; i++) {
         entries[i].key = NULL;
         entries[i].value = NIL_VAL();
@@ -63,7 +64,7 @@ static void adjust_capacity(Table* table, int capacityMask)
         table->count++;
     }
 
-    FREE_ARRAY(Entry, table->entries, table->capacityMask + 1);
+    FREE_ARRAY(vm, Entry, table->entries, table->capacityMask + 1);
 
     table->entries = entries;
     table->capacityMask = capacityMask;
@@ -84,11 +85,11 @@ bool table_get(Table* table, ObjString* key, Value* value)
     return true;
 }
 
-bool table_put(Table* table, ObjString* key, Value value)
+bool table_put(VM* vm, Table* table, ObjString* key, Value value)
 {
     if ((double)table->count + 1 > ((double)table->capacityMask + 1) * TABLE_MAX_LOAD) {
         int capacity = GROW_CAPACITY(table->capacityMask + 1) - 1;
-        adjust_capacity(table, capacity);
+        adjust_capacity(vm, table, capacity);
     }
 
     Entry* entry = find_entry(table->entries, table->capacityMask, key);
@@ -103,12 +104,12 @@ bool table_put(Table* table, ObjString* key, Value value)
     return isNewKey;
 }
 
-void table_put_from(Table* source, Table* destination)
+void table_put_from(VM* vm, Table* source, Table* destination)
 {
     for (int i = 0; i <= source->capacityMask; i++) {
         Entry* entry = &source->entries[i];
         if (entry->key != NULL) {
-            table_put(destination, entry->key, entry->value);
+            table_put(vm, destination, entry->key, entry->value);
         }
     }
 }
@@ -163,11 +164,11 @@ void table_remove_white(Table* table)
     }
 }
 
-void mark_table(Table* table)
+void mark_table(VM* vm, Table* table)
 {
     for (int i = 0; i <= table->capacityMask; i++) {
         Entry* entry = &table->entries[i];
-        mark_object((Obj*)entry->key);
-        mark_value(entry->value);
+        mark_object(vm, (Obj*)entry->key);
+        mark_value(vm, entry->value);
     }
 }

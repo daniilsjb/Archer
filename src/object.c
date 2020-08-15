@@ -5,16 +5,16 @@
 #include "memory.h"
 #include "vm.h"
 
-#define ALLOCATE_OBJ(type, objectType) (type*)allocate_object(sizeof(type), objectType)
+#define ALLOCATE_OBJ(vm, type, objectType) (type*)allocate_object(vm, sizeof(type), objectType)
 
-Obj* allocate_object(size_t size, ObjType type) 
+Obj* allocate_object(VM* vm, size_t size, ObjType type) 
 {
-    Obj* object = (Obj*)reallocate(NULL, 0, size);
+    Obj* object = (Obj*)reallocate(vm, NULL, 0, size);
     object->type = type;
     object->marked = false;
 
-    object->next = vm.objects;
-    vm.objects = object;
+    object->next = vm->objects;
+    vm->objects = object;
 
 #if DEBUG_LOG_GC
     printf("%p free type %d\n", (void*)object, object->type);
@@ -23,9 +23,9 @@ Obj* allocate_object(size_t size, ObjType type)
     return object;
 }
 
-ObjFunction* new_function()
+ObjFunction* new_function(VM* vm)
 {
-    ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
+    ObjFunction* function = ALLOCATE_OBJ(vm, ObjFunction, OBJ_FUNCTION);
 
     function->arity = 0;
     function->upvalueCount = 0;
@@ -35,56 +35,56 @@ ObjFunction* new_function()
     return function;
 }
 
-ObjClosure* new_closure(ObjFunction* function)
+ObjClosure* new_closure(VM* vm, ObjFunction* function)
 {
-    ObjUpvalue** upvalues = ALLOCATE(ObjUpvalue*, function->upvalueCount);
+    ObjUpvalue** upvalues = ALLOCATE(vm, ObjUpvalue*, function->upvalueCount);
     for (size_t i = 0; i < function->upvalueCount; i++) {
         upvalues[i] = NULL;
     }
 
-    ObjClosure* closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
+    ObjClosure* closure = ALLOCATE_OBJ(vm, ObjClosure, OBJ_CLOSURE);
     closure->function = function;
     closure->upvalues = upvalues;
     closure->upvalueCount = function->upvalueCount;
     return closure;
 }
 
-ObjUpvalue* new_upvalue(Value* slot)
+ObjUpvalue* new_upvalue(VM* vm, Value* slot)
 {
-    ObjUpvalue* upvalue = ALLOCATE_OBJ(ObjUpvalue, OBJ_UPVALUE);
+    ObjUpvalue* upvalue = ALLOCATE_OBJ(vm, ObjUpvalue, OBJ_UPVALUE);
     upvalue->location = slot;
     upvalue->closed = NIL_VAL();
     upvalue->next = NULL;
     return upvalue;
 }
 
-ObjNative* new_native(NativeFn function, int arity)
+ObjNative* new_native(VM* vm, NativeFn function, int arity)
 {
-    ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
+    ObjNative* native = ALLOCATE_OBJ(vm, ObjNative, OBJ_NATIVE);
     native->function = function;
     native->arity = arity;
     return native;
 }
 
-ObjClass* new_class(ObjString* name)
+ObjClass* new_class(VM* vm, ObjString* name)
 {
-    ObjClass* loxClass = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
+    ObjClass* loxClass = ALLOCATE_OBJ(vm, ObjClass, OBJ_CLASS);
     loxClass->name = name;
     table_init(&loxClass->methods);
     return loxClass;
 }
 
-ObjInstance* new_instance(ObjClass* loxClass)
+ObjInstance* new_instance(VM* vm, ObjClass* loxClass)
 {
-    ObjInstance* instance = ALLOCATE_OBJ(ObjInstance, OBJ_INSTANCE);
+    ObjInstance* instance = ALLOCATE_OBJ(vm, ObjInstance, OBJ_INSTANCE);
     instance->loxClass = loxClass;
     table_init(&instance->fields);
     return instance;
 }
 
-ObjBoundMethod* new_bound_method(Value receiver, ObjClosure* method)
+ObjBoundMethod* new_bound_method(VM* vm, Value receiver, ObjClosure* method)
 {
-    ObjBoundMethod* boundMethod = ALLOCATE_OBJ(ObjBoundMethod, OBJ_BOUND_METHOD);
+    ObjBoundMethod* boundMethod = ALLOCATE_OBJ(vm, ObjBoundMethod, OBJ_BOUND_METHOD);
     boundMethod->receiver = receiver;
     boundMethod->method = method;
     return boundMethod;
@@ -99,54 +99,54 @@ static void print_function(ObjFunction* function)
     }
 }
 
-ObjString* make_string(size_t length)
+ObjString* make_string(VM* vm, size_t length)
 {
-    ObjString* string = (ObjString*)allocate_object(sizeof(ObjString) + length + 1, OBJ_STRING);
+    ObjString* string = (ObjString*)allocate_object(vm, sizeof(ObjString) + length + 1, OBJ_STRING);
     string->length = length;
     return string;
 }
 
-ObjString* copy_string(const char* chars, size_t length)
+ObjString* copy_string(VM* vm, const char* chars, size_t length)
 {
     uint32_t hash = hash_string(chars, length);
-    ObjString* interned = table_find_string(&vm.strings, chars, length, hash);
+    ObjString* interned = table_find_string(&vm->strings, chars, length, hash);
     if (interned != NULL) {
         return interned;
     }
 
-    ObjString* string = make_string(length);
+    ObjString* string = make_string(vm, length);
 
     memcpy(string->chars, chars, length);
     string->chars[length] = '\0';
     string->hash = hash;
 
-    vm_push(OBJ_VAL(string));
-    table_put(&vm.strings, string, NIL_VAL());
-    vm_pop();
+    vm_push(vm, OBJ_VAL(string));
+    table_put(vm, &vm->strings, string, NIL_VAL());
+    vm_pop(vm);
 
     return string;
 }
 
-ObjString* concatenate_strings(ObjString* a, ObjString* b)
+ObjString* concatenate_strings(VM* vm, ObjString* a, ObjString* b)
 {
     size_t length = a->length + b->length;
-    ObjString* string = make_string(length);
+    ObjString* string = make_string(vm, length);
 
     memcpy(string->chars, a->chars, a->length);
     memcpy(string->chars + a->length, b->chars, b->length);
     string->chars[length] = '\0';
     string->hash = hash_string(string->chars, length);
 
-    ObjString* interned = table_find_string(&vm.strings, string->chars, length, string->hash);
+    ObjString* interned = table_find_string(&vm->strings, string->chars, length, string->hash);
     if (interned != NULL) {
-        vm.objects = vm.objects->next;
-        reallocate(string, sizeof(ObjString) + string->length + 1, 0);
+        vm->objects = vm->objects->next;
+        reallocate(vm, string, sizeof(ObjString) + string->length + 1, 0);
 
         return interned;
     } else {
-        vm_push(OBJ_VAL(string));
-        table_put(&vm.strings, string, NIL_VAL());
-        vm_pop();
+        vm_push(vm, OBJ_VAL(string));
+        table_put(vm, &vm->strings, string, NIL_VAL());
+        vm_pop(vm);
 
         return string;
     }
