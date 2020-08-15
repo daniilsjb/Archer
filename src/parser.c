@@ -15,9 +15,14 @@ void parser_move_previous(Parser* parser)
     parser->previous = parser->current;
 }
 
+TokenType parser_peek_type(Parser* parser)
+{
+    return parser->current.type;
+}
+
 bool parser_check(Parser* parser, TokenType type)
 {
-    return parser->current.type == type;
+    return parser_peek_type(parser) == type;
 }
 
 bool parser_advance(Parser* parser)

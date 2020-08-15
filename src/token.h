@@ -1,6 +1,8 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
+#include "common.h"
+
 typedef enum {
     /* Brackets */
     TOKEN_L_PAREN,
@@ -95,5 +97,8 @@ typedef struct {
     int length;
     int line;
 } Token;
+
+bool lexemes_equal(Token* a, Token* b);
+Token synthetic_token(const char* lexeme);
 
 #endif

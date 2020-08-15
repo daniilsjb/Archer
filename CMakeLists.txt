@@ -34,4 +34,5 @@ add_executable (clox
     "src/token.h"
     "src/parser.h"
     "src/parser.c"
+    "src/token.c"
 )
