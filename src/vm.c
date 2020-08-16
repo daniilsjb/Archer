@@ -69,14 +69,7 @@ void vm_init(VM* vm)
 
     reset_stack(vm);
 
-    vm->objects = NULL;
-
-    vm->bytesAllocated = 0;
-    vm->nextGC = 1024 * 1024;
-
-    vm->grayCount = 0;
-    vm->grayCapacity = 0;
-    vm->grayStack = NULL;
+    gc_init(&vm->gc);
 
     table_init(&vm->globals);
     table_init(&vm->strings);
@@ -96,7 +89,7 @@ void vm_free(VM* vm)
 
     vm->initString = NULL;
 
-    free_objects(vm);
+    gc_free(&vm->gc, vm);
 
     reset_stack(vm);
 }

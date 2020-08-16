@@ -13,11 +13,10 @@ Obj* allocate_object(VM* vm, size_t size, ObjType type)
     object->type = type;
     object->marked = false;
 
-    object->next = vm->objects;
-    vm->objects = object;
+    gc_append_object(&vm->gc, object);
 
 #if DEBUG_LOG_GC
-    printf("%p free type %d\n", (void*)object, object->type);
+    printf("%p allocated object of type %d\n", (void*)object, object->type);
 #endif
 
     return object;
@@ -139,8 +138,8 @@ ObjString* concatenate_strings(VM* vm, ObjString* a, ObjString* b)
 
     ObjString* interned = table_find_string(&vm->strings, string->chars, length, string->hash);
     if (interned != NULL) {
-        vm->objects = vm->objects->next;
-        reallocate(vm, string, sizeof(ObjString) + string->length + 1, 0);
+        vm->gc.allocatedObjects = vm->gc.allocatedObjects->next;
+        deallocate(vm, string, sizeof(ObjString) + string->length + 1);
 
         return interned;
     } else {

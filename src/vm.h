@@ -1,6 +1,7 @@
 #ifndef VM_H
 #define VM_H
 
+#include "gc.h"
 #include "compiler.h"
 #include "chunk.h"
 #include "value.h"
@@ -17,6 +18,8 @@ typedef struct {
 } CallFrame;
 
 typedef struct VM {
+    GC gc;
+
     struct Compiler* compiler;
     struct ClassCompiler* classCompiler;
 
@@ -27,17 +30,9 @@ typedef struct VM {
     Value stack[STACK_MAX];
     Value* stackTop;
 
-    Obj* objects;
     Table globals;
     Table strings;
     ObjString* initString;
-
-    size_t bytesAllocated;
-    size_t nextGC;
-
-    size_t grayCount;
-    size_t grayCapacity;
-    Obj** grayStack;
 } VM;
 
 typedef enum {

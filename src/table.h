@@ -29,7 +29,4 @@ bool table_remove(Table* table, ObjString* key);
 
 ObjString* table_find_string(Table* table, const char* chars, size_t length, uint32_t hash);
 
-void table_remove_white(Table* table);
-void mark_table(struct VM* vm, Table* table);
-
 #endif

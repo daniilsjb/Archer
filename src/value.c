@@ -26,7 +26,8 @@ void value_array_write(VM* vm, ValueArray* array, Value value)
 
 void value_array_free(VM* vm, ValueArray* array)
 {
-    array->values = FREE_ARRAY(vm, Value, array->values, array->count);
+    FREE_ARRAY(vm, Value, array->values, array->count);
+    array->values = NULL;
     value_array_init(array);
 }
 

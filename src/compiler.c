@@ -1104,6 +1104,6 @@ ObjFunction* compile(VM* vm, const char* source)
 void mark_compiler_roots(VM* vm)
 {
     for (Compiler* compiler = vm->compiler; compiler != NULL; compiler = compiler->enclosing) {
-        mark_object(vm, (Obj*)compiler->function);
+        gc_mark_object(vm, (Obj*)compiler->function);
     }
 }

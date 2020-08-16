@@ -153,22 +153,3 @@ ObjString* table_find_string(Table* table, const char* chars, size_t length, uin
 
     return NULL;
 }
-
-void table_remove_white(Table* table)
-{
-    for (int i = 0; i <= table->capacityMask; i++) {
-        Entry* entry = &table->entries[i];
-        if (entry->key != NULL && !entry->key->obj.marked) {
-            table_remove(table, entry->key);
-        }
-    }
-}
-
-void mark_table(VM* vm, Table* table)
-{
-    for (int i = 0; i <= table->capacityMask; i++) {
-        Entry* entry = &table->entries[i];
-        mark_object(vm, (Obj*)entry->key);
-        mark_value(vm, entry->value);
-    }
-}
