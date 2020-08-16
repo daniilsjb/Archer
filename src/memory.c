@@ -1,9 +1,9 @@
 #include <stdlib.h>
 
 #include "memory.h"
+#include "memlib.h"
 #include "vm.h"
 #include "gc.h"
-#include "memlib.h"
 
 void* allocate(VM* vm, size_t size)
 {

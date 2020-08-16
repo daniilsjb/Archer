@@ -1,11 +1,9 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include "common.h"
-#include "value.h"
+#include <stdint.h>
 
 struct VM;
-struct Obj;
 
 #define ALLOCATE(vm, type, length)                                                                  \
     (type*)allocate(vm, sizeof(type) * (length))                                                    \
