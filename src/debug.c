@@ -13,7 +13,7 @@ static uint32_t constant_instruction(const char* name, Chunk* chunk, uint32_t of
 {
     uint8_t location = chunk->code[offset + 1];
     printf("%-16s %4d '", name, location);
-    print_value(chunk->constants.values[location]);
+    print_value(chunk->constants.data[location]);
     printf("'\n");
     return offset + 2;
 }
@@ -30,7 +30,7 @@ static uint32_t invoke_instruction(const char* name, Chunk* chunk, uint32_t offs
     uint8_t constant = chunk->code[offset + 1];
     uint8_t argCount = chunk->code[offset + 2];
     printf("%-16s (%d args) %4d '", name, argCount, constant);
-    print_value(chunk->constants.values[constant]);
+    print_value(chunk->constants.data[constant]);
     printf("'\n");
     return offset + 3;
 }
@@ -49,10 +49,10 @@ static uint32_t closure_instruction(Chunk* chunk, uint32_t offset)
 
     uint8_t constant = chunk->code[currentOffset++];
     printf("%-16s %4d ", "OP_CLOSURE", constant);
-    print_value(chunk->constants.values[constant]);
+    print_value(chunk->constants.data[constant]);
     printf("\n");
 
-    ObjFunction* function = AS_FUNCTION(chunk->constants.values[constant]);
+    ObjFunction* function = AS_FUNCTION(chunk->constants.data[constant]);
     for (size_t j = 0; j < function->upvalueCount; j++) {
         uint8_t isLocal = chunk->code[currentOffset++];
         uint8_t index = chunk->code[currentOffset++];

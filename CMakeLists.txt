@@ -38,4 +38,5 @@ add_executable (clox
     "src/memlib.c"
     "src/gc.h"
     "src/gc.c"
+    "src/vector.h"
 )

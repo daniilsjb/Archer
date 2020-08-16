@@ -2,6 +2,7 @@
 #define VALUE_H
 
 #include "common.h"
+#include "vector.h"
 
 #define NAN_BOXING 1
 
@@ -87,16 +88,18 @@ typedef struct {
 
 #endif
 
-typedef struct {
-    size_t count;
-    size_t capacity;
-    Value* values;
-} ValueArray;
+typedef VECTOR(Value) ValueArray;
 
-void value_array_init(ValueArray* array);
-void value_array_free(struct VM* vm, ValueArray* array);
-
-void value_array_write(struct VM* vm, ValueArray* array, Value value);
+//typedef struct {
+//    size_t count;
+//    size_t capacity;
+//    Value* values;
+//} ValueArray;
+//
+//void value_array_init(ValueArray* array);
+//void value_array_free(struct VM* vm, ValueArray* array);
+//
+//void value_array_write(struct VM* vm, ValueArray* array, Value value);
 
 bool value_is_falsey(Value value);
 bool values_equal(Value a, Value b);

@@ -305,7 +305,7 @@ static InterpretStatus run(VM* vm)
 
 #define READ_BYTE() (*ip++)
 #define READ_SHORT() (ip += 2, (uint16_t)(ip[-2] << 0 | ip[-1] << 8))
-#define READ_CONSTANT() frame->closure->function->chunk.constants.values[READ_BYTE()]
+#define READ_CONSTANT() frame->closure->function->chunk.constants.data[READ_BYTE()]
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
     while (true) {

@@ -5,32 +5,6 @@
 #include "object.h"
 #include "memory.h"
 
-void value_array_init(ValueArray* array)
-{
-    array->count = 0;
-    array->capacity = 0;
-    array->values = NULL;
-}
-
-void value_array_write(VM* vm, ValueArray* array, Value value)
-{
-    if (array->count >= array->capacity) {
-        size_t oldCapacity = array->capacity;
-        array->capacity = GROW_CAPACITY(oldCapacity);
-        array->values = GROW_ARRAY(vm, Value, array->values, oldCapacity, array->capacity);
-    }
-
-    array->values[array->count] = value;
-    array->count++;
-}
-
-void value_array_free(VM* vm, ValueArray* array)
-{
-    FREE_ARRAY(vm, Value, array->values, array->count);
-    array->values = NULL;
-    value_array_init(array);
-}
-
 bool value_is_falsey(Value value)
 {
     return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));

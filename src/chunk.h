@@ -4,6 +4,7 @@
 #include "common.h"
 #include "opcode.h"
 #include "value.h"
+#include "vector.h"
 
 struct VM;
 
@@ -12,11 +13,7 @@ typedef struct {
     int count;
 } Line;
 
-typedef struct {
-    size_t count;
-    size_t capacity;
-    Line* lines;
-} LineArray;
+typedef VECTOR(Line) LineArray;
 
 typedef struct {
     size_t count;

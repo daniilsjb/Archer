@@ -137,7 +137,7 @@ static void mark_value(VM* vm, Value value)
 
 static void mark_array(VM* vm, ValueArray* array) {
     for (size_t i = 0; i < array->count; i++) {
-        mark_value(vm, array->values[i]);
+        mark_value(vm, array->data[i]);
     }
 }
 
