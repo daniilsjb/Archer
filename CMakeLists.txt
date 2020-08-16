@@ -17,8 +17,6 @@ add_executable (clox
     "src/debug.c"
     "src/debug.h"
     "src/errcode.h"
-    "src/line.c"
-    "src/line.h"
     "src/memory.c"
     "src/memory.h"
     "src/object.c"
