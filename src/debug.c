@@ -127,6 +127,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("DIVIDE", offset);
         case OP_MODULO:
             return simple_instruction("MODULO", offset);
+        case OP_POWER:
+            return simple_instruction("POWER", offset);
         case OP_BITWISE_NOT:
             return simple_instruction("BITWISE_NOT", offset);
         case OP_BITWISE_AND:
