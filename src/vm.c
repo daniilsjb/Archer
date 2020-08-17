@@ -308,6 +308,14 @@ static InterpretStatus run(VM* vm)
 #define READ_CONSTANT() frame->closure->function->chunk.constants.data[READ_BYTE()]
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
+#define AS_COMPLEMENT(value) ((int64_t)AS_NUMBER(value))
+
+#define TOP vm->stackTop[-1]
+#define SND vm->stackTop[-2]
+
+#define PUSH(value) vm_push(vm, (value))
+#define POP() vm_pop(vm)
+
     while (true) {
 #if DEBUG_TRACE_EXECUTION
         printf("\t");
@@ -323,199 +331,183 @@ static InterpretStatus run(VM* vm)
         uint8_t instruction;
         switch (instruction = READ_BYTE()) {
             case OP_LOAD_CONSTANT: {
-                vm_push(vm, READ_CONSTANT());
+                PUSH(READ_CONSTANT());
                 break;
             }
             case OP_LOAD_TRUE: {
-                vm_push(vm, BOOL_VAL(true));
+                PUSH(BOOL_VAL(true));
                 break;
             }
             case OP_LOAD_FALSE: {
-                vm_push(vm, BOOL_VAL(false));
+                PUSH(BOOL_VAL(false));
                 break;
             }
             case OP_LOAD_NIL: {
-                vm_push(vm, NIL_VAL());
+                PUSH(NIL_VAL());
                 break;
             }
             case OP_NOT_EQUAL: {
-                Value b = vm_pop(vm);
-                Value a = vm_pop(vm);
-                vm_push(vm, BOOL_VAL(!values_equal(a, b)));
+                Value b = POP();
+                TOP = BOOL_VAL(!values_equal(TOP, b));
                 break;
             }
             case OP_EQUAL: {
-                Value b = vm_pop(vm);
-                Value a = vm_pop(vm);
-                vm_push(vm, BOOL_VAL(values_equal(a, b)));
+                Value b = POP();
+                TOP = BOOL_VAL(values_equal(TOP, b));
                 break;
             }
             case OP_GREATER: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, BOOL_VAL(a > b));
+                double rhs = AS_NUMBER(POP());
+                TOP = BOOL_VAL(AS_NUMBER(TOP) > rhs);
                 break;
             }
             case OP_GREATER_EQUAL: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, BOOL_VAL(a >= b));
+                double rhs = AS_NUMBER(POP());
+                TOP = BOOL_VAL(AS_NUMBER(TOP) >= rhs);
                 break;
             }
             case OP_LESS: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, BOOL_VAL(a < b));
+                double rhs = AS_NUMBER(POP());
+                TOP = BOOL_VAL(AS_NUMBER(TOP) < rhs);
                 break;
             }
             case OP_LESS_EQUAL: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, BOOL_VAL(a <= b));
+                double rhs = AS_NUMBER(POP());
+                TOP = BOOL_VAL(AS_NUMBER(TOP) <= rhs);
                 break;
             }
             case OP_NOT: {
-                vm->stackTop[-1] = BOOL_VAL(value_is_falsey(vm->stackTop[-1]));
+                TOP = BOOL_VAL(value_is_falsey(TOP));
                 break;
             }
             case OP_NEGATE: {
-                if (!IS_NUMBER(peek(vm, 0))) {
+                if (!IS_NUMBER(TOP)) {
                     return runtime_error(vm, "Operand must be a number.");
                 }
 
-                vm->stackTop[-1] = NUMBER_VAL(-AS_NUMBER(vm->stackTop[-1]));
+                TOP = NUMBER_VAL(-AS_NUMBER(TOP));
                 break;
             }
             case OP_ADD: {
-                if (IS_STRING(peek(vm, 0)) && IS_STRING(peek(vm, 1))) {
-                    ObjString* b = AS_STRING(peek(vm, 0));
-                    ObjString* a = AS_STRING(peek(vm, 1));
+                if (IS_STRING(TOP) && IS_STRING(SND)) {
+                    ObjString* b = AS_STRING(TOP);
+                    ObjString* a = AS_STRING(SND);
                     ObjString* result = concatenate_strings(vm, a, b);
 
-                    vm_pop(vm);
-                    vm_pop(vm);
-                    vm_push(vm, OBJ_VAL(result));
-                } else if (IS_NUMBER(peek(vm, 0)) || IS_NUMBER(peek(vm, 1))) {
-                    double b = AS_NUMBER(vm_pop(vm));
-                    double a = AS_NUMBER(vm_pop(vm));
-                    vm_push(vm, NUMBER_VAL(a + b));
+                    POP();
+                    POP();
+                    PUSH(OBJ_VAL(result));
+                } else if (IS_NUMBER(TOP) || IS_NUMBER(SND)) {
+                    double rhs = AS_NUMBER(POP());
+                    TOP = NUMBER_VAL(AS_NUMBER(TOP) + rhs);
                 } else {
                     return runtime_error(vm, "Operands must be either numbers or strings.");
                 }
                 break;
             }
             case OP_SUBTRACT: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, NUMBER_VAL(a - b));
+                double rhs = AS_NUMBER(POP());
+                TOP = NUMBER_VAL(AS_NUMBER(TOP) - rhs);
                 break;
             }
             case OP_MULTIPLY: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, NUMBER_VAL(a * b));
+                double rhs = AS_NUMBER(POP());
+                TOP = NUMBER_VAL(AS_NUMBER(TOP) * rhs);
                 break;
             }
             case OP_DIVIDE: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, NUMBER_VAL(a / b));
+                double rhs = AS_NUMBER(POP());
+                TOP = NUMBER_VAL(AS_NUMBER(TOP) / rhs);
                 break;
             }
             case OP_MODULO: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, NUMBER_VAL(fmod(a, b)));
+                double rhs = AS_NUMBER(POP());
+                TOP = NUMBER_VAL(fmod(AS_NUMBER(TOP), rhs));
                 break;
             }
             case OP_BITWISE_NOT: {
-                if (!IS_NUMBER(peek(vm, 0))) {
+                if (!IS_NUMBER(TOP)) {
                     return runtime_error(vm, "Operand must be a number.");
                 }
 
-                vm->stackTop[-1] = NUMBER_VAL((double)(~(int64_t)AS_NUMBER(vm->stackTop[-1])));
+                TOP = NUMBER_VAL((double)(~AS_COMPLEMENT(TOP)));
                 break;
             }
             case OP_BITWISE_AND: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, NUMBER_VAL((double)((int64_t)a & (int64_t)b)));
+                int64_t rhs = AS_COMPLEMENT(POP());
+                TOP = NUMBER_VAL((double)(AS_COMPLEMENT(TOP) & rhs));
                 break;
             }
             case OP_BITWISE_OR: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, NUMBER_VAL((double)((int64_t)a | (int64_t)b)));
+                int64_t rhs = AS_COMPLEMENT(POP());
+                TOP = NUMBER_VAL((double)(AS_COMPLEMENT(TOP) | rhs));
                 break;
             }
             case OP_BITWISE_XOR: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, NUMBER_VAL((double)((int64_t)a ^ (int64_t)b)));
+                int64_t rhs = AS_COMPLEMENT(POP());
+                TOP = NUMBER_VAL((double)(AS_COMPLEMENT(TOP) ^ rhs));
                 break;
             }
             case OP_BITWISE_LEFT_SHIFT: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, NUMBER_VAL((double)((int64_t)a << (int64_t)b)));
+                uint64_t rhs = AS_COMPLEMENT(POP());
+                TOP = NUMBER_VAL((double)(AS_COMPLEMENT(TOP) << rhs));
                 break;
             }
             case OP_BITWISE_RIGHT_SHIFT: {
-                if (!IS_NUMBER(peek(vm, 0)) || !IS_NUMBER(peek(vm, 1))) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
-                double b = AS_NUMBER(vm_pop(vm));
-                double a = AS_NUMBER(vm_pop(vm));
-                vm_push(vm, NUMBER_VAL((double)((int64_t)a >> (int64_t)b)));
+                uint64_t rhs = AS_COMPLEMENT(POP());
+                TOP = NUMBER_VAL((double)(AS_COMPLEMENT(TOP) >> rhs));
                 break;
             }
             case OP_LOOP: {
@@ -530,26 +522,26 @@ static InterpretStatus run(VM* vm)
             }
             case OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
-                if (value_is_falsey(peek(vm, 0))) {
+                if (value_is_falsey(TOP)) {
                     ip += offset;
                 }
                 break;
             }
             case OP_JUMP_IF_NOT_EQUAL: {
                 uint16_t offset = READ_SHORT();
-                if (!values_equal(peek(vm, 0), peek(vm, 1))) {
+                if (!values_equal(TOP, SND)) {
                     ip += offset;
                 }
                 break;
             }
             case OP_POP: {
-                vm_pop(vm);
+                POP();
                 break;
             }
             case OP_DEFINE_GLOBAL: {
                 ObjString* identifier = READ_STRING();
-                table_put(vm, &vm->globals, identifier, peek(vm, 0));
-                vm_pop(vm);
+                table_put(vm, &vm->globals, identifier, TOP);
+                POP();
                 break;
             }
             case OP_LOAD_GLOBAL: {
@@ -559,12 +551,12 @@ static InterpretStatus run(VM* vm)
                     frame->ip = ip;
                     return runtime_error(vm, "Undefined variable '%s'.", identifier->chars);
                 }
-                vm_push(vm, value);
+                PUSH(value);
                 break;
             }
             case OP_STORE_GLOBAL: {
                 ObjString* identifier = READ_STRING();
-                if (table_put(vm, &vm->globals, identifier, peek(vm, 0))) {
+                if (table_put(vm, &vm->globals, identifier, TOP)) {
                     frame->ip = ip;
                     table_remove(&vm->globals, identifier);
                     return runtime_error(vm, "Undefined variable '%s'.", identifier->chars);
@@ -572,34 +564,34 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_LOAD_LOCAL: {
-                vm_push(vm, frame->slots[READ_BYTE()]);
+                PUSH(frame->slots[READ_BYTE()]);
                 break;
             }
             case OP_STORE_LOCAL: {
-                frame->slots[READ_BYTE()] = peek(vm, 0);
+                frame->slots[READ_BYTE()] = TOP;
                 break;
             }
             case OP_LOAD_UPVALUE: {
-                vm_push(vm, *frame->closure->upvalues[READ_BYTE()]->location);
+                PUSH(*frame->closure->upvalues[READ_BYTE()]->location);
                 break;
             }
             case OP_STORE_UPVALUE: {
-                *frame->closure->upvalues[READ_BYTE()]->location = peek(vm, 0);
+                *frame->closure->upvalues[READ_BYTE()]->location = TOP;
                 break;
             }
             case OP_LOAD_PROPERTY: {
-                if (!IS_INSTANCE(peek(vm, 0))) {
+                if (!IS_INSTANCE(TOP)) {
                     runtime_error(vm, "Can only access properties of class instances.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                ObjInstance* instance = AS_INSTANCE(peek(vm, 0));
+                ObjInstance* instance = AS_INSTANCE(TOP);
                 ObjString* name = READ_STRING();
 
                 Value value;
                 if (table_get(&instance->fields, name, &value)) {
-                    vm_pop(vm);
-                    vm_push(vm, value);
+                    POP();
+                    PUSH(value);
                     break;
                 }
 
@@ -610,28 +602,28 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_STORE_PROPERTY: {
-                if (!IS_INSTANCE(peek(vm, 1))) {
+                if (!IS_INSTANCE(SND)) {
                     runtime_error(vm, "Can only set properties of class instances.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                ObjInstance* instance = AS_INSTANCE(peek(vm, 1));
-                table_put(vm, &instance->fields, READ_STRING(), peek(vm, 0));
+                ObjInstance* instance = AS_INSTANCE(SND);
+                table_put(vm, &instance->fields, READ_STRING(), TOP);
 
-                Value value = vm_pop(vm);
-                vm_pop(vm);
-                vm_push(vm, value);
+                Value value = POP();
+                POP();
+                PUSH(value);
                 break;
             }
             case OP_PRINT: {
-                print_value(vm_pop(vm));
+                print_value(POP());
                 printf("\n");
                 break;
             }
             case OP_CLOSURE: {
                 ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
                 ObjClosure* closure = new_closure(vm, function);
-                vm_push(vm, OBJ_VAL(closure));
+                PUSH(OBJ_VAL(closure));
                 for (size_t i = 0; i < closure->upvalueCount; i++) {
                     uint8_t isLocal = READ_BYTE();
                     uint8_t index = READ_BYTE();
@@ -645,7 +637,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_CLOSE_UPVALUE: {
                 close_upvalues(vm, vm->stackTop - 1);
-                vm_pop(vm);
+                POP();
                 break;
             }
             case OP_CALL: {
@@ -674,25 +666,25 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_RETURN: {
-                Value result = vm_pop(vm);
+                Value result = POP();
 
                 close_upvalues(vm, frame->slots);
 
                 vm->frameCount--;
                 if (vm->frameCount == 0) {
-                    vm_pop(vm);
+                    POP();
                     return INTERPRET_OK;
                 }
 
                 vm->stackTop = frame->slots;
-                vm_push(vm, result);
+                PUSH(result);
 
                 frame = &vm->frames[vm->frameCount - 1];
                 ip = frame->ip;
                 break;
             }
             case OP_CLASS: {
-                vm_push(vm, OBJ_VAL(new_class(vm, READ_STRING())));
+                PUSH(OBJ_VAL(new_class(vm, READ_STRING())));
                 break;
             }
             case OP_METHOD: {
@@ -700,19 +692,19 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_INHERIT: {
-                Value superclass = peek(vm, 1);
+                Value superclass = SND;
                 if (!IS_CLASS(superclass)) {
                     return runtime_error(vm, "Superclass must be a class.");
                 }
 
-                ObjClass* subclass = AS_CLASS(peek(vm, 0));
+                ObjClass* subclass = AS_CLASS(TOP);
                 table_put_from(vm, &AS_CLASS(superclass)->methods, &subclass->methods);
-                vm_pop(vm);
+                POP();
                 break;
             }
             case OP_GET_SUPER: {
                 ObjString* name = READ_STRING();
-                ObjClass* superclass = AS_CLASS(vm_pop(vm));
+                ObjClass* superclass = AS_CLASS(POP());
                 if (!bind_method(vm, superclass, name)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -721,7 +713,7 @@ static InterpretStatus run(VM* vm)
             case OP_SUPER_INVOKE: {
                 ObjString* method = READ_STRING();
                 uint8_t argCount = READ_BYTE();
-                ObjClass* superclass = AS_CLASS(vm_pop(vm));
+                ObjClass* superclass = AS_CLASS(POP());
                 frame->ip = ip;
 
                 if (!invoke_from_class(vm, superclass, method, argCount)) {
@@ -739,6 +731,14 @@ static InterpretStatus run(VM* vm)
 #undef READ_SHORT
 #undef READ_CONSTANT
 #undef READ_STRING
+
+#undef AS_COMPLEMENT
+
+#undef TOP
+#undef SND
+
+#undef PUSH
+#undef POP
 }
 
 InterpretStatus vm_interpret(VM* vm, const char* source)
