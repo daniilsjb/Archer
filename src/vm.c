@@ -322,19 +322,19 @@ static InterpretStatus run(VM* vm)
 #endif
         uint8_t instruction;
         switch (instruction = READ_BYTE()) {
-            case OP_CONSTANT: {
+            case OP_LOAD_CONSTANT: {
                 vm_push(vm, READ_CONSTANT());
                 break;
             }
-            case OP_TRUE: {
+            case OP_LOAD_TRUE: {
                 vm_push(vm, BOOL_VAL(true));
                 break;
             }
-            case OP_FALSE: {
+            case OP_LOAD_FALSE: {
                 vm_push(vm, BOOL_VAL(false));
                 break;
             }
-            case OP_NIL: {
+            case OP_LOAD_NIL: {
                 vm_push(vm, NIL_VAL());
                 break;
             }
@@ -552,16 +552,7 @@ static InterpretStatus run(VM* vm)
                 vm_pop(vm);
                 break;
             }
-            case OP_SET_GLOBAL: {
-                ObjString* identifier = READ_STRING();
-                if (table_put(vm, &vm->globals, identifier, peek(vm, 0))) {
-                    frame->ip = ip;
-                    table_remove(&vm->globals, identifier);
-                    return runtime_error(vm, "Undefined variable '%s'.", identifier->chars);
-                }
-                break;
-            }
-            case OP_GET_GLOBAL: {
+            case OP_LOAD_GLOBAL: {
                 ObjString* identifier = READ_STRING();
                 Value value;
                 if (!table_get(&vm->globals, identifier, &value)) {
@@ -571,37 +562,32 @@ static InterpretStatus run(VM* vm)
                 vm_push(vm, value);
                 break;
             }
-            case OP_SET_LOCAL: {
-                frame->slots[READ_BYTE()] = peek(vm, 0);
+            case OP_STORE_GLOBAL: {
+                ObjString* identifier = READ_STRING();
+                if (table_put(vm, &vm->globals, identifier, peek(vm, 0))) {
+                    frame->ip = ip;
+                    table_remove(&vm->globals, identifier);
+                    return runtime_error(vm, "Undefined variable '%s'.", identifier->chars);
+                }
                 break;
             }
-            case OP_GET_LOCAL: {
+            case OP_LOAD_LOCAL: {
                 vm_push(vm, frame->slots[READ_BYTE()]);
                 break;
             }
-            case OP_SET_UPVALUE: {
-                *frame->closure->upvalues[READ_BYTE()]->location = peek(vm, 0);
+            case OP_STORE_LOCAL: {
+                frame->slots[READ_BYTE()] = peek(vm, 0);
                 break;
             }
-            case OP_GET_UPVALUE: {
+            case OP_LOAD_UPVALUE: {
                 vm_push(vm, *frame->closure->upvalues[READ_BYTE()]->location);
                 break;
             }
-            case OP_SET_PROPERTY: {
-                if (!IS_INSTANCE(peek(vm, 1))) {
-                    runtime_error(vm, "Can only set properties of class instances.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-
-                ObjInstance* instance = AS_INSTANCE(peek(vm, 1));
-                table_put(vm, &instance->fields, READ_STRING(), peek(vm, 0));
-
-                Value value = vm_pop(vm);
-                vm_pop(vm);
-                vm_push(vm, value);
+            case OP_STORE_UPVALUE: {
+                *frame->closure->upvalues[READ_BYTE()]->location = peek(vm, 0);
                 break;
             }
-            case OP_GET_PROPERTY: {
+            case OP_LOAD_PROPERTY: {
                 if (!IS_INSTANCE(peek(vm, 0))) {
                     runtime_error(vm, "Can only access properties of class instances.");
                     return INTERPRET_RUNTIME_ERROR;
@@ -621,6 +607,20 @@ static InterpretStatus run(VM* vm)
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
+                break;
+            }
+            case OP_STORE_PROPERTY: {
+                if (!IS_INSTANCE(peek(vm, 1))) {
+                    runtime_error(vm, "Can only set properties of class instances.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                ObjInstance* instance = AS_INSTANCE(peek(vm, 1));
+                table_put(vm, &instance->fields, READ_STRING(), peek(vm, 0));
+
+                Value value = vm_pop(vm);
+                vm_pop(vm);
+                vm_push(vm, value);
                 break;
             }
             case OP_PRINT: {

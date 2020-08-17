@@ -48,7 +48,7 @@ static uint32_t closure_instruction(Chunk* chunk, uint32_t offset)
     currentOffset++;
 
     uint8_t constant = chunk->code[currentOffset++];
-    printf("%-16s %4d ", "OP_CLOSURE", constant);
+    printf("%-16s %4d ", "CLOSURE", constant);
     print_value(chunk->constants.data[constant]);
     printf("\n");
 
@@ -64,7 +64,7 @@ static uint32_t closure_instruction(Chunk* chunk, uint32_t offset)
 
 static uint32_t unknown_instruction(uint8_t instruction, uint32_t offset)
 {
-    printf("Unknown OpCode: %d\n", instruction);
+    printf("Unknown Code: %d\n", instruction);
     return offset + 1;
 }
 
@@ -93,102 +93,102 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
 
     uint8_t instruction = chunk->code[offset];
     switch (instruction) {
-        case OP_CONSTANT:
-            return constant_instruction("OP_CONSTANT", chunk, offset);
-        case OP_TRUE:
-            return simple_instruction("OP_TRUE", offset);
-        case OP_FALSE:
-            return simple_instruction("OP_FALSE", offset);
-        case OP_NIL:
-            return simple_instruction("OP_NIL", offset);
+        case OP_LOAD_CONSTANT:
+            return constant_instruction("LOAD_CONSTANT", chunk, offset);
+        case OP_LOAD_TRUE:
+            return simple_instruction("LOAD_TRUE", offset);
+        case OP_LOAD_FALSE:
+            return simple_instruction("LOAD_FALSE", offset);
+        case OP_LOAD_NIL:
+            return simple_instruction("LOAD_NIL", offset);
         case OP_NOT_EQUAL:
-            return simple_instruction("OP_NOT_EQUAL", offset);
+            return simple_instruction("NOT_EQUAL", offset);
         case OP_EQUAL:
-            return simple_instruction("OP_EQUAL", offset);
+            return simple_instruction("EQUAL", offset);
         case OP_GREATER:
-            return simple_instruction("OP_GREATER", offset);
+            return simple_instruction("GREATER", offset);
         case OP_GREATER_EQUAL:
-            return simple_instruction("OP_GREATER_EQUAL", offset);
+            return simple_instruction("GREATER_EQUAL", offset);
         case OP_LESS:
-            return simple_instruction("OP_LESS", offset);
+            return simple_instruction("LESS", offset);
         case OP_LESS_EQUAL:
-            return simple_instruction("OP_LESS_EQUAL", offset);
+            return simple_instruction("LESS_EQUAL", offset);
         case OP_NOT:
-            return simple_instruction("OP_NOT", offset);
+            return simple_instruction("NOT", offset);
         case OP_NEGATE:
-            return simple_instruction("OP_NEGATE", offset);
+            return simple_instruction("NEGATE", offset);
         case OP_ADD:
-            return simple_instruction("OP_ADD", offset);
+            return simple_instruction("ADD", offset);
         case OP_SUBTRACT:
-            return simple_instruction("OP_SUBTRACT", offset);
+            return simple_instruction("SUBTRACT", offset);
         case OP_MULTIPLY:
-            return simple_instruction("OP_MULTIPLY", offset);
+            return simple_instruction("MULTIPLY", offset);
         case OP_DIVIDE:
-            return simple_instruction("OP_DIVIDE", offset);
+            return simple_instruction("DIVIDE", offset);
         case OP_MODULO:
-            return simple_instruction("OP_MODULO", offset);
+            return simple_instruction("MODULO", offset);
         case OP_BITWISE_NOT:
-            return simple_instruction("OP_BITWISE_NOT", offset);
+            return simple_instruction("BITWISE_NOT", offset);
         case OP_BITWISE_AND:
-            return simple_instruction("OP_BITWISE_AND", offset);
+            return simple_instruction("BITWISE_AND", offset);
         case OP_BITWISE_OR:
-            return simple_instruction("OP_BITWISE_OR", offset);
+            return simple_instruction("BITWISE_OR", offset);
         case OP_BITWISE_XOR:
-            return simple_instruction("OP_BITWISE_XOR", offset);
+            return simple_instruction("BITWISE_XOR", offset);
         case OP_BITWISE_LEFT_SHIFT:
-            return simple_instruction("OP_BITWISE_LEFT_SHIFT", offset);
+            return simple_instruction("BITWISE_LEFT_SHIFT", offset);
         case OP_BITWISE_RIGHT_SHIFT:
-            return simple_instruction("OP_BITWISE_RIGHT_SHIFT", offset);
+            return simple_instruction("BITWISE_RIGHT_SHIFT", offset);
         case OP_PRINT:
-            return simple_instruction("OP_PRINT", offset);
+            return simple_instruction("PRINT", offset);
         case OP_LOOP:
-            return jump_instruction("OP_LOOP", -1, chunk, offset);
+            return jump_instruction("LOOP", -1, chunk, offset);
         case OP_JUMP:
-            return jump_instruction("OP_JUMP", 1, chunk, offset);
+            return jump_instruction("JUMP", 1, chunk, offset);
         case OP_JUMP_IF_FALSE:
-            return jump_instruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
+            return jump_instruction("JUMP_IF_FALSE", 1, chunk, offset);
         case OP_JUMP_IF_NOT_EQUAL:
-            return jump_instruction("OP_JUMP_IF_NOT_EQUAL", 1, chunk, offset);
+            return jump_instruction("JUMP_IF_NOT_EQUAL", 1, chunk, offset);
         case OP_POP:
-            return simple_instruction("OP_POP", offset);
+            return simple_instruction("POP", offset);
         case OP_DEFINE_GLOBAL:
-            return constant_instruction("OP_DEFINE_GLOBAL", chunk, offset);
-        case OP_SET_GLOBAL:
-            return constant_instruction("OP_SET_GLOBAL", chunk, offset);
-        case OP_GET_GLOBAL:
-            return constant_instruction("OP_GET_GLOBAL", chunk, offset);
-        case OP_SET_LOCAL:
-            return byte_instruction("OP_SET_LOCAL", chunk, offset);
-        case OP_GET_LOCAL:
-            return byte_instruction("OP_GET_LOCAL", chunk, offset);
-        case OP_SET_UPVALUE:
-            return byte_instruction("OP_SET_UPVALUE", chunk, offset);
-        case OP_GET_UPVALUE:
-            return byte_instruction("OP_GET_UPVALUE", chunk, offset);
-        case OP_SET_PROPERTY:
-            return constant_instruction("OP_SET_PROPERTY", chunk, offset);
-        case OP_GET_PROPERTY:
-            return constant_instruction("OP_GET_PROPERTY", chunk, offset);
+            return constant_instruction("DEFINE_GLOBAL", chunk, offset);
+        case OP_LOAD_GLOBAL:
+            return constant_instruction("LOAD_GLOBAL", chunk, offset);
+        case OP_STORE_GLOBAL:
+            return constant_instruction("STORE_GLOBAL", chunk, offset);
+        case OP_LOAD_LOCAL:
+            return byte_instruction("LOAD_LOCAL", chunk, offset);
+        case OP_STORE_LOCAL:
+            return byte_instruction("STORE_LOCAL", chunk, offset);
+        case OP_LOAD_UPVALUE:
+            return byte_instruction("LOAD_UPVALUE", chunk, offset);
+        case OP_STORE_UPVALUE:
+            return byte_instruction("STORE_UPVALUE", chunk, offset);
+        case OP_LOAD_PROPERTY:
+            return constant_instruction("LOAD_PROPERTY", chunk, offset);
+        case OP_STORE_PROPERTY:
+            return constant_instruction("STORE_PROPERTY", chunk, offset);
         case OP_CLOSURE:
             return closure_instruction(chunk, offset);
         case OP_CLOSE_UPVALUE:
-            return simple_instruction("OP_CLOSE_UPVALUE", offset);
+            return simple_instruction("CLOSE_UPVALUE", offset);
         case OP_CALL:
-            return byte_instruction("OP_CALL", chunk, offset);
+            return byte_instruction("CALL", chunk, offset);
         case OP_INVOKE:
-            return invoke_instruction("OP_INVOKE", chunk, offset);
+            return invoke_instruction("INVOKE", chunk, offset);
         case OP_RETURN:
-            return simple_instruction("OP_RETURN", offset);
+            return simple_instruction("RETURN", offset);
         case OP_CLASS:
-            return constant_instruction("OP_CLASS", chunk, offset);
+            return constant_instruction("CLASS", chunk, offset);
         case OP_METHOD:
-            return constant_instruction("OP_METHOD", chunk, offset);
+            return constant_instruction("METHOD", chunk, offset);
         case OP_INHERIT:
-            return simple_instruction("OP_INHERIT", offset);
+            return simple_instruction("INHERIT", offset);
         case OP_GET_SUPER:
-            return constant_instruction("OP_GET_SUPER", chunk, offset);
+            return constant_instruction("GET_SUPER", chunk, offset);
         case OP_SUPER_INVOKE:
-            return invoke_instruction("OP_SUPER_INVOKE", chunk, offset);
+            return invoke_instruction("SUPER_INVOKE", chunk, offset);
         default:
             return unknown_instruction(instruction, offset);
     }

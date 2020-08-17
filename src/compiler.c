@@ -345,9 +345,9 @@ static size_t emit_jump(Compiler* compiler, uint8_t instruction)
 static void emit_return(Compiler* compiler)
 {
     if (compiler->type == TYPE_INITIALIZER) {
-        emit_bytes(compiler, OP_GET_LOCAL, 0);
+        emit_bytes(compiler, OP_LOAD_LOCAL, 0);
     } else {
-        emit_byte(compiler, OP_NIL);
+        emit_byte(compiler, OP_LOAD_NIL);
     }
     emit_byte(compiler, OP_RETURN);
 }
@@ -365,7 +365,7 @@ static uint8_t make_constant(Compiler* compiler, Value value)
 
 static void emit_constant(Compiler* compiler, Value value)
 {
-    emit_bytes(compiler, OP_CONSTANT, make_constant(compiler, value));
+    emit_bytes(compiler, OP_LOAD_CONSTANT, make_constant(compiler, value));
 }
 
 static void patch_jump(Compiler* compiler, size_t offset)
@@ -561,25 +561,25 @@ static uint8_t parse_variable(Compiler* compiler, const char* message)
 static void named_variable(Compiler* compiler, Token identifier, bool canAssign)
 {
     int scope = resolve_local(compiler, &identifier);
-    uint8_t getOp, setOp;
+    uint8_t loadOp, storeOp;
 
     if (scope != -1) {
-        getOp = OP_GET_LOCAL;
-        setOp = OP_SET_LOCAL;
+        loadOp = OP_LOAD_LOCAL;
+        storeOp = OP_STORE_LOCAL;
     } else if ((scope = resolve_upvalue(compiler, &identifier)) != -1) {
-        getOp = OP_GET_UPVALUE;
-        setOp = OP_SET_UPVALUE;
+        loadOp = OP_LOAD_UPVALUE;
+        storeOp = OP_STORE_UPVALUE;
     } else {
         scope = identifier_constant(compiler, &identifier);
-        getOp = OP_GET_GLOBAL;
-        setOp = OP_SET_GLOBAL;
+        loadOp = OP_LOAD_GLOBAL;
+        storeOp = OP_STORE_GLOBAL;
     }
 
     if (canAssign && match(compiler, TOKEN_EQUAL)) {
         expression(compiler);
-        emit_bytes(compiler, setOp, (uint8_t)scope);
+        emit_bytes(compiler, storeOp, (uint8_t)scope);
     } else {
-        emit_bytes(compiler, getOp, (uint8_t)scope);
+        emit_bytes(compiler, loadOp, (uint8_t)scope);
     }
 }
 
@@ -713,7 +713,7 @@ static void variable_declaration(Compiler* compiler)
     if (match(compiler, TOKEN_EQUAL)) {
         expression(compiler);
     } else {
-        emit_byte(compiler, OP_NIL);
+        emit_byte(compiler, OP_LOAD_NIL);
     }
 
     consume(compiler, TOKEN_SEMICOLON, "Expected ';' after variable declaration.");
@@ -916,9 +916,9 @@ static void expression(Compiler* compiler)
 static void literal(Compiler* compiler, bool canAssign)
 {
     switch (compiler->parser->previous.type) {
-        case TOKEN_TRUE: emit_byte(compiler, OP_TRUE); break;
-        case TOKEN_FALSE: emit_byte(compiler, OP_FALSE); break;
-        case TOKEN_NIL: emit_byte(compiler, OP_NIL); break;
+        case TOKEN_TRUE: emit_byte(compiler, OP_LOAD_TRUE); break;
+        case TOKEN_FALSE: emit_byte(compiler, OP_LOAD_FALSE); break;
+        case TOKEN_NIL: emit_byte(compiler, OP_LOAD_NIL); break;
         default: return;
     }
 }
@@ -1029,13 +1029,13 @@ static void dot(Compiler* compiler, bool canAssign)
 
     if (canAssign && match(compiler, TOKEN_EQUAL)) {
         expression(compiler);
-        emit_bytes(compiler, OP_SET_PROPERTY, name);
+        emit_bytes(compiler, OP_STORE_PROPERTY, name);
     } else if (match(compiler, TOKEN_L_PAREN)) {
         uint8_t argCount = argument_list(compiler);
         emit_bytes(compiler, OP_INVOKE, name);
         emit_byte(compiler, argCount);
     } else {
-        emit_bytes(compiler, OP_GET_PROPERTY, name);
+        emit_bytes(compiler, OP_LOAD_PROPERTY, name);
     }
 }
 
