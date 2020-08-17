@@ -274,6 +274,7 @@ Token scanner_scan_token(Scanner* scanner)
         case '*': {
             switch (peek(scanner)) {
                 case '=': advance(scanner); return make_token(scanner, TOKEN_STAR_EQUAL);
+                case '*': advance(scanner); return make_token(scanner, TOKEN_DOUBLE_STAR);
             }
             return make_token(scanner, TOKEN_STAR);
         }

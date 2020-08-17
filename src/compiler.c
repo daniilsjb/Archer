@@ -69,6 +69,7 @@ typedef enum {
     PREC_SHIFT,
     PREC_ADDITIVE,
     PREC_MULTIPLICATIVE,
+    PREC_EXPONENTIATION,
     PREC_UNARY,
     PREC_POSTFIX,
     PREC_PRIMARY
@@ -97,6 +98,7 @@ static void number(Compiler* compiler, bool canAssign);
 static void string(Compiler* compiler, bool canAssign);
 static void variable(Compiler* compiler, bool canAssign);
 static void unary(Compiler* compiler, bool canAssign);
+static void power(Compiler* compiler, bool canAssign);
 static void binary(Compiler* compiler, bool canAssign);
 static void grouping(Compiler* compiler, bool canAssign);
 static void and(Compiler* compiler, bool canAssign);
@@ -133,6 +135,7 @@ ParseRule rules[] = {
     [TOKEN_DOUBLE_PLUS]     = { NULL,     NULL,   PREC_NONE           },
     [TOKEN_STAR]            = { NULL,     binary, PREC_MULTIPLICATIVE },
     [TOKEN_STAR_EQUAL]      = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_DOUBLE_STAR]     = { NULL,     power,  PREC_EXPONENTIATION },
     [TOKEN_SLASH]           = { NULL,     binary, PREC_MULTIPLICATIVE },
     [TOKEN_SLASH_EQUAL]     = { NULL,     NULL,   PREC_NONE           },
     [TOKEN_PERCENT]         = { NULL,     binary, PREC_MULTIPLICATIVE },
@@ -948,6 +951,12 @@ static void unary(Compiler* compiler, bool canAssign)
         case TOKEN_MINUS: emit_byte(compiler, OP_NEGATE); break;
         case TOKEN_TILDE: emit_byte(compiler, OP_BITWISE_NOT); break;
     }
+}
+
+static void power(Compiler* compiler, bool canAssign)
+{
+    parse_precedence(compiler, PREC_EXPONENTIATION);
+    emit_byte(compiler, OP_POWER);
 }
 
 static void binary(Compiler* compiler, bool canAssign)

@@ -357,10 +357,6 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_GREATER: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
-                    return runtime_error(vm, "Operands must be numbers");
-                }
-
                 double rhs = AS_NUMBER(POP());
                 TOP = BOOL_VAL(AS_NUMBER(TOP) > rhs);
                 break;
@@ -455,6 +451,15 @@ static InterpretStatus run(VM* vm)
 
                 double rhs = AS_NUMBER(POP());
                 TOP = NUMBER_VAL(fmod(AS_NUMBER(TOP), rhs));
+                break;
+            }
+            case OP_POWER: {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    return runtime_error(vm, "Operands must be numbers");
+                }
+
+                double exponent = AS_NUMBER(POP());
+                TOP = NUMBER_VAL(pow(AS_NUMBER(TOP), exponent));
                 break;
             }
             case OP_BITWISE_NOT: {

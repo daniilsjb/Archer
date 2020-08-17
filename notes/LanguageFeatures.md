@@ -8,22 +8,6 @@ This document contains various notes and thoughts regarding the set of new featu
 
 ### Operators
 
-#### Exponentiation
-
-A common task in many programs is to raise a number to some power. Very often the goal is to square a number - for example, when dealing with Pythagoras' theorem to calculate the hypotenuse of a right triangle. In such cases the normal solution is to manually performing squaring of a number by multiplying it with itself. This works well, but is rather cumbersome when dealing with expressions - the programmer either needs to type the whole expression twice, which may not be desirable if it produces side-effects or is expensive to compute, or store it in a temporary variable. Additionally, it is not generic enough to raise a number to any arbitrary power. To address this issue, many languages feature some sort of `pow` function, which takes in a base and an exponent and computes the power. Consider this example in C:
-
-```cpp
-double x = pow(2.0, 8.0); //Equals to 256
-```
-
-This approach is totally acceptable. In fact, the language already supports this function, and there is no reason to remove it, as it may be useful when emulating functional programming style. However, for such a common operation it would be desired to have a simpler solution. Drawing inspiration from Fortran, Python, and Haskell, the proposed solution is to implement the exponentiation operator, which is simply a syntactic construct that is equivalent to the `pow` function. The syntax looks like this:
-
-```js
-var x = 2 ** 8;             //Equals to 256
-var y = (1 + 1) ** (2 * 4); //Equals to 256
-var z = 2 ** 4 ** 2;        //Equals to 256
-```
-
 #### Compound Assignment
 
 It is often desirable to perform an operation on a variable and some value and store the result back into the variable, like this:
