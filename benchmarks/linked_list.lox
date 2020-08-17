@@ -90,7 +90,7 @@ list.append(154);
 var begin = clock();
 
 var node;
-for (var i = 0; i < 100000; i = i + 1) {
+for (var i = 0; i < 100000; i += 1) {
     node = list.search(i % 200);
 }
 print node;

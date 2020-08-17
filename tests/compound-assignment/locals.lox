@@ -1,0 +1,33 @@
+{
+    var x = 10;
+
+    print x += 5;  //Expected: 15
+    print x;       //Expected: 15
+
+    print x -= 5;  //Expected: 10
+    print x;       //Expected: 10
+
+    print x *= 3;  //Expected: 30
+    print x;       //Expected: 30
+
+    print x /= 2;  //Expected: 15
+    print x;       //Expected: 15
+
+    print x %= 4;  //Expected: 3
+    print x;       //Expected: 3
+
+    print x **= 3; //Expected: 27
+    print x;       //Expected: 27
+
+    print x |= 4;  //Expected: 31
+    print x;       //Expected: 31
+
+    print x &= 48; //Expected: 16
+    print x;       //Expected: 16
+
+    print x <<= 1; //Expected: 32
+    print x;       //Expected: 32
+
+    print x >>= 2; //Expected: 8
+    print x;       //Expected: 8
+}

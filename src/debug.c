@@ -153,6 +153,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return jump_instruction("JUMP_IF_NOT_EQUAL", 1, chunk, offset);
         case OP_POP:
             return simple_instruction("POP", offset);
+        case OP_DUP:
+            return simple_instruction("DUP", offset);
         case OP_DEFINE_GLOBAL:
             return constant_instruction("DEFINE_GLOBAL", chunk, offset);
         case OP_LOAD_GLOBAL:

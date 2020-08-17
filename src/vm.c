@@ -547,6 +547,10 @@ static InterpretStatus run(VM* vm)
                 POP();
                 break;
             }
+            case OP_DUP: {
+                PUSH(TOP);
+                break;
+            }
             case OP_DEFINE_GLOBAL: {
                 ObjString* identifier = READ_STRING();
                 table_put(vm, &vm->globals, identifier, TOP);

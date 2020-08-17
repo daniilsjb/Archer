@@ -13,6 +13,8 @@
 #include "debug.h"
 #endif
 
+#define INVALID_COMPOUND -1
+
 typedef struct {
     Token identifier;
     int depth;
@@ -115,76 +117,77 @@ typedef struct {
 } ParseRule;
 
 ParseRule rules[] = {
-    [TOKEN_L_PAREN]         = { grouping, call,   PREC_POSTFIX        },
-    [TOKEN_R_PAREN]         = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_L_BRACE]         = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_R_BRACE]         = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_L_BRACKET]       = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_R_BRACKET]       = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_COMMA]           = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_DOT]             = { NULL,     dot,    PREC_POSTFIX        },
-    [TOKEN_SEMICOLON]       = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_QUESTION]        = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_COLON]           = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_TILDE]           = { unary,    NULL,   PREC_NONE           },
-    [TOKEN_MINUS]           = { unary,    binary, PREC_ADDITIVE       },
-    [TOKEN_MINUS_EQUAL]     = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_DOUBLE_MINUS]    = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_PLUS]            = { NULL,     binary, PREC_ADDITIVE       },
-    [TOKEN_PLUS_EQUAL]      = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_DOUBLE_PLUS]     = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_STAR]            = { NULL,     binary, PREC_MULTIPLICATIVE },
-    [TOKEN_STAR_EQUAL]      = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_DOUBLE_STAR]     = { NULL,     power,  PREC_EXPONENTIATION },
-    [TOKEN_SLASH]           = { NULL,     binary, PREC_MULTIPLICATIVE },
-    [TOKEN_SLASH_EQUAL]     = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_PERCENT]         = { NULL,     binary, PREC_MULTIPLICATIVE },
-    [TOKEN_PERCENT_EQUAL]   = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_AMPERSAND]       = { NULL,     binary, PREC_BITWISE_AND    },
-    [TOKEN_AMPERSAND_EQUAL] = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_PIPE]            = { NULL,     binary, PREC_BITWISE_OR     },
-    [TOKEN_PIPE_EQUAL]      = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_CARET]           = { NULL,     binary, PREC_BITWISE_XOR    },
-    [TOKEN_CARET_EQUAL]     = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_BANG]            = { unary,    NULL,   PREC_NONE           },
-    [TOKEN_BANG_EQUAL]      = { NULL,     binary, PREC_EQUALITY       },
-    [TOKEN_EQUAL]           = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_EQUAL_EQUAL]     = { NULL,     binary, PREC_EQUALITY       },
-    [TOKEN_GREATER]         = { NULL,     binary, PREC_RELATIONAL     },
-    [TOKEN_GREATER_EQUAL]   = { NULL,     binary, PREC_RELATIONAL     },
-    [TOKEN_R_SHIFT]         = { NULL,     binary, PREC_SHIFT          },
-    [TOKEN_R_SHIFT_EQUAL]   = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_LESS]            = { NULL,     binary, PREC_RELATIONAL     },
-    [TOKEN_LESS_EQUAL]      = { NULL,     binary, PREC_RELATIONAL     },
-    [TOKEN_L_SHIFT]         = { NULL,     binary, PREC_SHIFT          },
-    [TOKEN_L_SHIFT_EQUAL]   = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_AND]             = { NULL,     and,    PREC_LOGICAL_AND    },
-    [TOKEN_BREAK]           = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_CLASS]           = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_CONTINUE]        = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_DEFAULT]         = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_ELSE]            = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_FALSE]           = { literal,  NULL,   PREC_NONE           },
-    [TOKEN_FUN]             = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_FOR]             = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_IF]              = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_NIL]             = { literal,  NULL,   PREC_NONE           },
-    [TOKEN_OR]              = { NULL,     or,     PREC_LOGICAL_OR     },
-    [TOKEN_PRINT]           = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_RETURN]          = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_STATIC]          = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_SUPER]           = { super_,   NULL,   PREC_NONE           },
-    [TOKEN_THIS]            = { this_,    NULL,   PREC_NONE           },
-    [TOKEN_TRUE]            = { literal,  NULL,   PREC_NONE           },
-    [TOKEN_VAR]             = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_VAR]             = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_WHILE]           = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_IDENTIFIER]      = { variable, NULL,   PREC_NONE           },
-    [TOKEN_STRING]          = { string,   NULL,   PREC_NONE           },
-    [TOKEN_NUMBER]          = { number,   NULL,   PREC_NONE           },
-    [TOKEN_ERROR]           = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_NONE]            = { NULL,     NULL,   PREC_NONE           },
-    [TOKEN_EOF]             = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_L_PAREN]           = { grouping, call,   PREC_POSTFIX        },
+    [TOKEN_R_PAREN]           = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_L_BRACE]           = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_R_BRACE]           = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_L_BRACKET]         = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_R_BRACKET]         = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_COMMA]             = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_DOT]               = { NULL,     dot,    PREC_POSTFIX        },
+    [TOKEN_SEMICOLON]         = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_QUESTION]          = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_COLON]             = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_TILDE]             = { unary,    NULL,   PREC_NONE           },
+    [TOKEN_MINUS]             = { unary,    binary, PREC_ADDITIVE       },
+    [TOKEN_MINUS_EQUAL]       = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_DOUBLE_MINUS]      = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_PLUS]              = { NULL,     binary, PREC_ADDITIVE       },
+    [TOKEN_PLUS_EQUAL]        = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_DOUBLE_PLUS]       = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_STAR]              = { NULL,     binary, PREC_MULTIPLICATIVE },
+    [TOKEN_STAR_EQUAL]        = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_DOUBLE_STAR]       = { NULL,     power,  PREC_EXPONENTIATION },
+    [TOKEN_DOUBLE_STAR_EQUAL] = { NULL,     NULL,   PREC_NONE },
+    [TOKEN_SLASH]             = { NULL,     binary, PREC_MULTIPLICATIVE },
+    [TOKEN_SLASH_EQUAL]       = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_PERCENT]           = { NULL,     binary, PREC_MULTIPLICATIVE },
+    [TOKEN_PERCENT_EQUAL]     = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_AMPERSAND]         = { NULL,     binary, PREC_BITWISE_AND    },
+    [TOKEN_AMPERSAND_EQUAL]   = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_PIPE]              = { NULL,     binary, PREC_BITWISE_OR     },
+    [TOKEN_PIPE_EQUAL]        = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_CARET]             = { NULL,     binary, PREC_BITWISE_XOR    },
+    [TOKEN_CARET_EQUAL]       = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_BANG]              = { unary,    NULL,   PREC_NONE           },
+    [TOKEN_BANG_EQUAL]        = { NULL,     binary, PREC_EQUALITY       },
+    [TOKEN_EQUAL]             = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_EQUAL_EQUAL]       = { NULL,     binary, PREC_EQUALITY       },
+    [TOKEN_GREATER]           = { NULL,     binary, PREC_RELATIONAL     },
+    [TOKEN_GREATER_EQUAL]     = { NULL,     binary, PREC_RELATIONAL     },
+    [TOKEN_R_SHIFT]           = { NULL,     binary, PREC_SHIFT          },
+    [TOKEN_R_SHIFT_EQUAL]     = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_LESS]              = { NULL,     binary, PREC_RELATIONAL     },
+    [TOKEN_LESS_EQUAL]        = { NULL,     binary, PREC_RELATIONAL     },
+    [TOKEN_L_SHIFT]           = { NULL,     binary, PREC_SHIFT          },
+    [TOKEN_L_SHIFT_EQUAL]     = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_AND]               = { NULL,     and,    PREC_LOGICAL_AND    },
+    [TOKEN_BREAK]             = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_CLASS]             = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_CONTINUE]          = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_DEFAULT]           = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_ELSE]              = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_FALSE]             = { literal,  NULL,   PREC_NONE           },
+    [TOKEN_FUN]               = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_FOR]               = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_IF]                = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_NIL]               = { literal,  NULL,   PREC_NONE           },
+    [TOKEN_OR]                = { NULL,     or,     PREC_LOGICAL_OR     },
+    [TOKEN_PRINT]             = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_RETURN]            = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_STATIC]            = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_SUPER]             = { super_,   NULL,   PREC_NONE           },
+    [TOKEN_THIS]              = { this_,    NULL,   PREC_NONE           },
+    [TOKEN_TRUE]              = { literal,  NULL,   PREC_NONE           },
+    [TOKEN_VAR]               = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_VAR]               = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_WHILE]             = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_IDENTIFIER]        = { variable, NULL,   PREC_NONE           },
+    [TOKEN_STRING]            = { string,   NULL,   PREC_NONE           },
+    [TOKEN_NUMBER]            = { number,   NULL,   PREC_NONE           },
+    [TOKEN_ERROR]             = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_NONE]              = { NULL,     NULL,   PREC_NONE           },
+    [TOKEN_EOF]               = { NULL,     NULL,   PREC_NONE           },
 };
 
 static void compiler_init(Compiler* compiler, VM* vm, FunctionType type)
@@ -292,6 +295,25 @@ static bool match(Compiler* compiler, TokenType type)
     return true;
 }
 
+static int peek_compound_assignment(Compiler* compiler)
+{
+    switch (peek_type(compiler)) {
+        case TOKEN_PLUS_EQUAL: return OP_ADD;
+        case TOKEN_MINUS_EQUAL: return OP_SUBTRACT;
+        case TOKEN_STAR_EQUAL: return OP_MULTIPLY;
+        case TOKEN_SLASH_EQUAL: return OP_DIVIDE;
+        case TOKEN_PERCENT_EQUAL: return OP_MODULO;
+        case TOKEN_DOUBLE_STAR_EQUAL: return OP_POWER;
+        case TOKEN_AMPERSAND_EQUAL: return OP_BITWISE_AND;
+        case TOKEN_PIPE_EQUAL: return OP_BITWISE_OR;
+        case TOKEN_CARET_EQUAL: return OP_BITWISE_XOR;
+        case TOKEN_L_SHIFT_EQUAL: return OP_BITWISE_LEFT_SHIFT;
+        case TOKEN_R_SHIFT_EQUAL: return OP_BITWISE_RIGHT_SHIFT;
+    }
+
+    return INVALID_COMPOUND;
+}
+
 static ParseRule* get_rule(TokenType type)
 {
     return &rules[type];
@@ -316,7 +338,8 @@ static void parse_precedence(Compiler* compiler, Precedence precedence)
         infixRule(compiler, canAssign);
     }
 
-    if (canAssign && match(compiler, TOKEN_EQUAL)) {
+    if (canAssign && (peek_type(compiler) == TOKEN_EQUAL || peek_compound_assignment(compiler) != INVALID_COMPOUND)) {
+        advance(compiler);
         error(compiler, "Invalid assignment target.");
     }
 }
@@ -577,13 +600,26 @@ static void named_variable(Compiler* compiler, Token identifier, bool canAssign)
         loadOp = OP_LOAD_GLOBAL;
         storeOp = OP_STORE_GLOBAL;
     }
-
-    if (canAssign && match(compiler, TOKEN_EQUAL)) {
-        expression(compiler);
-        emit_bytes(compiler, storeOp, (uint8_t)scope);
-    } else {
-        emit_bytes(compiler, loadOp, (uint8_t)scope);
+    
+    if (canAssign) {
+        int compoundOperation = peek_compound_assignment(compiler);
+        if (compoundOperation != INVALID_COMPOUND) {
+            advance(compiler);
+            emit_bytes(compiler, loadOp, (uint8_t)scope);
+            expression(compiler);
+            emit_byte(compiler, (uint8_t)compoundOperation);
+            emit_bytes(compiler, storeOp, (uint8_t)scope);
+            return;
+        }
+        
+        if (match(compiler, TOKEN_EQUAL)) {
+            expression(compiler);
+            emit_bytes(compiler, storeOp, (uint8_t)scope);
+            return;
+        }
     }
+
+    emit_bytes(compiler, loadOp, (uint8_t)scope);
 }
 
 static void declaration(Compiler* compiler)
@@ -1036,16 +1072,32 @@ static void dot(Compiler* compiler, bool canAssign)
     consume(compiler, TOKEN_IDENTIFIER, "Expected property name.");
     uint8_t name = identifier_constant(compiler, &compiler->parser->previous);
 
-    if (canAssign && match(compiler, TOKEN_EQUAL)) {
-        expression(compiler);
-        emit_bytes(compiler, OP_STORE_PROPERTY, name);
+    if (canAssign) {
+        int compoundOperation = peek_compound_assignment(compiler);
+        if (compoundOperation != INVALID_COMPOUND) {
+            advance(compiler);
+            emit_byte(compiler, OP_DUP);
+            emit_bytes(compiler, OP_LOAD_PROPERTY, name);
+            expression(compiler);
+            emit_byte(compiler, (uint8_t)compoundOperation);
+            emit_bytes(compiler, OP_STORE_PROPERTY, name);
+            return;
+        }
+
+        if (match(compiler, TOKEN_EQUAL)) {
+            expression(compiler);
+            emit_bytes(compiler, OP_STORE_PROPERTY, name);
+            return;
+        }
+
     } else if (match(compiler, TOKEN_L_PAREN)) {
         uint8_t argCount = argument_list(compiler);
         emit_bytes(compiler, OP_INVOKE, name);
         emit_byte(compiler, argCount);
-    } else {
-        emit_bytes(compiler, OP_LOAD_PROPERTY, name);
+        return;
     }
+
+    emit_bytes(compiler, OP_LOAD_PROPERTY, name);
 }
 
 static void call(Compiler* compiler, bool canAssign)

@@ -33,7 +33,7 @@ typedef enum {
     OP_CLASS, OP_INHERIT, OP_LOAD_PROPERTY, OP_STORE_PROPERTY, OP_METHOD, OP_INVOKE, OP_GET_SUPER, OP_SUPER_INVOKE,
 
     /* Miscellaneous */
-    OP_POP, OP_PRINT
+    OP_POP, OP_DUP, OP_PRINT
 } OpCode;
 
 #endif
