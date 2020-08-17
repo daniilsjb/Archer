@@ -8,50 +8,6 @@ This document contains various notes and thoughts regarding the set of new featu
 
 ### Operators
 
-#### Compound Assignment
-
-It is often desirable to perform an operation on a variable and some value and store the result back into the variable, like this:
-
-```js
-var x = 10;
-x = x + 5;
-```
-
-In C-like languages, this is usually achieved with compound assigment operators, which is the proposed solution. The following are the possible compound operators:
-
-```js
-x += y;  //x = x + y
-x -= y;  //x = x - y
-x *= y;  //x = x * y
-x /= y;  //x = x / y
-x %= y;  //x = x % y
-x |= y;  //x = x | y
-x &= y;  //x = x & y
-x ^= y;  //x = x ^ y
-x >>= y; //x = x >> y
-x <<= y; //x = x << y
-x **= y; //x = x ** y
-```
-
-While the result of such operations is mostly equivalent to their non-compound counterparts, the evaluation of compound assignments are slightly different - the expression on the left is only evaluated once. Consider:
-
-```js
-class Foo {}
-
-var foo = Foo();
-foo.field = 10;
-foo.counter = 0;
-
-fun getFoo() {
-    foo.counter += 1;
-    return foo;
-}
-
-getFoo().field += 20;
-```
-
-In the above example, the value of `foo.counter` will be equal to `1`, as the `getFoo` call is only evaluated once. This wouldn't be the case if the same statement was written in the non-compound form.
-
 #### Increment and Decrement
 
 Under certain circumstances, the program needs to either increment or decrement a numeric value exactly by one. Like the majority of C-like languages, it is desirable to add support for both `++` and `--` operators, preferably in both postfix and prefix forms. Consider:
