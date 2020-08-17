@@ -347,13 +347,13 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_NOT_EQUAL: {
-                Value b = POP();
-                TOP = BOOL_VAL(!values_equal(TOP, b));
+                Value rhs = POP();
+                TOP = BOOL_VAL(!values_equal(TOP, rhs));
                 break;
             }
             case OP_EQUAL: {
-                Value b = POP();
-                TOP = BOOL_VAL(values_equal(TOP, b));
+                Value rhs = POP();
+                TOP = BOOL_VAL(values_equal(TOP, rhs));
                 break;
             }
             case OP_GREATER: {
