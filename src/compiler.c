@@ -272,7 +272,7 @@ static void advance(Compiler* compiler)
             break;
         }
 
-        error(compiler, compiler->parser->current.start);
+        error_at_current(compiler, compiler->parser->current.start);
     }
 }
 
