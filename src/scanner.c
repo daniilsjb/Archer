@@ -66,12 +66,12 @@ static bool is_alpha_num(char c)
 
 static Token make_token(Scanner* scanner, TokenType type)
 {
-    return (Token) { .type = type, .start = scanner->start, .length = (int)(scanner->current - scanner->start), .line = scanner->line };
+    return (Token) { .type = type, .start = scanner->start, .length = scanner->current - scanner->start, .line = scanner->line };
 }
 
 static Token error_token(const char* message, int line)
 {
-    return (Token) { .type = TOKEN_ERROR, .start = message, .length = (int)strlen(message), .line = line };
+    return (Token) { .type = TOKEN_ERROR, .start = message, .length = strlen(message), .line = line };
 }
 
 static Token skip_whitespace(Scanner* scanner)
@@ -154,9 +154,9 @@ static Token number(Scanner* scanner)
     return make_token(scanner, TOKEN_NUMBER);
 }
 
-static TokenType check_keyword(Scanner* scanner, int start, int length, const char* rest, TokenType type)
+static TokenType check_keyword(Scanner* scanner, size_t start, size_t length, const char* rest, TokenType type)
 {
-    if ((int)(scanner->current - scanner->start) == start + length && memcmp(scanner->start + start, rest, length) == 0) {
+    if (scanner->current - scanner->start == start + length && memcmp(scanner->start + start, rest, length) == 0) {
         return type;
     }
 

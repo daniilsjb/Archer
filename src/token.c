@@ -9,5 +9,5 @@ bool lexemes_equal(Token* a, Token* b)
 
 Token synthetic_token(const char* lexeme)
 {
-    return (Token) { .start = lexeme, .length = (int)strlen(lexeme) };
+    return (Token) { .start = lexeme, .length = strlen(lexeme) };
 }

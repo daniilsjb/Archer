@@ -236,7 +236,7 @@ static void error_at(Compiler* compiler, Token* token, const char* message)
     if (token->type == TOKEN_EOF) {
         fprintf(stderr, " at the end");
     } else if (token->type != TOKEN_ERROR) {
-        fprintf(stderr, " at '%.*s'", token->length, token->start);
+        fprintf(stderr, " at '%.*s'", (int)token->length, token->start);
     }
 
     fprintf(stderr, ": %s\n", message);
