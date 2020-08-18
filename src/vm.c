@@ -111,33 +111,37 @@ static Value peek(VM* vm, int distance)
     return vm->stackTop[- 1 - distance];
 }
 
+static int get_current_line(CallFrame* frame)
+{
+    Chunk* chunk = &frame->closure->function->chunk;
+    size_t instruction = frame->ip - chunk->code - 1;
+    return chunk_get_line(chunk, instruction);
+}
+
+static void print_call_frame(CallFrame* frame)
+{
+    ObjFunction* function = frame->closure->function;
+    char* functionName = function->name ? function->name->chars : "script";
+    fprintf(stderr, "[Line %d] in %s\n", get_current_line(frame), functionName);
+}
+
+static void print_stack_trace(VM* vm)
+{
+    for (size_t i = vm->frameCount - 1; i != (size_t)-1; i--) {
+        print_call_frame(&vm->frames[i]);
+    }
+}
+
 static InterpretStatus runtime_error(VM* vm, const char* format, ...)
 {
-    CallFrame* frame = &vm->frames[vm->frameCount - 1];
-    ObjFunction* function = frame->closure->function;
-
-    size_t instruction = frame->ip - frame->closure->function->chunk.code - 1;
-    int line = chunk_get_line(&frame->closure->function->chunk, instruction);
-
     va_list args;
     va_start(args, format);
-    fprintf(stderr, "[Line %d] ", line);
+    fprintf(stderr, "[Line %d] ", get_current_line(&vm->frames[vm->frameCount - 1]));
     vfprintf(stderr, format, args);
     fputs("\n", stderr);
     va_end(args);
 
-    for (int i = (int)vm->frameCount - 1; i >= 0; i--) {
-        CallFrame* frame = &vm->frames[i];
-        ObjFunction* function = frame->closure->function;
-
-        size_t instruction = frame->ip - function->chunk.code - 1;
-        fprintf(stderr, "[Line %d] in ", chunk_get_line(&function->chunk, instruction));
-        if (function->name == NULL) {
-            fprintf(stderr, "script\n");
-        } else {
-            fprintf(stderr, "%s()\n", function->name->chars);
-        }
-    }
+    print_stack_trace(vm);
 
     reset_stack(vm);
     return INTERPRET_RUNTIME_ERROR;
@@ -185,7 +189,7 @@ static bool call_value(VM* vm, Value callee, uint8_t argCount)
                     vm->stackTop -= (uint64_t)argCount;
                     return true;
                 } else {
-                    runtime_error(vm, AS_CSTRING(vm->stackTop[-argCount]));
+                    runtime_error(vm, AS_CSTRING(vm->stackTop[- argCount - 1]));
                     return false;
                 }
             }
