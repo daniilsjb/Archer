@@ -39,4 +39,6 @@ add_executable (clox
     "src/gc.h"
     "src/gc.c"
     "src/vector.h"
+    "src/ast.h"
+    "src/ast.c"
 )
