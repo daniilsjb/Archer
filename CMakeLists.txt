@@ -41,4 +41,6 @@ add_executable (clox
     "src/vector.h"
     "src/ast.h"
     "src/ast.c"
+    "src/astprinter.h"
+    "src/astprinter.c"
 )

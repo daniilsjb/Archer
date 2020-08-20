@@ -103,4 +103,6 @@ typedef struct {
 bool lexemes_equal(Token* a, Token* b);
 Token synthetic_token(const char* lexeme);
 
+Token empty_token();
+
 #endif

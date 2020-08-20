@@ -14,11 +14,11 @@ typedef struct ArgumentList ArgumentList;
 typedef struct Function Function;
 typedef struct FunctionList FunctionList;
 
-typedef enum ExprContext { Load, Store } ExprContext;
+typedef enum ExprContext { LOAD, STORE } ExprContext;
 
-typedef struct Program {
+typedef struct AST {
     DeclarationList* body;
-} Program;
+} AST;
 
 typedef struct Declaration {
     enum {
@@ -61,7 +61,7 @@ typedef struct Statement {
 
     union {
         struct {
-            Statement* initializer;
+            Declaration* initializer;
             Expression* condition;
             Expression* increment;
             Statement* body;
@@ -98,7 +98,6 @@ typedef struct Expression {
     enum {
         EXPR_CALL,
         EXPR_PROPERTY,
-        EXPR_THIS,
         EXPR_SUPER,
         EXPR_ASSIGNMENT,
         EXPR_COMPOUND_ASSIGNMNET,
@@ -123,20 +122,16 @@ typedef struct Expression {
 
         struct {
             Token keyword;
-        } thisExpr;
-
-        struct {
-            Token keyword;
             Token method;
         } superExpr;
 
         struct {
-            Token target;
+            Expression* target;
             Expression* value;
         } assignmentExpr;
 
         struct {
-            Token target;
+            Expression* target;
             Token op;
             Expression* value;
         } compoundAssignmentExpr;
@@ -195,8 +190,8 @@ typedef struct DeclarationList {
     DeclarationList* next;
 } DeclarationList;
 
-Program* ast_new_program(DeclarationList* body);
-void ast_delete_program(Program* program);
+AST* ast_new_tree(DeclarationList* body);
+void ast_delete_tree(AST* ast);
 
 void ast_delete_declaration(Declaration* declaration);
 Declaration* ast_new_class_decl(Token identifier, Token superclass, FunctionList* body);
@@ -209,7 +204,7 @@ Declaration* ast_new_statement_decl(Statement* statement);
 void ast_delete_statement_decl(Declaration* declaration);
 
 void ast_delete_statement(Statement* statement);
-Statement* ast_new_for_stmt(Statement* initializer, Expression* condition, Expression* increment, Statement* body);
+Statement* ast_new_for_stmt(Declaration* initializer, Expression* condition, Expression* increment, Statement* body);
 void ast_delete_for_stmt(Statement* statement);
 Statement* ast_new_while_stmt(Expression* condition, Statement* body);
 void ast_delete_while_stmt(Statement* statement);
@@ -229,13 +224,11 @@ Expression* ast_new_call_expr(Expression* callee, ArgumentList* arguments);
 void ast_delete_call_expr(Expression* expression);
 Expression* ast_new_property_expr(Expression* object, Token property, ExprContext context);
 void ast_delete_property_expr(Expression* expression);
-Expression* ast_new_this_expr(Token keyword);
-void ast_delete_this_expr(Expression* expression);
 Expression* ast_new_super_expr(Token keyword, Token method);
 void ast_delete_super_expr(Expression* expression);
-Expression* ast_new_assignment_expr(Token target, Expression* value);
+Expression* ast_new_assignment_expr(Expression* target, Expression* value);
 void ast_delete_assignment_expr(Expression* expression);
-Expression* ast_new_compound_assignment_expr(Token target, Token op, Expression* value);
+Expression* ast_new_compound_assignment_expr(Expression*, Token op, Expression* value);
 void ast_delete_compound_assignment_expr(Expression* expression);
 Expression* ast_new_logical_expr(Expression* left, Token op, Expression* right);
 void ast_delete_logical_expr(Expression* expression);
@@ -248,23 +241,27 @@ void ast_delete_literal_expr(Expression* expression);
 Expression* ast_new_identifier_expr(Token identifier, ExprContext context);
 void ast_delete_identifier_expr(Expression* expression);
 
-ArgumentList* ast_new_argument_list(Expression* expression);
-void ast_argument_list_append(ArgumentList* list, Expression* expression);
+ArgumentList* ast_new_argument_node(Expression* expression);
+void ast_argument_list_append(ArgumentList** list, Expression* expression);
 void ast_delete_argument_list(ArgumentList* list);
+size_t ast_argument_list_length(ArgumentList* list);
 
-ParameterList* ast_new_parameter_list(Token parameter);
-void ast_parameter_list_append(ParameterList* list, Token parameter);
+ParameterList* ast_new_parameter_node(Token parameter);
+void ast_parameter_list_append(ParameterList** list, Token parameter);
 void ast_delete_parameter_list(ParameterList* list);
+size_t ast_parameter_list_length(ParameterList* list);
 
 Function* ast_new_function(Token identifier, ParameterList* parameters, DeclarationList* body);
 void ast_delete_function(Function* function);
 
-FunctionList* ast_new_function_list(Function* function);
-void ast_function_list_append(FunctionList* list, Function* function);
+FunctionList* ast_new_function_node(Function* function);
+void ast_function_list_append(FunctionList** list, Function* function);
 void ast_delete_function_list(FunctionList* list);
+size_t ast_function_list_length(FunctionList* list);
 
-DeclarationList* ast_new_declaration_list(Declaration* declaration);
-void ast_declaration_list_append(DeclarationList* list, Declaration* declaration);
+DeclarationList* ast_new_declaration_node(Declaration* declaration);
+void ast_declaration_list_append(DeclarationList** list, Declaration* declaration);
 void ast_delete_declaration_list(DeclarationList* list);
+size_t ast_declaration_list_length(DeclarationList* list);
 
 #endif

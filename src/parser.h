@@ -4,6 +4,7 @@
 #include "common.h"
 #include "scanner.h"
 #include "token.h"
+#include "ast.h"
 
 typedef struct {
     Scanner scanner;
@@ -24,5 +25,7 @@ bool parser_advance(Parser* parser);
 
 void parser_synchronize(Parser* parser);
 void parser_enter_error_mode(Parser* parser);
+
+AST* parse(const char* source);
 
 #endif

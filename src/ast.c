@@ -1,25 +1,35 @@
+#include <stdint.h>
+
 #include "ast.h"
 #include "memlib.h"
 
-Program* ast_new_program(DeclarationList* body)
+AST* ast_new_tree(DeclarationList* body)
 {
-    Program* program = raw_allocate(sizeof(Program));
-    if (!program) {
+    AST* ast = raw_allocate(sizeof(AST));
+    if (!ast) {
         return NULL;
     }
 
-    program->body = body;
-    return program;
+    ast->body = body;
+    return ast;
 }
 
-void ast_delete_program(Program* program)
+void ast_delete_tree(AST* ast)
 {
-    ast_delete_declaration_list(program->body);
-    raw_deallocate(program);
+    if (!ast) {
+        return;
+    }
+
+    ast_delete_declaration_list(ast->body);
+    raw_deallocate(ast);
 }
 
 void ast_delete_declaration(Declaration* declaration)
 {
+    if (!declaration) {
+        return;
+    }
+
     switch (declaration->type) {
         case DECL_CLASS: ast_delete_class_decl(declaration); return;
         case DECL_FUNCTION: ast_delete_function_decl(declaration); return;
@@ -108,6 +118,10 @@ void ast_delete_statement_decl(Declaration* declaration)
 
 void ast_delete_statement(Statement* statement)
 {
+    if (!statement) {
+        return;
+    }
+
     switch (statement->type) {
         case STMT_FOR: ast_delete_for_stmt(statement); return;
         case STMT_WHILE: ast_delete_while_stmt(statement); return;
@@ -119,7 +133,7 @@ void ast_delete_statement(Statement* statement)
     }
 }
 
-Statement* ast_new_for_stmt(Statement* initializer, Expression* condition, Expression* increment, Statement* body)
+Statement* ast_new_for_stmt(Declaration* initializer, Expression* condition, Expression* increment, Statement* body)
 {
     Statement* stmt = raw_allocate(sizeof(Statement));
     if (!stmt) {
@@ -136,18 +150,9 @@ Statement* ast_new_for_stmt(Statement* initializer, Expression* condition, Expre
 
 void ast_delete_for_stmt(Statement* statement)
 {
-    if (statement->as.forStmt.initializer) {
-        ast_delete_statement(statement->as.forStmt.initializer);
-    }
-
-    if (statement->as.forStmt.condition) {
-        ast_delete_expression(statement->as.forStmt.condition);
-    }
-
-    if (statement->as.forStmt.increment) {
-        ast_delete_expression(statement->as.forStmt.increment);
-    }
-
+    ast_delete_declaration(statement->as.forStmt.initializer);
+    ast_delete_expression(statement->as.forStmt.condition);
+    ast_delete_expression(statement->as.forStmt.increment);
     raw_deallocate(statement);
 }
 
@@ -189,11 +194,7 @@ void ast_delete_if_stmt(Statement* statement)
 {
     ast_delete_expression(statement->as.ifStmt.condition);
     ast_delete_statement(statement->as.ifStmt.thenBranch);
-
-    if (statement->as.ifStmt.elseBranch) {
-        ast_delete_statement(statement->as.ifStmt.elseBranch);
-    }
-
+    ast_delete_statement(statement->as.ifStmt.elseBranch);
     raw_deallocate(statement);
 }
 
@@ -211,10 +212,7 @@ Statement* ast_new_return_stmt(Expression* expression)
 
 void ast_delete_return_stmt(Statement* statement)
 {
-    if (statement->as.returnStmt.expression) {
-        ast_delete_expression(statement->as.returnStmt.expression);
-    }
-
+    ast_delete_expression(statement->as.returnStmt.expression);
     raw_deallocate(statement);
 }
 
@@ -274,10 +272,13 @@ void ast_delete_expression_stmt(Statement* statement)
 
 void ast_delete_expression(Expression* expression)
 {
+    if (!expression) {
+        return;
+    }
+
     switch (expression->type) {
         case EXPR_CALL: ast_delete_call_expr(expression); return;
         case EXPR_PROPERTY: ast_delete_property_expr(expression); return;
-        case EXPR_THIS: ast_delete_this_expr(expression); return;
         case EXPR_SUPER: ast_delete_super_expr(expression); return;
         case EXPR_ASSIGNMENT: ast_delete_assignment_expr(expression); return;
         case EXPR_COMPOUND_ASSIGNMNET: ast_delete_compound_assignment_expr(expression); return;
@@ -329,23 +330,6 @@ void ast_delete_property_expr(Expression* expression)
     raw_deallocate(expression);
 }
 
-Expression* ast_new_this_expr(Token keyword)
-{
-    Expression* expr = raw_allocate(sizeof(Expression));
-    if (!expr) {
-        return NULL;
-    }
-
-    expr->type = EXPR_SUPER;
-    expr->as.thisExpr.keyword = keyword;
-    return expr;
-}
-
-void ast_delete_this_expr(Expression* expression)
-{
-    raw_deallocate(expression);
-}
-
 Expression* ast_new_super_expr(Token keyword, Token method)
 {
     Expression* expr = raw_allocate(sizeof(Expression));
@@ -364,7 +348,7 @@ void ast_delete_super_expr(Expression* expression)
     raw_deallocate(expression);
 }
 
-Expression* ast_new_assignment_expr(Token target, Expression* value)
+Expression* ast_new_assignment_expr(Expression* target, Expression* value)
 {
     Expression* expr = raw_allocate(sizeof(Expression));
     if (!expr) {
@@ -379,11 +363,12 @@ Expression* ast_new_assignment_expr(Token target, Expression* value)
 
 void ast_delete_assignment_expr(Expression* expression)
 {
+    ast_delete_expression(expression->as.assignmentExpr.target);
     ast_delete_expression(expression->as.assignmentExpr.value);
     raw_deallocate(expression);
 }
 
-Expression* ast_new_compound_assignment_expr(Token target, Token op, Expression* value)
+Expression* ast_new_compound_assignment_expr(Expression* target, Token op, Expression* value)
 {
     Expression* expr = raw_allocate(sizeof(Expression));
     if (!expr) {
@@ -399,6 +384,7 @@ Expression* ast_new_compound_assignment_expr(Token target, Token op, Expression*
 
 void ast_delete_compound_assignment_expr(Expression* expression)
 {
+    ast_delete_expression(expression->as.compoundAssignmentExpr.target);
     ast_delete_expression(expression->as.compoundAssignmentExpr.value);
     raw_deallocate(expression);
 }
@@ -499,7 +485,7 @@ void ast_delete_identifier_expr(Expression* expression)
     raw_deallocate(expression);
 }
 
-ArgumentList* ast_new_argument_list(Expression* expression)
+ArgumentList* ast_new_argument_node(Expression* expression)
 {
     ArgumentList* list = raw_allocate(sizeof(ArgumentList));
     if (!list) {
@@ -511,9 +497,19 @@ ArgumentList* ast_new_argument_list(Expression* expression)
     return list;
 }
 
-void ast_argument_list_append(ArgumentList* list, Expression* expression)
+void ast_argument_list_append(ArgumentList** list, Expression* expression)
 {
-    list->next = ast_new_argument_list(expression);
+    if (!(*list)) {
+        *list = ast_new_argument_node(expression);
+        return;
+    }
+
+    ArgumentList* current = *list;
+    while (current->next) {
+        current = current->next;
+    }
+
+    current->next = ast_new_argument_node(expression);
 }
 
 void ast_delete_argument_list(ArgumentList* list)
@@ -527,7 +523,20 @@ void ast_delete_argument_list(ArgumentList* list)
     }
 }
 
-ParameterList* ast_new_parameter_list(Token parameter)
+size_t ast_argument_list_length(ArgumentList* list)
+{
+    size_t length = 0;
+    ArgumentList* current = list;
+
+    while (current) {
+        length++;
+        current = current->next;
+    }
+
+    return length;
+}
+
+ParameterList* ast_new_parameter_node(Token parameter)
 {
     ParameterList* list = raw_allocate(sizeof(ParameterList));
     if (!list) {
@@ -539,9 +548,19 @@ ParameterList* ast_new_parameter_list(Token parameter)
     return list;
 }
 
-void ast_parameter_list_append(ParameterList* list, Token parameter)
+void ast_parameter_list_append(ParameterList** list, Token parameter)
 {
-    list->next = ast_new_parameter_list(parameter);
+    if (!(*list)) {
+        *list = ast_new_parameter_node(parameter);
+        return;
+    }
+
+    ParameterList* current = *list;
+    while (current->next) {
+        current = current->next;
+    }
+
+    current->next = ast_new_parameter_node(parameter);
 }
 
 void ast_delete_parameter_list(ParameterList* list)
@@ -552,6 +571,19 @@ void ast_delete_parameter_list(ParameterList* list)
         raw_deallocate(current);
         current = next;
     }
+}
+
+size_t ast_parameter_list_length(ParameterList* list)
+{
+    size_t length = 0;
+    ParameterList* current = list;
+
+    while (current) {
+        length++;
+        current = current->next;
+    }
+
+    return length;
 }
 
 Function* ast_new_function(Token identifier, ParameterList* parameters, DeclarationList* body)
@@ -574,7 +606,7 @@ void ast_delete_function(Function* function)
     raw_deallocate(function);
 }
 
-FunctionList* ast_new_function_list(Function* function)
+FunctionList* ast_new_function_node(Function* function)
 {
     FunctionList* list = raw_allocate(sizeof(FunctionList));
     if (!list) {
@@ -586,9 +618,19 @@ FunctionList* ast_new_function_list(Function* function)
     return list;
 }
 
-void ast_function_list_append(FunctionList* list, Function* function)
+void ast_function_list_append(FunctionList** list, Function* function)
 {
-    list->next = ast_new_function_list(function);
+    if (!(*list)) {
+        *list = ast_new_function_node(function);
+        return;
+    }
+
+    FunctionList* current = *list;
+    while (current->next) {
+        current = current->next;
+    }
+
+    current->next = ast_new_function_node(function);
 }
 
 void ast_delete_function_list(FunctionList* list)
@@ -602,7 +644,20 @@ void ast_delete_function_list(FunctionList* list)
     }
 }
 
-DeclarationList* ast_new_declaration_list(Declaration* declaration)
+size_t ast_function_list_length(FunctionList* list)
+{
+    size_t length = 0;
+    FunctionList* current = list;
+
+    while (current) {
+        length++;
+        current = current->next;
+    }
+
+    return length;
+}
+
+DeclarationList* ast_new_declaration_node(Declaration* declaration)
 {
     DeclarationList* list = raw_allocate(sizeof(DeclarationList));
     if (!list) {
@@ -614,9 +669,19 @@ DeclarationList* ast_new_declaration_list(Declaration* declaration)
     return list;
 }
 
-void ast_declaration_list_append(DeclarationList* list, Declaration* declaration)
+void ast_declaration_list_append(DeclarationList** list, Declaration* declaration)
 {
-    list->next = ast_new_declaration_list(declaration);
+    if (!(*list)) {
+        *list = ast_new_declaration_node(declaration);
+        return;
+    }
+
+    DeclarationList* current = *list;
+    while (current->next) {
+        current = current->next;
+    }
+
+    current->next = ast_new_declaration_node(declaration);
 }
 
 void ast_delete_declaration_list(DeclarationList* list)
@@ -628,4 +693,17 @@ void ast_delete_declaration_list(DeclarationList* list)
         raw_deallocate(current);
         current = next;
     }
+}
+
+size_t ast_declaration_list_length(DeclarationList* list)
+{
+    size_t length = 0;
+    DeclarationList* current = list;
+
+    while (current) {
+        length++;
+        current = current->next;
+    }
+
+    return length;
 }

@@ -11,3 +11,8 @@ Token synthetic_token(const char* lexeme)
 {
     return (Token) { .start = lexeme, .length = strlen(lexeme) };
 }
+
+Token empty_token()
+{
+    return (Token) { .type = TOKEN_NONE, .start = NULL, .length = 0, .line = 0 };
+}

@@ -29,7 +29,7 @@ BlockStmt → "{" Declaration* "}"
 ExprStmt → Expression ";"
 
 Expression → AssignmentExpr
-AssignmentExpr → ( CallExpr "." )? IDENTIFIER AssignOp AssignmentExpr | LogicOrExpr
+AssignmentExpr → ( ( CallExpr "." )? IDENTIFIER AssignOp AssignmentExpr ) | LogicOrExpr
 LogicOrExpr → LogicAndExpr ( "or" LogicAndExpr )*
 LogicAndExpr → BitwiseOrExpr ( "and" BitwiseOrExpr )*
 BitwiseOrExpr → BitwiseXorExpr ( "|" BitwiseXorExpr )*
