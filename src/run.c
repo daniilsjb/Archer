@@ -5,9 +5,7 @@
 #include "run.h"
 #include "errcode.h"
 #include "parser.h"
-#include "astprinter.h"
-
-//#include "vm.h"
+#include "vm.h"
 
 static char* read_file(const char* fileName)
 {
@@ -41,33 +39,28 @@ static char* read_file(const char* fileName)
 
 void run_file(const char* fileName)
 {
-    AST* ast = parse(fileName);
-    if (!ast) {
+    VM vm;
+    vm_init(&vm);
+
+    char* source = read_file(fileName);
+    InterpretStatus status = vm_interpret(&vm, source);
+    free(source);
+
+    if (status == INTERPRET_COMPILE_ERROR) {
         exit(ERR_DATA);
     }
+    if (status == INTERPRET_RUNTIME_ERROR) {
+        exit(ERR_SOFTWARE);
+    }
 
-    print_ast(ast);
-    ast_delete_tree(ast);
-
-//    VM vm;
-//    vm_init(&vm);
-//
-//    char* source = read_file(fileName);
-//    InterpretStatus status = vm_interpret(&vm, source);
-//    free(source);
-//
-//    if (status == INTERPRET_COMPILE_ERROR) {
-//        exit(ERR_DATA);
-//    }
-//    if (status == INTERPRET_RUNTIME_ERROR) {
-//        exit(ERR_SOFTWARE);
-//    }
-//
-//    vm_free(&vm);
+    vm_free(&vm);
 }
 
 void run_prompt()
 {
+    VM vm;
+    vm_init(&vm);
+
     char line[1024];
     while (true) {
         printf("> ");
@@ -77,27 +70,8 @@ void run_prompt()
             break;
         }
 
-        AST* ast = parse(line);
-        if (ast) {
-            print_ast(ast);
-            ast_delete_tree(ast);
-        }
+        vm_interpret(&vm, line);
     }
 
-    //VM vm;
-    //vm_init(&vm);
-
-    //char line[1024];
-    //while (true) {
-    //    printf("> ");
-
-    //    if (!fgets(line, 1024, stdin)) {
-    //        printf("\n");
-    //        break;
-    //    }
-
-    //    vm_interpret(&vm, line);
-    //}
-
-    //vm_free(&vm);
+    vm_free(&vm);
 }

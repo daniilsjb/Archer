@@ -60,7 +60,7 @@ static void print_token(Token token)
 
 static void print_token_field(int indent, const char* fieldName, Token token)
 {
-    print_indented(indent, "%s: ");
+    print_indented(indent, "%s: ", fieldName);
 
     if (token.type == TOKEN_NONE) {
         printf("<None>");

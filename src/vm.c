@@ -555,6 +555,12 @@ static InterpretStatus run(VM* vm)
                 PUSH(TOP);
                 break;
             }
+            case OP_SWAP: {
+                Value tmp = SND;
+                SND = TOP;
+                TOP = tmp;
+                break;
+            }
             case OP_DEFINE_GLOBAL: {
                 ObjString* identifier = READ_STRING();
                 table_put(vm, &vm->globals, identifier, TOP);
@@ -619,17 +625,15 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_STORE_PROPERTY: {
-                if (!IS_INSTANCE(SND)) {
+                if (!IS_INSTANCE(TOP)) {
                     runtime_error(vm, "Can only set properties of class instances.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                ObjInstance* instance = AS_INSTANCE(SND);
-                table_put(vm, &instance->fields, READ_STRING(), TOP);
+                ObjInstance* instance = AS_INSTANCE(TOP);
+                table_put(vm, &instance->fields, READ_STRING(), SND);
 
-                Value value = POP();
                 POP();
-                PUSH(value);
                 break;
             }
             case OP_PRINT: {

@@ -1,6 +1,19 @@
 #include <stdio.h>
 
 #include "parser.h"
+#include "scanner.h"
+#include "token.h"
+#include "common.h"
+
+typedef struct {
+    Scanner scanner;
+
+    Token current;
+    Token previous;
+
+    bool error;
+    bool panic;
+} Parser;
 
 typedef enum {
     PREC_NONE,
@@ -145,62 +158,14 @@ ParseRule rules[] = {
     [TOKEN_EOF]               = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
 };
 
-void parser_init(Parser* parser, const char* source)
+static void parser_init(Parser* parser, const char* source)
 {
     scanner_init(&parser->scanner, source);
     parser->error = false;
     parser->panic = false;
 }
 
-void parser_move_previous(Parser* parser)
-{
-    parser->previous = parser->current;
-}
-
-TokenType parser_peek_type(Parser* parser)
-{
-    return parser->current.type;
-}
-
-bool parser_check(Parser* parser, TokenType type)
-{
-    return parser_peek_type(parser) == type;
-}
-
-bool parser_advance(Parser* parser)
-{
-    parser->current = scanner_scan_token(&parser->scanner);
-    return !parser_check(parser, TOKEN_ERROR);
-}
-
-void parser_synchronize(Parser* parser)
-{
-    parser->panic = false;
-
-    while (!parser_check(parser, TOKEN_EOF)) {
-        switch (parser->previous.type) {
-            case TOKEN_SEMICOLON: return;
-        }
-
-        switch (parser->current.type) {
-            case TOKEN_CLASS: return;
-            case TOKEN_STATIC: return;
-            case TOKEN_FUN: return;
-            case TOKEN_VAR: return;
-            case TOKEN_FOR: return;
-            case TOKEN_IF: return;
-            case TOKEN_WHILE: return;
-            case TOKEN_PRINT: return;
-            case TOKEN_BREAK: return;
-            case TOKEN_CONTINUE: return;
-            case TOKEN_RETURN: return;
-        }
-
-        parser_advance(parser);
-    }
-}
-
-void parser_enter_error_mode(Parser* parser)
+static void enter_error_mode(Parser* parser)
 {
     parser->error = true;
     parser->panic = true;
@@ -221,7 +186,7 @@ static void error_at(Parser* parser, Token* token, const char* message)
     }
 
     fprintf(stderr, ": %s\n", message);
-    parser_enter_error_mode(parser);
+    enter_error_mode(parser);
 }
 
 static void error_at_current(Parser* parser, const char* message)
@@ -239,15 +204,17 @@ static bool check(Parser* parser, TokenType type)
     return parser->current.type == type;
 }
 
+static bool next_token(Parser* parser)
+{
+    parser->current = scanner_scan_token(&parser->scanner);
+    return !check(parser, TOKEN_ERROR);
+}
+
 static void advance(Parser* parser)
 {
     parser->previous = parser->current;
 
-    while (true) {
-        if (parser_advance(parser)) {
-            break;
-        }
-
+    while (!next_token(parser)) {
         error_at_current(parser, parser->current.start);
     }
 }
@@ -268,6 +235,33 @@ static void consume(Parser* parser, TokenType type, const char* message)
         error_at_current(parser, message);
     } else {
         advance(parser);
+    }
+}
+
+static void synchronize(Parser* parser)
+{
+    parser->panic = false;
+
+    while (!check(parser, TOKEN_EOF)) {
+        switch (parser->previous.type) {
+            case TOKEN_SEMICOLON: return;
+        }
+
+        switch (parser->current.type) {
+            case TOKEN_CLASS: return;
+            case TOKEN_STATIC: return;
+            case TOKEN_FUN: return;
+            case TOKEN_VAR: return;
+            case TOKEN_FOR: return;
+            case TOKEN_IF: return;
+            case TOKEN_WHILE: return;
+            case TOKEN_PRINT: return;
+            case TOKEN_BREAK: return;
+            case TOKEN_CONTINUE: return;
+            case TOKEN_RETURN: return;
+        }
+
+        next_token(parser);
     }
 }
 
@@ -300,10 +294,10 @@ static Expression* parse_precedence(Parser* parser, Precedence precedence)
 Declaration* declaration(Parser* parser)
 {
     if (parser->panic) {
-        parser_synchronize(parser);
+        synchronize(parser);
     }
 
-    switch (parser_peek_type(parser)) {
+    switch (parser->current.type) {
         case TOKEN_CLASS: advance(parser); return class_decl(parser);
         case TOKEN_FUN: advance(parser); return function_decl(parser);
         case TOKEN_VAR: advance(parser); return variable_decl(parser);
@@ -358,7 +352,7 @@ Declaration* statement_decl(Parser* parser)
 
 Statement* statement(Parser* parser)
 {
-    switch (parser_peek_type(parser)) {
+    switch (parser->current.type) {
         case TOKEN_FOR: advance(parser); return for_stmt(parser);
         case TOKEN_WHILE: advance(parser); return while_stmt(parser);
         case TOKEN_IF: advance(parser); return if_stmt(parser);
@@ -590,10 +584,6 @@ ParameterList* parameters_rule(Parser* parser)
     ParameterList* parameters = NULL;
     if (!check(parser, TOKEN_R_PAREN)) {
         do {
-            if (ast_parameter_list_length(parameters) > 255) {
-                error(parser, "Cannot have more than 255 parameters.");
-            }
-
             consume(parser, TOKEN_IDENTIFIER, "Expected parameter name.");
             ast_parameter_list_append(&parameters, parser->previous);
         } while (match(parser, TOKEN_COMMA));
