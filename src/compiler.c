@@ -631,6 +631,8 @@ void compile_if_stmt(Compiler* compiler, Statement* stmt)
 
 void compile_return_stmt(Compiler* compiler, Statement* stmt)
 {
+    compiler->token = stmt->as.returnStmt.keyword;
+
     if (compiler->type == TYPE_SCRIPT) {
         error(compiler, "Can only return from functions.");
     }

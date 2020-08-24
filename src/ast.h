@@ -79,6 +79,7 @@ typedef struct Statement {
         } ifStmt;
 
         struct {
+            Token keyword;
             Expression* expression;
         } returnStmt;
 
@@ -210,7 +211,7 @@ Statement* ast_new_while_stmt(Expression* condition, Statement* body);
 void ast_delete_while_stmt(Statement* statement);
 Statement* ast_new_if_stmt(Expression* condition, Statement* thenBranch, Statement* elseBranch);
 void ast_delete_if_stmt(Statement* statement);
-Statement* ast_new_return_stmt(Expression* expression);
+Statement* ast_new_return_stmt(Token keyword, Expression* expression);
 void ast_delete_return_stmt(Statement* statement);
 Statement* ast_new_print_stmt(Expression* expression);
 void ast_delete_print_stmt(Statement* statement);

@@ -416,13 +416,14 @@ Statement* if_stmt(Parser* parser)
 
 Statement* return_stmt(Parser* parser)
 {
+    Token keyword = parser->previous;
     Expression* expr = NULL;
     if (!check(parser, TOKEN_SEMICOLON)) {
         expr = expression(parser);
     }
 
     consume(parser, TOKEN_SEMICOLON, "Expected ';' at the end of 'return'.");
-    return ast_new_return_stmt(expr);
+    return ast_new_return_stmt(keyword, expr);
 }
 
 Statement* print_stmt(Parser* parser)

@@ -198,7 +198,7 @@ void ast_delete_if_stmt(Statement* statement)
     raw_deallocate(statement);
 }
 
-Statement* ast_new_return_stmt(Expression* expression)
+Statement* ast_new_return_stmt(Token keyword, Expression* expression)
 {
     Statement* stmt = raw_allocate(sizeof(Statement));
     if (!stmt) {
@@ -206,6 +206,7 @@ Statement* ast_new_return_stmt(Expression* expression)
     }
 
     stmt->type = STMT_RETURN;
+    stmt->as.returnStmt.keyword = keyword;
     stmt->as.returnStmt.expression = expression;
     return stmt;
 }
