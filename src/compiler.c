@@ -94,7 +94,7 @@ static void compile_function(Compiler* compiler, Function* function, FunctionTyp
 static void compile_function_list(Compiler* compiler, FunctionList* list);
 static void compile_declaration_list(Compiler* compiler, DeclarationList* list);
 
-static void compiler_init(Compiler* compiler, VM* vm, FunctionType type)
+static void compiler_init(Compiler* compiler, VM* vm, FunctionType type, Token identifier)
 {
     compiler->enclosing = vm->compiler;
     vm->compiler = compiler;
@@ -112,12 +112,8 @@ static void compiler_init(Compiler* compiler, VM* vm, FunctionType type)
     compiler->function = new_function(vm);
 
     if (type != TYPE_SCRIPT) {
-        compiler->function->name = copy_string(vm, "Test", 4);
+        compiler->function->name = copy_string(vm, identifier.start, identifier.length);
     }
-
-    //if (type != TYPE_SCRIPT) {
-    //    compiler->function->name = copy_string(vm, compiler->parser->previous.start, compiler->parser->previous.length);
-    //}
 
     Local* local = &compiler->locals[compiler->localCount++];
     local->depth = 0;
@@ -151,7 +147,7 @@ static void error(Compiler* compiler, Token token, const char* message)
 
     if (token.type == TOKEN_EOF) {
         fprintf(stderr, " at the end");
-    } else if (token.type != TOKEN_ERROR) {
+    } else if (token.type != TOKEN_ERROR && token.type != TOKEN_NONE) {
         fprintf(stderr, " at '%.*s'", (int)token.length, token.start);
     }
 
@@ -953,7 +949,7 @@ void compile_parameter_list(Compiler* compiler, ParameterList* list)
 void compile_function(Compiler* compiler, Function* function, FunctionType type)
 {
     Compiler newCompiler;
-    compiler_init(&newCompiler, compiler->vm, type);
+    compiler_init(&newCompiler, compiler->vm, type, function->identifier);
     begin_scope(&newCompiler);
 
     compile_parameter_list(&newCompiler, function->parameters);
@@ -1005,7 +1001,7 @@ ObjFunction* compile(VM* vm, const char* source)
 
     Compiler compiler;
     compiler.vm = vm;
-    compiler_init(&compiler, vm, TYPE_SCRIPT);
+    compiler_init(&compiler, vm, TYPE_SCRIPT, empty_token());
 
     compile_tree(&compiler, ast);
     ObjFunction* function = finish_compilation(vm, empty_token());
