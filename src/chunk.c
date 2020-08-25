@@ -32,7 +32,7 @@ static void append_line(VM* vm, LineArray* array, int line)
         }
     }
 
-    VECTOR_PUSH(vm, LineArray, array, Line, ((Line) {.number = line, .count = 1 }));
+    VECTOR_PUSH(vm, LineArray, array, Line, ((Line) { .number = line, .count = 1 }));
 }
 
 void chunk_write(VM* vm, Chunk* chunk, uint8_t byte, int line)

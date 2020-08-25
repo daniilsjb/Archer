@@ -363,6 +363,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_GREATER: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -372,6 +373,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_GREATER_EQUAL: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -381,6 +383,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_LESS: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -390,6 +393,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_LESS_EQUAL: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -403,6 +407,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_NEGATE: {
                 if (!IS_NUMBER(TOP)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operand must be a number.");
                 }
 
@@ -411,6 +416,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_DEC: {
                 if (!IS_NUMBER(TOP)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operand must be a number.");
                 }
 
@@ -419,6 +425,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_INC: {
                 if (!IS_NUMBER(TOP)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operand must be a number.");
                 }
 
@@ -438,12 +445,14 @@ static InterpretStatus run(VM* vm)
                     double rhs = AS_NUMBER(POP());
                     TOP = NUMBER_VAL(AS_NUMBER(TOP) + rhs);
                 } else {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be either numbers or strings.");
                 }
                 break;
             }
             case OP_SUBTRACT: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -453,6 +462,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_MULTIPLY: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -462,6 +472,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_DIVIDE: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -471,6 +482,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_MODULO: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -480,6 +492,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_POWER: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -489,6 +502,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_BITWISE_NOT: {
                 if (!IS_NUMBER(TOP)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operand must be a number.");
                 }
 
@@ -497,6 +511,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_BITWISE_AND: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -506,6 +521,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_BITWISE_OR: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -515,6 +531,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_BITWISE_XOR: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -524,6 +541,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_BITWISE_LEFT_SHIFT: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -533,6 +551,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_BITWISE_RIGHT_SHIFT: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
 
@@ -631,6 +650,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_LOAD_PROPERTY: {
                 if (!IS_INSTANCE(TOP)) {
+                    frame->ip = ip;
                     runtime_error(vm, "Can only access properties of class instances.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -653,6 +673,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_STORE_PROPERTY: {
                 if (!IS_INSTANCE(TOP)) {
+                    frame->ip = ip;
                     runtime_error(vm, "Can only set properties of class instances.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -743,6 +764,7 @@ static InterpretStatus run(VM* vm)
             case OP_INHERIT: {
                 Value superclass = SND;
                 if (!IS_CLASS(superclass)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Superclass must be a class.");
                 }
 
