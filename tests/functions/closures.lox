@@ -76,3 +76,16 @@ print counter(); //Expected: 3
     a = "changed";
     showA(); //Expected: changed
 }
+
+fun nestedClass() {
+
+    class Bar {
+        show() {
+            print "Hello from Bar!";
+        }
+    }
+
+    Bar().show(); //Expected: Hello from Bar!
+}
+
+nestedClass();

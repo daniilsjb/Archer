@@ -676,6 +676,7 @@ static InterpretStatus run(VM* vm)
             case OP_INVOKE: {
                 ObjString* method = READ_STRING();
                 uint8_t argCount = READ_BYTE();
+
                 frame->ip = ip;
 
                 if (!invoke(vm, method, argCount)) {

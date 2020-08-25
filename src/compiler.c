@@ -19,8 +19,8 @@
 
 typedef struct {
     Token identifier;
-    int depth;
-    bool isCaptured;
+    int scopeDepth;
+    bool captured;
 } Local;
 
 typedef struct {
@@ -90,39 +90,35 @@ static void compile_unary_expr(Compiler* compiler, Expression* expr);
 static void compile_literal_expr(Compiler* compiler, Expression* expr);
 static void compile_identifier_expr(Compiler* compiler, Expression* expr);
 
-static void compile_argument_list(Compiler* compiler, ArgumentList* list);
-static void compile_parameter_list(Compiler* compiler, ParameterList* list);
+static size_t compile_argument_list(Compiler* compiler, ArgumentList* list);
+static size_t compile_parameter_list(Compiler* compiler, ParameterList* list);
 static void compile_function(Compiler* compiler, Function* function, FunctionType type);
-static void compile_function_list(Compiler* compiler, FunctionList* list);
-static void compile_declaration_list(Compiler* compiler, DeclarationList* list);
+static size_t compile_function_list(Compiler* compiler, FunctionList* list);
+static size_t compile_declaration_list(Compiler* compiler, DeclarationList* list);
 
 static void compiler_init(Compiler* compiler, VM* vm, FunctionType type, Token identifier)
 {
     compiler->enclosing = vm->compiler;
     vm->compiler = compiler;
 
-    if (compiler->enclosing) {
-        compiler->vm = compiler->enclosing->vm;
-    }
+    compiler->vm = vm;
 
-    compiler->function = NULL;
+    compiler->function = new_function(vm);
     compiler->type = type;
 
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
 
-    compiler->token = empty_token();
-
-    compiler->function = new_function(vm);
-
     if (type != TYPE_SCRIPT) {
         compiler->token = identifier;
         compiler->function->name = copy_string(vm, identifier.start, identifier.length);
+    } else {
+        compiler->token = empty_token();
     }
 
     Local* local = &compiler->locals[compiler->localCount++];
-    local->depth = 0;
-    local->isCaptured = false;
+    local->scopeDepth = 0;
+    local->captured = false;
 
     if (type != TYPE_FUNCTION) {
         local->identifier.start = "this";
@@ -192,6 +188,7 @@ static void emit_return(Compiler* compiler)
     } else {
         emit_byte(compiler, OP_LOAD_NIL);
     }
+
     emit_byte(compiler, OP_RETURN);
 }
 
@@ -211,18 +208,6 @@ static void emit_constant(Compiler* compiler, Value value)
     emit_bytes(compiler, OP_LOAD_CONSTANT, make_constant(compiler, value));
 }
 
-static void patch_jump(Compiler* compiler, size_t offset)
-{
-    size_t jump = current_chunk(compiler)->count - offset - 2;
-
-    if (jump > UINT16_MAX) {
-        error(compiler, "Too much code to jump over.");
-    }
-
-    current_chunk(compiler)->code[offset    ] = (jump >> 0) & 0xFF;
-    current_chunk(compiler)->code[offset + 1] = (jump >> 8) & 0xFF;
-}
-
 static void emit_loop(Compiler* compiler, size_t loopStart)
 {
     emit_byte(compiler, OP_LOOP);
@@ -234,6 +219,18 @@ static void emit_loop(Compiler* compiler, size_t loopStart)
 
     emit_byte(compiler, (offset >> 0) & 0xFF);
     emit_byte(compiler, (offset >> 8) & 0xFF);
+}
+
+static void patch_jump(Compiler* compiler, size_t offset)
+{
+    size_t jump = current_chunk(compiler)->count - offset - 2;
+
+    if (jump > UINT16_MAX) {
+        error(compiler, "Too much code to jump over.");
+    }
+
+    current_chunk(compiler)->code[offset    ] = (jump >> 0) & 0xFF;
+    current_chunk(compiler)->code[offset + 1] = (jump >> 8) & 0xFF;
 }
 
 static ObjFunction* finish_compilation(VM* vm)
@@ -251,6 +248,26 @@ static ObjFunction* finish_compilation(VM* vm)
     return function;
 }
 
+static Local* top_local(Compiler* compiler)
+{
+    return &compiler->locals[compiler->localCount - 1];
+}
+
+static Local* pop_local(Compiler* compiler)
+{
+    compiler->localCount--;
+    return top_local(compiler);
+}
+
+static void remove_locals(Compiler* compiler)
+{
+    Local* local = top_local(compiler);
+    while (compiler->localCount > 0 && local->scopeDepth > compiler->scopeDepth) {
+        emit_byte(compiler, local->captured ? OP_CLOSE_UPVALUE : OP_POP);
+        local = pop_local(compiler);
+    }
+}
+
 static void begin_scope(Compiler* compiler)
 {
     compiler->scopeDepth++;
@@ -259,36 +276,23 @@ static void begin_scope(Compiler* compiler)
 static void end_scope(Compiler* compiler)
 {
     compiler->scopeDepth--;
-
-    while (compiler->localCount > 0 && compiler->locals[compiler->localCount - 1].depth > compiler->scopeDepth) {
-        if (compiler->locals[compiler->localCount - 1].isCaptured) {
-            emit_byte(compiler, OP_CLOSE_UPVALUE);
-        } else {
-            emit_byte(compiler, OP_POP);
-        }
-
-        compiler->localCount--;
-    }
+    remove_locals(compiler);
 }
 
-static void mark_initialized(Compiler* compiler)
+static void initialize_local(Compiler* compiler)
 {
-    if (compiler->scopeDepth == 0) {
-        return;
+    if (compiler->scopeDepth != 0) {
+        top_local(compiler)->scopeDepth = compiler->scopeDepth;
     }
-
-    compiler->locals[compiler->localCount - 1].depth = compiler->scopeDepth;
 }
 
 static void define_variable(Compiler* compiler, uint8_t global)
 {
-    if (compiler->scopeDepth > 0) {
-        mark_initialized(compiler);
-        return;
+    if (compiler->scopeDepth == 0) {
+        emit_bytes(compiler, OP_DEFINE_GLOBAL, global);
+    } else {
+        initialize_local(compiler);
     }
-
-    emit_byte(compiler, OP_DEFINE_GLOBAL);
-    emit_byte(compiler, global);
 }
 
 static void add_local(Compiler* compiler, Token identifier)
@@ -300,8 +304,8 @@ static void add_local(Compiler* compiler, Token identifier)
 
     Local* local = &compiler->locals[compiler->localCount++];
     local->identifier = identifier;
-    local->depth = -1;
-    local->isCaptured = false;
+    local->scopeDepth = -1;
+    local->captured = false;
 }
 
 static int resolve_local(Compiler* compiler, Token* identifier)
@@ -310,7 +314,7 @@ static int resolve_local(Compiler* compiler, Token* identifier)
         Local* local = &compiler->locals[i];
 
         if (lexemes_equal(identifier, &local->identifier)) {
-            if (local->depth == -1) {
+            if (local->scopeDepth == -1) {
                 error(compiler, "Cannot read local variable in its own initializer.");
             }
 
@@ -350,7 +354,7 @@ static int resolve_upvalue(Compiler* compiler, Token* identifier)
 
     int local = resolve_local(compiler->enclosing, identifier);
     if (local != -1) {
-        compiler->enclosing->locals[local].isCaptured = true;
+        compiler->enclosing->locals[local].captured = true;
         return add_upvalue(compiler, (uint8_t)local, true);
     }
 
@@ -370,7 +374,7 @@ static void declare_local_variable(Compiler* compiler, Token identifier)
 
     for (int i = compiler->localCount - 1; i >= 0; i--) {
         Local* local = &compiler->locals[i];
-        if (local->depth != -1 && local->depth < compiler->scopeDepth) {
+        if (local->scopeDepth != -1 && local->scopeDepth < compiler->scopeDepth) {
             break;
         }
 
@@ -382,19 +386,19 @@ static void declare_local_variable(Compiler* compiler, Token identifier)
     add_local(compiler, identifier);
 }
 
-static uint8_t identifier_constant(Compiler* compiler, Token identifier)
+static uint8_t make_identifier_constant(Compiler* compiler, Token identifier)
 {
     return make_constant(compiler, OBJ_VAL(copy_string(compiler->vm, identifier.start, identifier.length)));
 }
 
 static uint8_t declare_variable(Compiler* compiler, Token identifier)
 {
-    declare_local_variable(compiler, identifier);
-    if (compiler->scopeDepth > 0) {
+    if (compiler->scopeDepth == 0) {
+        return make_identifier_constant(compiler, identifier);
+    } else {
+        declare_local_variable(compiler, identifier);
         return 0;
     }
-
-    return identifier_constant(compiler, identifier);
 }
 
 static void named_variable(Compiler* compiler, Token identifier, ExprContext context)
@@ -407,7 +411,7 @@ static void named_variable(Compiler* compiler, Token identifier, ExprContext con
     } else if ((scope = resolve_upvalue(compiler, &identifier)) != -1) {
         operation = context == LOAD ? OP_LOAD_UPVALUE : OP_STORE_UPVALUE;
     } else {
-        scope = identifier_constant(compiler, identifier);
+        scope = make_identifier_constant(compiler, identifier);
         operation = context == LOAD ? OP_LOAD_GLOBAL : OP_STORE_GLOBAL;
     }
     
@@ -435,7 +439,7 @@ static void compile_method(Compiler* compiler, Function* function)
 {
     Token identifier = function->identifier;
     compiler->token = identifier;
-    uint8_t constant = identifier_constant(compiler, identifier);
+    uint8_t name = make_identifier_constant(compiler, identifier);
 
     FunctionType type = TYPE_METHOD;
     if (identifier.length == 4 && memcmp(identifier.start, "init", 4) == 0) {
@@ -443,19 +447,19 @@ static void compile_method(Compiler* compiler, Function* function)
     }
 
     compile_function(compiler, function, type);
-    emit_bytes(compiler, OP_METHOD, constant);
+    emit_bytes(compiler, OP_METHOD, name);
 }
 
 void compile_class_decl(Compiler* compiler, Declaration* decl)
 {
     Token identifier = decl->as.classDecl.identifier;
     compiler->token = identifier;
-    uint8_t nameConstant = identifier_constant(compiler, identifier);
+    uint8_t name = make_identifier_constant(compiler, identifier);
 
     declare_local_variable(compiler, identifier);
 
-    emit_bytes(compiler, OP_CLASS, nameConstant);
-    define_variable(compiler, nameConstant);
+    emit_bytes(compiler, OP_CLASS, name);
+    define_variable(compiler, name);
 
     ClassCompiler classCompiler = { .name = identifier, .enclosing = compiler->vm->classCompiler, .hasSuperclass = false };
     compiler->vm->classCompiler = &classCompiler;
@@ -501,7 +505,7 @@ void compile_function_decl(Compiler* compiler, Declaration* decl)
     Token identifier = decl->as.functionDecl.function->identifier;
     compiler->token = identifier;
     uint8_t global = declare_variable(compiler, identifier);
-    mark_initialized(compiler);
+    initialize_local(compiler);
     compile_function(compiler, decl->as.functionDecl.function, TYPE_FUNCTION);
     define_variable(compiler, global);
 }
@@ -684,15 +688,66 @@ void compile_expression(Compiler* compiler, Expression* expr)
     }
 }
 
-void compile_call_expr(Compiler* compiler, Expression* expr)
+static void compile_invocation(Compiler* compiler, Expression* expr)
 {
-    compile_expression(compiler, expr->as.callExpr.callee);
+    Expression* callee = expr->as.callExpr.callee;
+
+    Expression* object = callee->as.propertyExpr.object;
+    compile_expression(compiler, object);
 
     ArgumentList* arguments = expr->as.callExpr.arguments;
-    uint8_t argumentCount = (uint8_t)ast_argument_list_length(arguments);
-    compile_argument_list(compiler, arguments);
+    uint8_t argumentCount = (uint8_t)compile_argument_list(compiler, arguments);
 
-    emit_bytes(compiler, OP_CALL, argumentCount);
+    Token property = callee->as.propertyExpr.property;
+    compiler->token = property;
+    uint8_t name = make_identifier_constant(compiler, property);
+
+    emit_bytes(compiler, OP_INVOKE, name);
+    emit_byte(compiler, argumentCount);
+}
+
+static void compile_super_invocation(Compiler* compiler, Expression* expr)
+{
+    Expression* callee = expr->as.callExpr.callee;
+
+    Token keyword = callee->as.superExpr.keyword;
+    compiler->token = keyword;
+
+    if (!compiler->vm->classCompiler) {
+        error(compiler, "Cannot use 'super' outside of a class.");
+    } else if (!compiler->vm->classCompiler->hasSuperclass) {
+        error(compiler, "Cannot use 'super' in a class with no superclass.");
+    }
+
+    Token method = callee->as.superExpr.method;
+    compiler->token = method;
+    uint8_t name = make_identifier_constant(compiler, method);
+
+    named_variable(compiler, synthetic_token("this"), LOAD);
+
+    ArgumentList* arguments = expr->as.callExpr.arguments;
+    uint8_t argumentCount = (uint8_t)compile_argument_list(compiler, arguments);
+
+    named_variable(compiler, synthetic_token("super"), LOAD);
+    emit_bytes(compiler, OP_SUPER_INVOKE, name);
+    emit_byte(compiler, argumentCount);
+}
+
+void compile_call_expr(Compiler* compiler, Expression* expr)
+{
+    Expression* callee = expr->as.callExpr.callee;
+    if (callee->type == EXPR_PROPERTY) {
+        compile_invocation(compiler, expr);
+    } else if (callee->type == EXPR_SUPER) {
+        compile_super_invocation(compiler, expr);
+    } else {
+        compile_expression(compiler, callee);
+
+        ArgumentList* arguments = expr->as.callExpr.arguments;
+        uint8_t argumentCount = (uint8_t)compile_argument_list(compiler, arguments);
+
+        emit_bytes(compiler, OP_CALL, argumentCount);
+    }
 }
 
 void compile_property_expr(Compiler* compiler, Expression* expr)
@@ -702,7 +757,7 @@ void compile_property_expr(Compiler* compiler, Expression* expr)
 
     Token property = expr->as.propertyExpr.property;
     compiler->token = property;
-    uint8_t name = identifier_constant(compiler, property);
+    uint8_t name = make_identifier_constant(compiler, property);
 
     ExprContext context = expr->as.propertyExpr.context;
     uint8_t operation = context == LOAD ? OP_LOAD_PROPERTY : OP_STORE_PROPERTY;
@@ -722,7 +777,7 @@ void compile_super_expr(Compiler* compiler, Expression* expr)
 
     Token method = expr->as.superExpr.method;
     compiler->token = method;
-    uint8_t name = identifier_constant(compiler, method);
+    uint8_t name = make_identifier_constant(compiler, method);
 
     named_variable(compiler, synthetic_token("this"), LOAD);
     named_variable(compiler, synthetic_token("super"), LOAD);
@@ -753,38 +808,55 @@ static OpCode compound_opcode(Token op)
     }
 }
 
+static void compile_compound_identifier_assignment(Compiler* compiler, Expression* expr)
+{
+    Expression* target = expr->as.compoundAssignmentExpr.target;
+
+    Token identifier = target->as.identifierExpr.identifier;
+    compiler->token = identifier;
+    named_variable(compiler, identifier, LOAD);
+
+    compile_expression(compiler, expr->as.compoundAssignmentExpr.value);
+
+    Token op = expr->as.compoundAssignmentExpr.op;
+    compiler->token = op;
+    emit_byte(compiler, compound_opcode(op));
+
+    named_variable(compiler, identifier, STORE);
+}
+
+static void compile_compound_property_assignment(Compiler* compiler, Expression* expr)
+{
+    Expression* target = expr->as.compoundAssignmentExpr.target;
+
+    compile_expression(compiler, target->as.propertyExpr.object);
+    emit_byte(compiler, OP_DUP);
+
+    Token property = target->as.propertyExpr.property;
+    compiler->token = property;
+    uint8_t name = make_identifier_constant(compiler, property);
+    emit_bytes(compiler, OP_LOAD_PROPERTY, name);
+
+    compile_expression(compiler, expr->as.compoundAssignmentExpr.value);
+
+    Token op = expr->as.compoundAssignmentExpr.op;
+    compiler->token = op;
+    emit_byte(compiler, compound_opcode(op));
+
+    emit_byte(compiler, OP_SWAP);
+    emit_bytes(compiler, OP_STORE_PROPERTY, name);
+}
+
 void compile_compound_assignment_expr(Compiler* compiler, Expression* expr)
 {
     Expression* target = expr->as.compoundAssignmentExpr.target;
     switch (target->type) {
         case EXPR_IDENTIFIER: {
-            named_variable(compiler, target->as.identifierExpr.identifier, LOAD);
-            compile_expression(compiler, expr->as.compoundAssignmentExpr.value);
-
-            Token op = expr->as.compoundAssignmentExpr.op;
-            compiler->token = op;
-            emit_byte(compiler, compound_opcode(op));
-
-            named_variable(compiler, target->as.identifierExpr.identifier, STORE);
+            compile_compound_identifier_assignment(compiler, expr);
             break;
         }
         case EXPR_PROPERTY: {
-            compile_expression(compiler, target->as.propertyExpr.object);
-            emit_byte(compiler, OP_DUP);
-            
-            Token property = target->as.propertyExpr.property;
-            compiler->token = property;
-            uint8_t name = identifier_constant(compiler, property);
-            emit_bytes(compiler, OP_LOAD_PROPERTY, name);
-
-            compile_expression(compiler, expr->as.compoundAssignmentExpr.value);
-
-            Token op = expr->as.compoundAssignmentExpr.op;
-            compiler->token = op;
-            emit_byte(compiler, compound_opcode(op));
-
-            emit_byte(compiler, OP_SWAP);
-            emit_bytes(compiler, OP_STORE_PROPERTY, name);
+            compile_compound_property_assignment(compiler, expr);
             break;
         }
         default: {
@@ -799,7 +871,7 @@ static void compile_and(Compiler* compiler, Expression* expr)
 
     Token op = expr->as.logicalExpr.op;
     compiler->token = op;
-    size_t endJump = emit_jump(compiler, OP_JUMP_IF_FALSE, op);
+    size_t endJump = emit_jump(compiler, OP_JUMP_IF_FALSE);
 
     emit_byte(compiler, OP_POP);
     compile_expression(compiler, expr->as.logicalExpr.right);
@@ -875,21 +947,18 @@ void compile_unary_expr(Compiler* compiler, Expression* expr)
 
 static void compile_number_literal(Compiler* compiler, Token literal)
 {
-    compiler->token = literal;
     Value value = NUMBER_VAL(strtod(literal.start, NULL));
     emit_constant(compiler, value);
 }
 
 static void compile_string_literal(Compiler* compiler, Token literal)
 {
-    compiler->token = literal;
     Value value = OBJ_VAL(copy_string(compiler->vm, literal.start + 1, literal.length - 2));
     emit_constant(compiler, value);
 }
 
 static void compile_this_literal(Compiler* compiler, Token literal)
 {
-    compiler->token = literal;
     if (!compiler->vm->classCompiler) {
         error(compiler, "Cannot use 'this' outside of a class.");
         return;
@@ -901,9 +970,9 @@ static void compile_this_literal(Compiler* compiler, Token literal)
 static void compile_language_literal(Compiler* compiler, Token literal)
 {
     switch (literal.type) {
-        case TOKEN_TRUE: emit_byte(compiler, OP_LOAD_TRUE, literal); return;
-        case TOKEN_FALSE: emit_byte(compiler, OP_LOAD_FALSE, literal); return;
-        case TOKEN_NIL: emit_byte(compiler, OP_LOAD_NIL, literal); return;
+        case TOKEN_TRUE: emit_byte(compiler, OP_LOAD_TRUE); return;
+        case TOKEN_FALSE: emit_byte(compiler, OP_LOAD_FALSE); return;
+        case TOKEN_NIL: emit_byte(compiler, OP_LOAD_NIL); return;
         case TOKEN_THIS: compile_this_literal(compiler, literal); return;
     }
 }
@@ -911,6 +980,7 @@ static void compile_language_literal(Compiler* compiler, Token literal)
 void compile_literal_expr(Compiler* compiler, Expression* expr)
 {
     Token value = expr->as.literalExpr.value;
+    compiler->token = value;
     switch (value.type) {
         case TOKEN_NUMBER: compile_number_literal(compiler, value); return;
         case TOKEN_STRING: compile_string_literal(compiler, value); return;
@@ -927,7 +997,7 @@ void compile_identifier_expr(Compiler* compiler, Expression* expr)
     named_variable(compiler, identifier, context);
 }
 
-void compile_argument_list(Compiler* compiler, ArgumentList* list)
+size_t compile_argument_list(Compiler* compiler, ArgumentList* list)
 {
     ArgumentList* current = list;
     size_t count = 0;
@@ -943,25 +1013,30 @@ void compile_argument_list(Compiler* compiler, ArgumentList* list)
 
         current = current->next;
     }
+
+    return count;
 }
 
-void compile_parameter_list(Compiler* compiler, ParameterList* list)
+size_t compile_parameter_list(Compiler* compiler, ParameterList* list)
 {
     ParameterList* current = list;
+    size_t count = 0;
     while (current) {
         Token parameter = current->parameter;
         compiler->token = parameter;
 
-        compiler->function->arity++;
-        if (compiler->function->arity > 255) {
-            error(compiler, "Cannot have more than 255 parameters.");
-        }
-
         uint8_t index = declare_variable(compiler, parameter);
         define_variable(compiler, index);
 
+        count++;
+        if (count > 255) {
+            error(compiler, "Cannot have more than 255 parameters.");
+        }
+
         current = current->next;
     }
+
+    return count;
 }
 
 void compile_function(Compiler* compiler, Function* function, FunctionType type)
@@ -971,37 +1046,42 @@ void compile_function(Compiler* compiler, Function* function, FunctionType type)
     compiler_init(&newCompiler, compiler->vm, type, function->identifier);
     begin_scope(&newCompiler);
 
-    compile_parameter_list(&newCompiler, function->parameters);
+    newCompiler.function->arity = (int)compile_parameter_list(&newCompiler, function->parameters);
 
     begin_scope(&newCompiler);
     compile_declaration_list(&newCompiler, function->body);
     end_scope(&newCompiler);
 
-    ObjFunction* compiled = finish_compilation(newCompiler.vm, empty_token());
+    ObjFunction* compiled = finish_compilation(newCompiler.vm);
 
-    emit_bytes(compiler, OP_CLOSURE, make_constant(compiler, OBJ_VAL(compiled), empty_token()), empty_token());
+    emit_bytes(compiler, OP_CLOSURE, make_constant(compiler, OBJ_VAL(compiled)));
     for (size_t i = 0; i < compiled->upvalueCount; i++) {
-        emit_byte(compiler, newCompiler.upvalues[i].isLocal ? 1 : 0, empty_token());
-        emit_byte(compiler, newCompiler.upvalues[i].index, empty_token());
+        emit_byte(compiler, newCompiler.upvalues[i].isLocal ? 1 : 0);
+        emit_byte(compiler, newCompiler.upvalues[i].index);
     }
 }
 
-void compile_function_list(Compiler* compiler, FunctionList* list)
+size_t compile_function_list(Compiler* compiler, FunctionList* list)
 {
     FunctionList* current = list;
+    size_t count = 0;
     while (current) {
         compile_function(compiler, current->function, TYPE_METHOD);
         current = current->next;
+        count++;
     }
+    return count;
 }
 
-void compile_declaration_list(Compiler* compiler, DeclarationList* list)
+size_t compile_declaration_list(Compiler* compiler, DeclarationList* list)
 {
     DeclarationList* current = list;
+    size_t count = 0;
     while (current) {
         compile_declaration(compiler, current->declaration);
         current = current->next;
     }
+    return count;
 }
 
 ObjFunction* compile(VM* vm, const char* source)
@@ -1023,7 +1103,7 @@ ObjFunction* compile(VM* vm, const char* source)
     compiler_init(&compiler, vm, TYPE_SCRIPT, empty_token());
 
     compile_tree(&compiler, ast);
-    ObjFunction* function = finish_compilation(vm, empty_token());
+    ObjFunction* function = finish_compilation(vm);
 
     ast_delete_tree(ast);
 

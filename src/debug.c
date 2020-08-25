@@ -56,7 +56,7 @@ static uint32_t closure_instruction(Chunk* chunk, uint32_t offset)
     for (size_t j = 0; j < function->upvalueCount; j++) {
         uint8_t isLocal = chunk->code[currentOffset++];
         uint8_t index = chunk->code[currentOffset++];
-        printf("%04d      |                     %s %d\n", currentOffset - 2, isLocal ? "local" : "upvalue", index);
+        printf("%04d    |                     %s %d\n", currentOffset - 2, isLocal ? "local" : "upvalue", index);
     }
 
     return currentOffset;
@@ -155,6 +155,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("POP", offset);
         case OP_DUP:
             return simple_instruction("DUP", offset);
+        case OP_SWAP:
+            return simple_instruction("SWAP", offset);
         case OP_DEFINE_GLOBAL:
             return constant_instruction("DEFINE_GLOBAL", chunk, offset);
         case OP_LOAD_GLOBAL:
