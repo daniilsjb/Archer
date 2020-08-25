@@ -12,17 +12,9 @@ class Node {
         }
         
         if (value < this.value) {
-            if (this.left == nil) {
-                return nil;
-            }
-            
-            return this.left.search(value);
+            return this.left ? this.left.search(value) : nil;
         } else {
-            if (this.right == nil) {
-                return nil;
-            }
-            
-            return this.right.search(value);
+            return this.right ? this.right.search(value) : nil;
         }
     }
     

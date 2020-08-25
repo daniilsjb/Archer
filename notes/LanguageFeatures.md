@@ -31,16 +31,6 @@ for (i = 0, j = 10; i < 10; i = i + 1, j = j - 1) {
 }
 ```
 
-#### Ternary Operator
-
-It is often desirable to choose one of two values based on a condition. This could be achieved with an `if-else` statement, but it is rather clumsy. Additionally, it is a statement, meaning it cannot be used if an expression is expected instead. As such, many C-like languages feature a ternary operator, also known as conditional operator. It is proposed that this language implements it as well:
-
-```js
-var x = 10;
-var y = x > 5 ? "Larger" : "Smaller"; //Equals to "Larger"
-var z = y != "Larger" ? 10 : 3;       //Equals to 3
-```
-
 #### Safe Navigation Operator
 
 One of the most annoying issues to deal with in any programming language is the `Null Pointer Exception`, which occurs whenever the program attempts to somehow use an object which has `null` value. The best (as in the worst) example of when this becomes a problem is whenever the program needs to chain field access on an object:

@@ -103,6 +103,7 @@ typedef struct Expression {
         EXPR_ASSIGNMENT,
         EXPR_COMPOUND_ASSIGNMNET,
         EXPR_LOGICAL,
+        EXPR_CONDITIONAL,
         EXPR_BINARY,
         EXPR_UNARY,
         EXPR_PREFIX_INC,
@@ -144,6 +145,12 @@ typedef struct Expression {
             Token op;
             Expression* right;
         } logicalExpr;
+
+        struct {
+            Expression* condition;
+            Expression* thenBranch;
+            Expression* elseBranch;
+        } conditionalExpr;
 
         struct {
             Expression* left;
@@ -245,6 +252,8 @@ Expression* ast_new_compound_assignment_expr(Expression*, Token op, Expression* 
 void ast_delete_compound_assignment_expr(Expression* expression);
 Expression* ast_new_logical_expr(Expression* left, Token op, Expression* right);
 void ast_delete_logical_expr(Expression* expression);
+Expression* ast_new_conditional_expr(Expression* condition, Expression* thenBranch, Expression* elseBranch);
+void ast_delete_conditional_expr(Expression* expression);
 Expression* ast_new_binary_expr(Expression* left, Token op, Expression* right);
 void ast_delete_binary_expr(Expression* expression);
 Expression* ast_new_unary_expr(Token op, Expression* expression);

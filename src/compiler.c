@@ -87,6 +87,7 @@ static void compile_compound_assignment_expr(Compiler* compiler, Expression* exp
 static void compile_postfix_inc_expr(Compiler* compiler, Expression* expr);
 static void compile_prefix_inc_expr(Compiler* compiler, Expression* expr);
 static void compile_logical_expr(Compiler* compiler, Expression* expr);
+static void compile_conditional_expr(Compiler* compiler, Expression* expr);
 static void compile_binary_expr(Compiler* compiler, Expression* expr);
 static void compile_unary_expr(Compiler* compiler, Expression* expr);
 static void compile_literal_expr(Compiler* compiler, Expression* expr);
@@ -685,6 +686,7 @@ void compile_expression(Compiler* compiler, Expression* expr)
         case EXPR_POSTFIX_INC: compile_postfix_inc_expr(compiler, expr); return;
         case EXPR_PREFIX_INC: compile_prefix_inc_expr(compiler, expr); return;
         case EXPR_LOGICAL: compile_logical_expr(compiler, expr); return;
+        case EXPR_CONDITIONAL: compile_conditional_expr(compiler, expr); return;
         case EXPR_BINARY: compile_binary_expr(compiler, expr); return;
         case EXPR_UNARY: compile_unary_expr(compiler, expr); return;
         case EXPR_LITERAL: compile_literal_expr(compiler, expr); return;
@@ -1023,6 +1025,25 @@ void compile_logical_expr(Compiler* compiler, Expression* expr)
         case TOKEN_AND: compile_and(compiler, expr); return;
         case TOKEN_OR: compile_or(compiler, expr); return;
     }
+}
+
+void compile_conditional_expr(Compiler* compiler, Expression* expr)
+{
+    Expression* condition = expr->as.conditionalExpr.condition;
+    compile_expression(compiler, condition);
+
+    size_t elseJump = emit_jump(compiler, OP_JUMP_IF_FALSE);
+
+    Expression* thenBranch = expr->as.conditionalExpr.thenBranch;
+    compile_expression(compiler, thenBranch);
+
+    size_t endJump = emit_jump(compiler, OP_JUMP);
+    patch_jump(compiler, elseJump);
+
+    Expression* elseBranch = expr->as.conditionalExpr.elseBranch;
+    compile_expression(compiler, elseBranch);
+
+    patch_jump(compiler, endJump);
 }
 
 void compile_binary_expr(Compiler* compiler, Expression* expr)

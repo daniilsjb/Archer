@@ -286,6 +286,7 @@ void ast_delete_expression(Expression* expression)
         case EXPR_POSTFIX_INC: ast_delete_postfix_inc_expr(expression); return;
         case EXPR_PREFIX_INC: ast_delete_prefix_inc_expr(expression); return;
         case EXPR_LOGICAL: ast_delete_logical_expr(expression); return;
+        case EXPR_CONDITIONAL: ast_delete_conditional_expr(expression); return;
         case EXPR_BINARY: ast_delete_binary_expr(expression); return;
         case EXPR_UNARY: ast_delete_unary_expr(expression); return;
         case EXPR_LITERAL: ast_delete_literal_expr(expression); return;
@@ -410,6 +411,28 @@ void ast_delete_logical_expr(Expression* expression)
 {
     ast_delete_expression(expression->as.logicalExpr.left);
     ast_delete_expression(expression->as.logicalExpr.right);
+    raw_deallocate(expression);
+}
+
+Expression* ast_new_conditional_expr(Expression* condition, Expression* thenBranch, Expression* elseBranch)
+{
+    Expression* expr = raw_allocate(sizeof(Expression));
+    if (!expr) {
+        return NULL;
+    }
+
+    expr->type = EXPR_CONDITIONAL;
+    expr->as.conditionalExpr.condition = condition;
+    expr->as.conditionalExpr.thenBranch = thenBranch;
+    expr->as.conditionalExpr.elseBranch = elseBranch;
+    return expr;
+}
+
+void ast_delete_conditional_expr(Expression* expression)
+{
+    ast_delete_expression(expression->as.conditionalExpr.condition);
+    ast_delete_expression(expression->as.conditionalExpr.thenBranch);
+    ast_delete_expression(expression->as.conditionalExpr.elseBranch);
     raw_deallocate(expression);
 }
 

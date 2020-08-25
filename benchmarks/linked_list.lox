@@ -18,11 +18,7 @@ class Node {
             return this;
         }
         
-        if (this.next == nil) {
-            return nil;
-        }
-        
-        return this.next.search(value);
+        return this.next ? this.next.search(value) : nil;
     }
     
 }

@@ -29,6 +29,7 @@ static void print_compound_assignment_expr(int indent, Expression* expr);
 static void print_postfix_inc_expr(int indent, Expression* expr);
 static void print_prefix_inc_expr(int indent, Expression* expr);
 static void print_logical_expr(int indent, Expression* expr);
+static void print_conditional_expr(int indent, Expression* expr);
 static void print_binary_expr(int indent, Expression* expr);
 static void print_unary_expr(int indent, Expression* expr);
 static void print_literal_expr(int indent, Expression* expr);
@@ -279,6 +280,7 @@ void print_expression(int indent, Expression* expr)
         case EXPR_POSTFIX_INC: print_postfix_inc_expr(indent, expr); return;
         case EXPR_PREFIX_INC: print_prefix_inc_expr(indent, expr); return;
         case EXPR_LOGICAL: print_logical_expr(indent, expr); return;
+        case EXPR_CONDITIONAL: print_conditional_expr(indent, expr); return;
         case EXPR_BINARY: print_binary_expr(indent, expr); return;
         case EXPR_UNARY: print_unary_expr(indent, expr); return;
         case EXPR_LITERAL: print_literal_expr(indent, expr); return;
@@ -397,6 +399,24 @@ void print_logical_expr(int indent, Expression* expr)
     Expression* right = expr->as.logicalExpr.right;
     print_indented(indent, "Right:\n");
     print_expression(indent + 1, right);
+}
+
+void print_conditional_expr(int indent, Expression* expr)
+{
+    print_header(indent, "Conditional");
+    indent++;
+
+    Expression* condition = expr->as.conditionalExpr.condition;
+    print_indented(indent, "Condition:\n");
+    print_expression(indent + 1, condition);
+
+    Expression* thenBranch = expr->as.conditionalExpr.thenBranch;
+    print_indented(indent, "Then:\n");
+    print_expression(indent + 1, thenBranch);
+
+    Expression* elseBranch = expr->as.conditionalExpr.elseBranch;
+    print_indented(indent, "Else:\n");
+    print_expression(indent + 1, elseBranch);
 }
 
 void print_binary_expr(int indent, Expression* expr)

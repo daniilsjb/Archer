@@ -17,7 +17,6 @@ typedef struct {
 
 typedef enum {
     PREC_NONE,
-    PREC_COMMA,
     PREC_ASSIGNMENT,
     PREC_CONDITIONAL,
     PREC_LOGICAL_OR,
@@ -73,6 +72,7 @@ static Expression* postfix_inc_expr(Parser* parser, Expression* prefix);
 static Expression* assignment_expr(Parser* parser, Expression* prefix);
 static Expression* compound_assignment_expr(Parser* parser, Expression* prefix);
 static Expression* logical_expr(Parser* parser, Expression* prefix);
+static Expression* conditional_expr(Parser* parser, Expression* prefix);
 static Expression* binary_expr(Parser* parser, Expression* prefix);
 
 static ArgumentList* arguments_rule(Parser* parser);
@@ -96,7 +96,7 @@ ParseRule rules[] = {
     [TOKEN_COMMA]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_DOT]               = { NULL,            property_expr,            PREC_POSTFIX,        ASSOC_LEFT   },
     [TOKEN_SEMICOLON]         = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_QUESTION]          = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_QUESTION]          = { NULL,            conditional_expr,         PREC_CONDITIONAL,    ASSOC_RIGHT  },
     [TOKEN_COLON]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_TILDE]             = { unary_expr,      NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_MINUS]             = { unary_expr,      binary_expr,              PREC_ADDITIVE,       ASSOC_LEFT   },
@@ -454,7 +454,7 @@ Statement* expression_stmt(Parser* parser)
 
 Expression* expression(Parser* parser)
 {
-    return parse_precedence(parser, PREC_COMMA);
+    return parse_precedence(parser, PREC_ASSIGNMENT);
 }
 
 Expression* literal_expr(Parser* parser)
@@ -565,6 +565,14 @@ Expression* logical_expr(Parser* parser, Expression* prefix)
     return ast_new_logical_expr(prefix, op, right);
 }
 
+Expression* conditional_expr(Parser* parser, Expression* prefix)
+{
+    Expression* thenBranch = expression(parser);
+    consume(parser, TOKEN_COLON, "Expected ':' in conditional expression.");
+    Expression* elseBranch = parse_precedence(parser, PREC_CONDITIONAL);
+    return ast_new_conditional_expr(prefix, thenBranch, elseBranch);
+}
+
 ArgumentList* arguments_rule(Parser* parser)
 {
     ArgumentList* arguments = NULL;
@@ -573,7 +581,7 @@ ArgumentList* arguments_rule(Parser* parser)
             if (ast_argument_list_length(arguments) > 255) {
                 error(parser, "Cannot have more than 255 arguments.");
             }
-            ast_argument_list_append(&arguments, parse_precedence(parser, PREC_ASSIGNMENT));
+            ast_argument_list_append(&arguments, expression(parser));
         } while (match(parser, TOKEN_COMMA));
     }
 
