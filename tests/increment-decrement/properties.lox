@@ -1,0 +1,15 @@
+class Foo {}
+var foo = Foo();
+foo.x = 10;
+
+print --foo.x; //Expected: 9
+print foo.x;   //Expected: 9
+
+print ++foo.x; //Expected: 10
+print foo.x;   //Expected: 10
+
+print foo.x++; //Expected: 10
+print foo.x;   //Expected: 11
+
+print foo.x--; //Expected: 11
+print foo.x;   //Expected: 10

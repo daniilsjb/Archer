@@ -1,0 +1,15 @@
+class Foo {}
+
+var foo = Foo();
+foo.field = 10;
+foo.counter = 0;
+
+fun getFoo() {
+    foo.counter++;
+    return foo;
+}
+
+
+print getFoo().field++; //Expected: 10
+print foo.field;        //Expected: 11
+print foo.counter;      //Expected: 1

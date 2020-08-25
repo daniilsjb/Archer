@@ -63,11 +63,13 @@ static Statement* expression_stmt(Parser* parser);
 static Expression* expression(Parser* parser);
 static Expression* literal_expr(Parser* parser);
 static Expression* identifier_expr(Parser* parser);
+static Expression* prefix_inc_expr(Parser* parser);
 static Expression* unary_expr(Parser* parser);
 static Expression* grouping_expr(Parser* parser);
 static Expression* super_expr(Parser* parser);
 static Expression* call_expr(Parser* parser, Expression* prefix);
 static Expression* property_expr(Parser* parser, Expression* prefix);
+static Expression* postfix_inc_expr(Parser* parser, Expression* prefix);
 static Expression* assignment_expr(Parser* parser, Expression* prefix);
 static Expression* compound_assignment_expr(Parser* parser, Expression* prefix);
 static Expression* logical_expr(Parser* parser, Expression* prefix);
@@ -99,10 +101,10 @@ ParseRule rules[] = {
     [TOKEN_TILDE]             = { unary_expr,      NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_MINUS]             = { unary_expr,      binary_expr,              PREC_ADDITIVE,       ASSOC_LEFT   },
     [TOKEN_MINUS_EQUAL]       = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_DOUBLE_MINUS]      = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_DOUBLE_MINUS]      = { prefix_inc_expr, postfix_inc_expr,         PREC_POSTFIX,        ASSOC_LEFT   },
     [TOKEN_PLUS]              = { NULL,            binary_expr,              PREC_ADDITIVE,       ASSOC_LEFT   },
     [TOKEN_PLUS_EQUAL]        = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_DOUBLE_PLUS]       = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_DOUBLE_PLUS]       = { prefix_inc_expr, postfix_inc_expr,         PREC_POSTFIX,        ASSOC_LEFT   },
     [TOKEN_STAR]              = { NULL,            binary_expr,              PREC_MULTIPLICATIVE, ASSOC_LEFT   },
     [TOKEN_STAR_EQUAL]        = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
     [TOKEN_DOUBLE_STAR]       = { NULL,            binary_expr,              PREC_EXPONENTIATION, ASSOC_RIGHT  },
@@ -465,6 +467,25 @@ Expression* identifier_expr(Parser* parser)
     return ast_new_identifier_expr(parser->previous, LOAD);
 }
 
+static void set_assignment_context(Parser* parser, Expression* expr)
+{
+    if (expr->type == EXPR_IDENTIFIER) {
+        expr->as.identifierExpr.context = STORE;
+    } else if (expr->type == EXPR_PROPERTY) {
+        expr->as.propertyExpr.context = STORE;
+    } else {
+        error(parser, "Invalid assignment target.");
+    }
+}
+
+Expression* prefix_inc_expr(Parser* parser)
+{
+    Token op = parser->previous;
+    Expression* expr = parse_precedence(parser, PREC_UNARY);
+    set_assignment_context(parser, expr);
+    return ast_new_prefix_inc_expr(op, expr);
+}
+
 Expression* unary_expr(Parser* parser)
 {
     Token op = parser->previous;
@@ -501,6 +522,13 @@ Expression* property_expr(Parser* parser, Expression* prefix)
     return ast_new_property_expr(prefix, parser->previous, LOAD);
 }
 
+Expression* postfix_inc_expr(Parser* parser, Expression* prefix)
+{
+    set_assignment_context(parser, prefix);
+    Token op = parser->previous;
+    return ast_new_postfix_inc_expr(op, prefix);
+}
+
 Expression* binary_expr(Parser* parser, Expression* prefix)
 {
     Token op = parser->previous;
@@ -514,13 +542,7 @@ Expression* binary_expr(Parser* parser, Expression* prefix)
 
 Expression* assignment_expr(Parser* parser, Expression* prefix)
 {
-    if (prefix->type == EXPR_IDENTIFIER) {
-        prefix->as.identifierExpr.context = STORE;
-    } else if (prefix->type == EXPR_PROPERTY) {
-        prefix->as.propertyExpr.context = STORE;
-    } else {
-        error(parser, "Invalid assignment target.");
-    }
+    set_assignment_context(parser, prefix);
 
     Expression* value = parse_precedence(parser, PREC_ASSIGNMENT);
     return ast_new_assignment_expr(prefix, value);
@@ -528,13 +550,7 @@ Expression* assignment_expr(Parser* parser, Expression* prefix)
 
 Expression* compound_assignment_expr(Parser* parser, Expression* prefix)
 {
-    if (prefix->type == EXPR_IDENTIFIER) {
-        prefix->as.identifierExpr.context = STORE;
-    } else if (prefix->type == EXPR_PROPERTY) {
-        prefix->as.propertyExpr.context = STORE;
-    } else {
-        error(parser, "Invalid assignment target.");
-    }
+    set_assignment_context(parser, prefix);
 
     Token op = parser->previous;
     Expression* value = parse_precedence(parser, PREC_ASSIGNMENT);

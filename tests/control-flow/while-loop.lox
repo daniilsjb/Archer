@@ -1,7 +1,7 @@
 var i = 0;
 while (i < 10) {
     print i;
-    i += 1;
+    i++;
 }
 
 //Expected: 0
@@ -24,11 +24,11 @@ while (j < 3) {
     var k = 0;
     while (k < 3) {
         print k;
-        k += 1;
+        k++;
     }
     
     print j;
-    j += 1;
+    j++;
 }
 
 //Expected: 0

@@ -26,6 +26,8 @@ static void print_property_expr(int indent, Expression* expr);
 static void print_super_expr(int indent, Expression* expr);
 static void print_assignment_expr(int indent, Expression* expr);
 static void print_compound_assignment_expr(int indent, Expression* expr);
+static void print_postfix_inc_expr(int indent, Expression* expr);
+static void print_prefix_inc_expr(int indent, Expression* expr);
 static void print_logical_expr(int indent, Expression* expr);
 static void print_binary_expr(int indent, Expression* expr);
 static void print_unary_expr(int indent, Expression* expr);
@@ -274,6 +276,8 @@ void print_expression(int indent, Expression* expr)
         case EXPR_SUPER: print_super_expr(indent, expr); return;
         case EXPR_ASSIGNMENT: print_assignment_expr(indent, expr); return;
         case EXPR_COMPOUND_ASSIGNMNET: print_compound_assignment_expr(indent, expr); return;
+        case EXPR_POSTFIX_INC: print_postfix_inc_expr(indent, expr); return;
+        case EXPR_PREFIX_INC: print_prefix_inc_expr(indent, expr); return;
         case EXPR_LOGICAL: print_logical_expr(indent, expr); return;
         case EXPR_BINARY: print_binary_expr(indent, expr); return;
         case EXPR_UNARY: print_unary_expr(indent, expr); return;
@@ -350,6 +354,32 @@ void print_compound_assignment_expr(int indent, Expression* expr)
     Expression* value = expr->as.compoundAssignmentExpr.value;
     print_indented(indent, "Value:\n");
     print_expression(indent + 1, value);
+}
+
+void print_postfix_inc_expr(int indent, Expression* expr)
+{
+    print_header(indent, "Postfix Increment");
+    indent++;
+
+    Expression* target = expr->as.postfixIncExpr.target;
+    print_indented(indent, "Target:\n");
+    print_expression(indent + 1, target);
+
+    Token op = expr->as.postfixIncExpr.op;
+    print_token_field(indent, "Operator", op);
+}
+
+void print_prefix_inc_expr(int indent, Expression* expr)
+{
+    print_header(indent, "Prefix Increment");
+    indent++;
+
+    Expression* target = expr->as.prefixIncExpr.target;
+    print_indented(indent, "Target:\n");
+    print_expression(indent + 1, target);
+
+    Token op = expr->as.prefixIncExpr.op;
+    print_token_field(indent, "Operator", op);
 }
 
 void print_logical_expr(int indent, Expression* expr)

@@ -8,7 +8,7 @@ fun remainder(x, y) {
 var begin = clock();
 
 var result;
-for (var i = 0; i < 20000; i += 1) {
+for (var i = 0; i < 20000; i++) {
     result = remainder(i, 5);
 }
 print result;

@@ -8,19 +8,6 @@ This document contains various notes and thoughts regarding the set of new featu
 
 ### Operators
 
-#### Increment and Decrement
-
-Under certain circumstances, the program needs to either increment or decrement a numeric value exactly by one. Like the majority of C-like languages, it is desirable to add support for both `++` and `--` operators, preferably in both postfix and prefix forms. Consider:
-
-```js
-var x = 10;
-print x++; //Prints 10, x is now 11
-print ++x; //Prints 12, x is now 12
-
-print x--; //Prints 12, x is now 11
-print --x; //Prints 10, x is now 10
-```
-
 #### Comma Operator
 
 Many C-like languages feature the comma operator, which lets programmers insert multiple expressions where only a single is expected, discarding the results of all but the last last expression. For example:

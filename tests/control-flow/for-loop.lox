@@ -1,4 +1,4 @@
-for (var i = 0; i < 5; i += 1) {
+for (var i = 0; i < 5; i++) {
     print i;
 }
 
@@ -20,8 +20,8 @@ for ( ; j < 5; ) {
 //Expected: 3
 //Expected: 4
 
-for (var i = 0; i < 3; i += 1) {
-    for (var j = 0; j < 3; j += 1) {
+for (var i = 0; i < 3; i++) {
+    for (var j = 0; j < 3; j++) {
         print j;
     }
     print i;

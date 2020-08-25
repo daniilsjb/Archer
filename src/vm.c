@@ -316,6 +316,7 @@ static InterpretStatus run(VM* vm)
 
 #define TOP vm->stackTop[-1]
 #define SND vm->stackTop[-2]
+#define THD vm->stackTop[-3]
 
 #define PUSH(value) vm_push(vm, (value))
 #define POP() vm_pop(vm)
@@ -406,6 +407,22 @@ static InterpretStatus run(VM* vm)
                 }
 
                 TOP = NUMBER_VAL(-AS_NUMBER(TOP));
+                break;
+            }
+            case OP_DEC: {
+                if (!IS_NUMBER(TOP)) {
+                    return runtime_error(vm, "Operand must be a number.");
+                }
+
+                TOP = NUMBER_VAL(AS_NUMBER(TOP) - 1);
+                break;
+            }
+            case OP_INC: {
+                if (!IS_NUMBER(TOP)) {
+                    return runtime_error(vm, "Operand must be a number.");
+                }
+
+                TOP = NUMBER_VAL(AS_NUMBER(TOP) + 1);
                 break;
             }
             case OP_ADD: {
@@ -559,6 +576,16 @@ static InterpretStatus run(VM* vm)
                 Value tmp = SND;
                 SND = TOP;
                 TOP = tmp;
+                break;
+            }
+            case OP_SWAP_THREE: {
+                Value oldThd = THD;
+                THD = TOP;
+
+                Value oldSnd = SND;
+                SND = oldThd;
+
+                TOP = oldSnd;
                 break;
             }
             case OP_DEFINE_GLOBAL: {
@@ -758,6 +785,7 @@ static InterpretStatus run(VM* vm)
 
 #undef TOP
 #undef SND
+#undef THD
 
 #undef PUSH
 #undef POP

@@ -84,6 +84,8 @@ static void compile_property_expr(Compiler* compiler, Expression* expr);
 static void compile_super_expr(Compiler* compiler, Expression* expr);
 static void compile_assignment_expr(Compiler* compiler, Expression* expr);
 static void compile_compound_assignment_expr(Compiler* compiler, Expression* expr);
+static void compile_postfix_inc_expr(Compiler* compiler, Expression* expr);
+static void compile_prefix_inc_expr(Compiler* compiler, Expression* expr);
 static void compile_logical_expr(Compiler* compiler, Expression* expr);
 static void compile_binary_expr(Compiler* compiler, Expression* expr);
 static void compile_unary_expr(Compiler* compiler, Expression* expr);
@@ -680,6 +682,8 @@ void compile_expression(Compiler* compiler, Expression* expr)
         case EXPR_SUPER: compile_super_expr(compiler, expr); return;
         case EXPR_ASSIGNMENT: compile_assignment_expr(compiler, expr); return;
         case EXPR_COMPOUND_ASSIGNMNET: compile_compound_assignment_expr(compiler, expr); return;
+        case EXPR_POSTFIX_INC: compile_postfix_inc_expr(compiler, expr); return;
+        case EXPR_PREFIX_INC: compile_prefix_inc_expr(compiler, expr); return;
         case EXPR_LOGICAL: compile_logical_expr(compiler, expr); return;
         case EXPR_BINARY: compile_binary_expr(compiler, expr); return;
         case EXPR_UNARY: compile_unary_expr(compiler, expr); return;
@@ -861,6 +865,123 @@ void compile_compound_assignment_expr(Compiler* compiler, Expression* expr)
         }
         default: {
             error(compiler, "Invalid compund assignment target.");
+        }
+    }
+}
+
+static OpCode increment_operation(Token token)
+{
+    switch (token.type) {
+        case TOKEN_DOUBLE_PLUS: return OP_INC;
+        case TOKEN_DOUBLE_MINUS: return OP_DEC;
+        default: return -1;
+    }
+}
+
+static void compile_identifier_postfix_inc(Compiler* compiler, Expression* expr)
+{
+    Expression* target = expr->as.postfixIncExpr.target;
+
+    Token identifier = target->as.identifierExpr.identifier;
+    compiler->token = identifier;
+    named_variable(compiler, identifier, LOAD);
+    emit_byte(compiler, OP_DUP);
+
+    Token op = expr->as.postfixIncExpr.op;
+    compiler->token = op;
+    emit_byte(compiler, increment_operation(op));
+
+    named_variable(compiler, identifier, STORE);
+    emit_byte(compiler, OP_POP);
+}
+
+static void compile_property_postfix_inc(Compiler* compiler, Expression* expr)
+{
+    Expression* target = expr->as.postfixIncExpr.target;
+
+    compile_expression(compiler, target->as.propertyExpr.object);
+    emit_byte(compiler, OP_DUP);
+
+    Token property = target->as.propertyExpr.property;
+    compiler->token = property;
+    uint8_t name = make_identifier_constant(compiler, property);
+    emit_bytes(compiler, OP_LOAD_PROPERTY, name);
+    emit_bytes(compiler, OP_DUP, OP_SWAP_THREE);
+
+    Token op = expr->as.postfixIncExpr.op;
+    compiler->token = op;
+    emit_byte(compiler, increment_operation(op));
+
+    emit_byte(compiler, OP_SWAP);
+    emit_bytes(compiler, OP_STORE_PROPERTY, name);
+    emit_byte(compiler, OP_POP);
+}
+
+void compile_postfix_inc_expr(Compiler* compiler, Expression* expr)
+{
+    Expression* target = expr->as.postfixIncExpr.target;
+    switch (target->type) {
+        case EXPR_IDENTIFIER: {
+            compile_identifier_postfix_inc(compiler, expr);
+            break;
+        }
+        case EXPR_PROPERTY: {
+            compile_property_postfix_inc(compiler, expr);
+            break;
+        }
+        default: {
+            error(compiler, "Invalid assignment target.");
+        }
+    }
+}
+
+static void compile_identifier_prefix_inc(Compiler* compiler, Expression* expr)
+{
+    Expression* target = expr->as.prefixIncExpr.target;
+    Token identifier = target->as.identifierExpr.identifier;
+    compiler->token = identifier;
+
+    named_variable(compiler, identifier, LOAD);
+
+    Token op = expr->as.prefixIncExpr.op;
+    emit_byte(compiler, increment_operation(op));
+
+    named_variable(compiler, identifier, STORE);
+}
+
+static void compile_property_prefix_inc(Compiler* compiler, Expression* expr)
+{
+    Expression* target = expr->as.prefixIncExpr.target;
+
+    compile_expression(compiler, target->as.propertyExpr.object);
+    emit_byte(compiler, OP_DUP);
+
+    Token property = target->as.propertyExpr.property;
+    compiler->token = property;
+    uint8_t name = make_identifier_constant(compiler, property);
+    emit_bytes(compiler, OP_LOAD_PROPERTY, name);
+
+    Token op = expr->as.prefixIncExpr.op;
+    emit_byte(compiler, increment_operation(op));
+
+    emit_byte(compiler, OP_SWAP);
+    emit_bytes(compiler, OP_STORE_PROPERTY, name);
+}
+
+void compile_prefix_inc_expr(Compiler* compiler, Expression* expr)
+{
+    Expression* target = expr->as.prefixIncExpr.target;
+    switch (target->type) {
+        case EXPR_IDENTIFIER: {
+            compile_identifier_prefix_inc(compiler, expr);
+            break;
+        }
+        case EXPR_PROPERTY: {
+            compile_property_prefix_inc(compiler, expr);
+            break;
+        }
+        default: {
+            error(compiler, "Invalid assignment target.");
         }
     }
 }

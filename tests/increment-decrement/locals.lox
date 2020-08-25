@@ -1,0 +1,15 @@
+{
+    var x = 10;
+
+    print --x; //Expected: 9
+    print x;   //Expected: 9
+
+    print ++x; //Expected: 10
+    print x;   //Expected: 10
+
+    print x++; //Expected: 10
+    print x;   //Expected: 11
+
+    print x--; //Expected: 11
+    print x;   //Expected: 10
+}

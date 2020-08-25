@@ -29,7 +29,7 @@ BlockStmt → "{" Declaration* "}"
 ExprStmt → Expression ";"
 
 Expression → AssignmentExpr
-AssignmentExpr → ( ( CallExpr "." )? IDENTIFIER AssignOp AssignmentExpr ) | LogicOrExpr
+AssignmentExpr → ( ( PostfixExpr "." )? IDENTIFIER AssignOp AssignmentExpr ) | LogicOrExpr
 LogicOrExpr → LogicAndExpr ( "or" LogicAndExpr )*
 LogicAndExpr → BitwiseOrExpr ( "and" BitwiseOrExpr )*
 BitwiseOrExpr → BitwiseXorExpr ( "|" BitwiseXorExpr )*
@@ -41,8 +41,8 @@ BitwiseShiftExpr → AdditionExpr ( ( "<<" | ">>" ) AdditionExpr )*
 AdditionExpr → MultiplicationExpr ( ( "+" | "-" ) MultiplicationExpr )*
 MultiplicationExpr → ExponentiationExpr ( ( "*" | "/" | "%" ) ExponentiationExpr )*
 ExponentiationExpr → UnaryExpr ( ( "**" UnaryExpr ) )*
-UnaryExpr → ( "!" | "-" ) UnaryExpr | CallExpr
-CallExpr → PrimaryExpr ( "(" Arguments? ")" | "." IDENTIFIER )*
+UnaryExpr → ( "!" | "-" | "++" | "--" ) UnaryExpr | PostfixExpr
+PostfixExpr → PrimaryExpr ( "(" Arguments? ")" | "." IDENTIFIER )* ( "++" | "--" )?
 PrimaryExpr → "true" | "false" | "nil" | "this"
             | STRING | NUMBER | IDENTIFIER | "(" Expression ")"
             | "super" "." IDENTIFIER

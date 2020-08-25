@@ -117,6 +117,10 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("NOT", offset);
         case OP_NEGATE:
             return simple_instruction("NEGATE", offset);
+        case OP_INC:
+            return simple_instruction("INC", offset);
+        case OP_DEC:
+            return simple_instruction("DEC", offset);
         case OP_ADD:
             return simple_instruction("ADD", offset);
         case OP_SUBTRACT:
@@ -157,6 +161,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("DUP", offset);
         case OP_SWAP:
             return simple_instruction("SWAP", offset);
+        case OP_SWAP_THREE:
+            return simple_instruction("SWAP_THREE", offset);
         case OP_DEFINE_GLOBAL:
             return constant_instruction("DEFINE_GLOBAL", chunk, offset);
         case OP_LOAD_GLOBAL:

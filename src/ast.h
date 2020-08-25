@@ -105,6 +105,8 @@ typedef struct Expression {
         EXPR_LOGICAL,
         EXPR_BINARY,
         EXPR_UNARY,
+        EXPR_PREFIX_INC,
+        EXPR_POSTFIX_INC,
         EXPR_LITERAL,
         EXPR_IDENTIFIER
     } type;
@@ -148,6 +150,16 @@ typedef struct Expression {
             Token op;
             Expression* right;
         } binaryExpr;
+
+        struct {
+            Token op;
+            Expression* target;
+        } prefixIncExpr;
+
+        struct {
+            Token op;
+            Expression* target;
+        } postfixIncExpr;
 
         struct {
             Token op;
@@ -237,6 +249,10 @@ Expression* ast_new_binary_expr(Expression* left, Token op, Expression* right);
 void ast_delete_binary_expr(Expression* expression);
 Expression* ast_new_unary_expr(Token op, Expression* expression);
 void ast_delete_unary_expr(Expression* expression);
+Expression* ast_new_postfix_inc_expr(Token op, Expression* expression);
+void ast_delete_postfix_inc_expr(Expression* expression);
+Expression* ast_new_prefix_inc_expr(Token op, Expression* expression);
+void ast_delete_prefix_inc_expr(Expression* expression);
 Expression* ast_new_literal_expr(Token value);
 void ast_delete_literal_expr(Expression* expression);
 Expression* ast_new_identifier_expr(Token identifier, ExprContext context);
