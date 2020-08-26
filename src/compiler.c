@@ -1138,7 +1138,7 @@ void compile_conditional_expr(Compiler* compiler, Expression* expr)
     Expression* condition = expr->as.conditionalExpr.condition;
     compile_expression(compiler, condition);
 
-    size_t elseJump = emit_jump(compiler, OP_JUMP_IF_FALSE);
+    size_t elseJump = emit_jump(compiler, OP_POP_JUMP_IF_FALSE);
 
     Expression* thenBranch = expr->as.conditionalExpr.thenBranch;
     compile_expression(compiler, thenBranch);
