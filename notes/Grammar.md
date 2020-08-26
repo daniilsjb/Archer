@@ -16,6 +16,7 @@ Statement → ForStmt
           | WhileStmt
           | BreakStmt
           | ContinueStmt
+          | WhenStmt
           | IfStmt
           | ReturnStmt
           | PrintStmt
@@ -26,6 +27,7 @@ ForStmt → "for" "(" ( VariableDecl | ExprStmt | ";" ) Expression? ";" Expressi
 WhileStmt → "while" "(" Expression ")" Statement
 BreakStmt → "break" ";"
 ContinueStmt → "continue" ";"
+WhenStmt → "when" "(" Expression ")" "{" WhenEntry* ( "else" "->" Statement )? "}"
 IfStmt → "if" "(" Expression ")" Statement ( "else" Statement )?
 ReturnStmt → "return" Expression? ";"
 PrintStmt → "print" Expression ";"
@@ -52,6 +54,7 @@ PrimaryExpr → "true" | "false" | "nil" | "this"
             | STRING | NUMBER | IDENTIFIER | "(" Expression ")"
             | "super" "." IDENTIFIER
 
+WhenEntry → Expression ( "," Expression )* "->" Statement
 Function → IDENTIFIER "(" Parameters? ")" BlockStmt
 Parameters → IDENTIFIER ( "," IDENTIFIER )*
 Arguments → Expression ( "," Expression )*

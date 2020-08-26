@@ -55,6 +55,7 @@ static Statement* for_stmt(Parser* parser);
 static Statement* while_stmt(Parser* parser);
 static Statement* break_stmt(Parser* parser);
 static Statement* continue_stmt(Parser* parser);
+static Statement* when_stmt(Parser* parser);
 static Statement* if_stmt(Parser* parser);
 static Statement* return_stmt(Parser* parser);
 static Statement* print_stmt(Parser* parser);
@@ -77,6 +78,8 @@ static Expression* logical_expr(Parser* parser, Expression* prefix);
 static Expression* conditional_expr(Parser* parser, Expression* prefix);
 static Expression* binary_expr(Parser* parser, Expression* prefix);
 
+static WhenEntry* when_entry_rule(Parser* parser);
+static WhenEntryList* when_entries_rule(Parser* parser);
 static ArgumentList* arguments_rule(Parser* parser);
 static Function* function_rule(Parser* parser);
 static ParameterList* parameters_rule(Parser* parser);
@@ -257,6 +260,7 @@ static void synchronize(Parser* parser)
             case TOKEN_FUN: return;
             case TOKEN_VAR: return;
             case TOKEN_FOR: return;
+            case TOKEN_WHEN: return;
             case TOKEN_IF: return;
             case TOKEN_WHILE: return;
             case TOKEN_PRINT: return;
@@ -361,6 +365,7 @@ Statement* statement(Parser* parser)
         case TOKEN_WHILE: advance(parser); return while_stmt(parser);
         case TOKEN_BREAK: advance(parser); return break_stmt(parser);
         case TOKEN_CONTINUE: advance(parser); return continue_stmt(parser);
+        case TOKEN_WHEN: advance(parser); return when_stmt(parser);
         case TOKEN_IF: advance(parser); return if_stmt(parser);
         case TOKEN_RETURN: advance(parser); return return_stmt(parser);
         case TOKEN_PRINT: advance(parser);  return print_stmt(parser);
@@ -415,6 +420,27 @@ Statement* continue_stmt(Parser* parser)
 {
     consume(parser, TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
     return ast_new_continue_stmt(parser->previous);
+}
+
+Statement* when_stmt(Parser* parser)
+{
+    consume(parser, TOKEN_L_PAREN, "Expected '(' before control expression in 'when'.");
+    Expression* control = expression(parser);
+    consume(parser, TOKEN_R_PAREN, "Expected ')' after control expression in 'when'.");
+
+    consume(parser, TOKEN_L_BRACE, "Expected '{' before 'when' body.");
+
+    WhenEntryList* entries = when_entries_rule(parser);
+
+    Statement* elseBranch = NULL;
+    if (match(parser, TOKEN_ELSE)) {
+        consume(parser, TOKEN_R_ARROW, "Expected '->' after 'else' in 'when'.");
+        elseBranch = statement(parser);
+    }
+
+    consume(parser, TOKEN_R_BRACE, "Expected '}' after 'when' body.");
+
+    return ast_new_when_stmt(control, entries, elseBranch);
 }
 
 Statement* if_stmt(Parser* parser)
@@ -587,6 +613,29 @@ Expression* conditional_expr(Parser* parser, Expression* prefix)
     consume(parser, TOKEN_COLON, "Expected ':' in conditional expression.");
     Expression* elseBranch = parse_precedence(parser, PREC_CONDITIONAL);
     return ast_new_conditional_expr(prefix, thenBranch, elseBranch);
+}
+
+WhenEntry* when_entry_rule(Parser* parser)
+{
+    ExpressionList* cases = NULL;
+    do {
+        ast_expression_list_append(&cases, expression(parser));
+    } while (match(parser, TOKEN_COMMA));
+
+    consume(parser, TOKEN_R_ARROW, "Expected '->' after 'when' cases.");
+
+    Statement* body = statement(parser);
+
+    return ast_new_when_entry(cases, body);
+}
+
+WhenEntryList* when_entries_rule(Parser* parser)
+{
+    WhenEntryList* entries = NULL;
+    while (!check(parser, TOKEN_ELSE) && !check(parser, TOKEN_R_BRACE) && !check(parser, TOKEN_EOF)) {
+        ast_when_entry_list_append(&entries, when_entry_rule(parser));
+    }
+    return entries;
 }
 
 ArgumentList* arguments_rule(Parser* parser)

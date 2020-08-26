@@ -29,7 +29,7 @@ typedef struct {
     bool isLocal;
 } Upvalue;
 
-typedef enum { CONTROL_FOR, CONTROL_WHILE } ControlType;
+typedef enum { CONTROL_FOR, CONTROL_WHILE, CONTROL_WHEN } ControlType;
 
 typedef struct ControlBreak {
     struct ControlBreak* enclosing;
@@ -92,6 +92,7 @@ static void compile_for_stmt(Compiler* compiler, Statement* stmt);
 static void compile_while_stmt(Compiler* compiler, Statement* stmt);
 static void compile_break_stmt(Compiler* compiler, Statement* stmt);
 static void compile_continue_stmt(Compiler* compiler, Statement* stmt);
+static void compile_when_stmt(Compiler* compiler, Statement* stmt);
 static void compile_if_stmt(Compiler* compiler, Statement* stmt);
 static void compile_return_stmt(Compiler* compiler, Statement* stmt);
 static void compile_print_stmt(Compiler* compiler, Statement* stmt);
@@ -113,6 +114,8 @@ static void compile_unary_expr(Compiler* compiler, Expression* expr);
 static void compile_literal_expr(Compiler* compiler, Expression* expr);
 static void compile_identifier_expr(Compiler* compiler, Expression* expr);
 
+static void compile_when_entry(Compiler* compiler, WhenEntry* entry);
+static size_t compile_when_entry_list(Compiler* compiler, WhenEntryList* list);
 static size_t compile_argument_list(Compiler* compiler, ArgumentList* list);
 static size_t compile_parameter_list(Compiler* compiler, ParameterList* list);
 static void compile_function(Compiler* compiler, Function* function, FunctionType type);
@@ -258,9 +261,9 @@ static void patch_jump(Compiler* compiler, size_t offset)
     current_chunk(compiler)->code[offset + 1] = (jump >> 8) & 0xFF;
 }
 
-static void patch_breaks(Compiler* compiler)
+static void patch_breaks(Compiler* compiler, ControlBreak* breaks)
 {
-    ControlBreak* current = compiler->controlBlock->breaks;
+    ControlBreak* current = breaks;
     while (current) {
         ControlBreak* next = current->enclosing;
         patch_jump(compiler, current->address);
@@ -284,17 +287,24 @@ static ObjFunction* finish_compilation(VM* vm)
     return function;
 }
 
-static void push_control_break(Compiler* compiler, size_t address)
+static ControlBreak* make_control_break(Compiler* compiler, size_t address, ControlBreak* enclosing)
 {
-    if (!compiler->controlBlock) {
-        return;
+    ControlBreak* controlBreak = raw_allocate(sizeof(ControlBreak));
+    if (!controlBreak) {
+        return NULL;
     }
 
-    ControlBreak* controlBreak = raw_allocate(sizeof(ControlBreak));
     controlBreak->address = address;
+    controlBreak->enclosing = enclosing;
+    return controlBreak;
+}
 
-    controlBreak->enclosing = compiler->controlBlock->breaks;
-    compiler->controlBlock->breaks = controlBreak;
+static void push_control_break(Compiler* compiler, size_t address)
+{
+    if (compiler->controlBlock) {
+        ControlBreak** breaks = &compiler->controlBlock->breaks;
+        *breaks = make_control_break(compiler, address, *breaks);
+    }
 }
 
 static void push_control_block(Compiler* compiler, ControlType type, size_t start, size_t end)
@@ -324,7 +334,7 @@ static void enter_control_block(Compiler* compiler, ControlType type, size_t sta
 static void exit_control_block(Compiler* compiler)
 {
     compiler->controlBlock->end = current_chunk(compiler)->count;
-    patch_breaks(compiler);
+    patch_breaks(compiler, compiler->controlBlock->breaks);
     pop_control_block(compiler);
 }
 
@@ -618,6 +628,7 @@ void compile_statement(Compiler* compiler, Statement* stmt)
         case STMT_WHILE: compile_while_stmt(compiler, stmt); return;
         case STMT_BREAK: compile_break_stmt(compiler, stmt); return;
         case STMT_CONTINUE: compile_continue_stmt(compiler, stmt); return;
+        case STMT_WHEN: compile_when_stmt(compiler, stmt); return;
         case STMT_IF: compile_if_stmt(compiler, stmt); return;
         case STMT_RETURN: compile_return_stmt(compiler, stmt); return;
         case STMT_PRINT: compile_print_stmt(compiler, stmt); return;
@@ -693,12 +704,18 @@ void compile_while_stmt(Compiler* compiler, Statement* stmt)
     exit_control_block(compiler);
 }
 
+static bool within_loop(Compiler* compiler)
+{
+    ControlBlock* block = compiler->controlBlock;
+    return block && (block->type == CONTROL_FOR || block->type == CONTROL_WHILE);
+}
+
 void compile_break_stmt(Compiler* compiler, Statement* stmt)
 {
     Token keyword = stmt->as.breakStmt.keyword;
     compiler->token = keyword;
 
-    if (!compiler->controlBlock) {
+    if (!within_loop(compiler)) {
         error(compiler, "Cannot use 'break' outside of a loop.");
     } else {
         size_t address = emit_jump(compiler, OP_JUMP);
@@ -711,11 +728,31 @@ void compile_continue_stmt(Compiler* compiler, Statement* stmt)
     Token keyword = stmt->as.continueStmt.keyword;
     compiler->token = keyword;
 
-    if (!compiler->controlBlock) {
+    if (!within_loop(compiler)) {
         error(compiler, "Cannot use 'continue' outside of a loop.");
     } else {
         emit_loop(compiler, compiler->controlBlock->start);
     }
+}
+
+void compile_when_stmt(Compiler* compiler, Statement* stmt)
+{
+    size_t start = current_chunk(compiler)->count;
+    enter_control_block(compiler, CONTROL_WHEN, start, 0xFFFF);
+
+    Expression* control = stmt->as.whenStmt.control;
+    compile_expression(compiler, control);
+
+    WhenEntryList* entries = stmt->as.whenStmt.entries;
+    compile_when_entry_list(compiler, entries);
+
+    Statement* elseBranch = stmt->as.whenStmt.elseBranch;
+    if (elseBranch) {
+        emit_byte(compiler, OP_POP);
+        compile_statement(compiler, elseBranch);
+    }
+
+    exit_control_block(compiler);
 }
 
 void compile_if_stmt(Compiler* compiler, Statement* stmt)
@@ -1243,6 +1280,44 @@ void compile_identifier_expr(Compiler* compiler, Expression* expr)
 
     ExprContext context = expr->as.identifierExpr.context;
     named_variable(compiler, identifier, context);
+}
+
+void compile_when_entry(Compiler* compiler, WhenEntry* entry)
+{
+    ControlBreak* caseJumps = NULL;
+
+    ExpressionList* currentCase = entry->cases;
+    while (currentCase) {
+        compile_expression(compiler, currentCase->expression);
+        size_t address = emit_jump(compiler, OP_POP_JUMP_IF_EQUAL);
+        caseJumps = make_control_break(compiler, address, caseJumps);
+        currentCase = currentCase->next;
+    }
+
+    size_t nextEntry = emit_jump(compiler, OP_JUMP);
+
+    patch_breaks(compiler, caseJumps);
+    emit_byte(compiler, OP_POP);
+    compile_statement(compiler, entry->body);
+
+    size_t address = emit_jump(compiler, OP_JUMP);
+    push_control_break(compiler, address);
+
+    patch_jump(compiler, nextEntry);
+}
+
+size_t compile_when_entry_list(Compiler* compiler, WhenEntryList* list)
+{
+    WhenEntryList* current = list;
+    size_t count = 0;
+
+    while (current) {
+        compile_when_entry(compiler, current->entry);
+        count++;
+        current = current->next;
+    }
+
+    return count;
 }
 
 size_t compile_argument_list(Compiler* compiler, ArgumentList* list)

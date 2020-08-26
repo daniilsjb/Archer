@@ -19,6 +19,7 @@ typedef enum {
     TOKEN_QUESTION,
     TOKEN_COLON,
     TOKEN_TILDE,
+    TOKEN_R_ARROW,
 
     /* Arithmetic */
     TOKEN_PLUS,
@@ -80,6 +81,7 @@ typedef enum {
     TOKEN_THIS,
     TOKEN_TRUE,
     TOKEN_VAR,
+    TOKEN_WHEN,
     TOKEN_WHILE,
 
     /* Literals */

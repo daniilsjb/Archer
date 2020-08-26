@@ -127,6 +127,7 @@ void ast_delete_statement(Statement* statement)
         case STMT_WHILE: ast_delete_while_stmt(statement); return;
         case STMT_BREAK: ast_delete_break_stmt(statement); return;
         case STMT_CONTINUE: ast_delete_continue_stmt(statement); return;
+        case STMT_WHEN: ast_delete_when_stmt(statement); return;
         case STMT_IF: ast_delete_if_stmt(statement); return;
         case STMT_RETURN: ast_delete_return_stmt(statement); return;
         case STMT_PRINT: ast_delete_print_stmt(statement); return;
@@ -209,6 +210,28 @@ Statement* ast_new_continue_stmt(Token keyword)
 
 void ast_delete_continue_stmt(Statement* statement)
 {
+    raw_deallocate(statement);
+}
+
+Statement* ast_new_when_stmt(Expression* control, WhenEntryList* entries, Statement* elseBranch)
+{
+    Statement* stmt = raw_allocate(sizeof(Statement));
+    if (!stmt) {
+        return NULL;
+    }
+
+    stmt->type = STMT_WHEN;
+    stmt->as.whenStmt.control = control;
+    stmt->as.whenStmt.entries = entries;
+    stmt->as.whenStmt.elseBranch = elseBranch;
+    return stmt;
+}
+
+void ast_delete_when_stmt(Statement* statement)
+{
+    ast_delete_expression(statement->as.whenStmt.control);
+    ast_delete_when_entry_list(statement->as.whenStmt.entries);
+    ast_delete_statement(statement->as.whenStmt.elseBranch);
     raw_deallocate(statement);
 }
 
@@ -585,6 +608,57 @@ void ast_delete_identifier_expr(Expression* expression)
     raw_deallocate(expression);
 }
 
+ExpressionList* ast_new_expression_node(Expression* expression)
+{
+    ExpressionList* list = raw_allocate(sizeof(ExpressionList));
+    if (!list) {
+        return NULL;
+    }
+
+    list->expression = expression;
+    list->next = NULL;
+    return list;
+}
+
+void ast_expression_list_append(ExpressionList** list, Expression* expression)
+{
+    if (!(*list)) {
+        *list = ast_new_expression_node(expression);
+        return;
+    }
+
+    ExpressionList* current = *list;
+    while (current->next) {
+        current = current->next;
+    }
+
+    current->next = ast_new_expression_node(expression);
+}
+
+void ast_delete_expression_list(ExpressionList* list)
+{
+    ExpressionList* current = list;
+    while (current != NULL) {
+        ExpressionList* next = current->next;
+        ast_delete_expression(current->expression);
+        raw_deallocate(current);
+        current = next;
+    }
+}
+
+size_t ast_expression_list_length(ExpressionList* list)
+{
+    size_t length = 0;
+    ExpressionList* current = list;
+
+    while (current) {
+        length++;
+        current = current->next;
+    }
+
+    return length;
+}
+
 ArgumentList* ast_new_argument_node(Expression* expression)
 {
     ArgumentList* list = raw_allocate(sizeof(ArgumentList));
@@ -677,6 +751,76 @@ size_t ast_parameter_list_length(ParameterList* list)
 {
     size_t length = 0;
     ParameterList* current = list;
+
+    while (current) {
+        length++;
+        current = current->next;
+    }
+
+    return length;
+}
+
+WhenEntry* ast_new_when_entry(ExpressionList* cases, Statement* body)
+{
+    WhenEntry* entry = raw_allocate(sizeof(WhenEntry));
+    if (!entry) {
+        return NULL;
+    }
+
+    entry->cases = cases;
+    entry->body = body;
+    return entry;
+}
+
+void ast_delete_when_entry(WhenEntry* entry)
+{
+    ast_delete_expression_list(entry->cases);
+    ast_delete_statement(entry->body);
+    raw_deallocate(entry);
+}
+
+WhenEntryList* ast_new_when_entry_node(WhenEntry* entry)
+{
+    WhenEntryList* list = raw_allocate(sizeof(WhenEntryList));
+    if (!list) {
+        return NULL;
+    }
+
+    list->entry = entry;
+    list->next = NULL;
+    return list;
+}
+
+void ast_when_entry_list_append(WhenEntryList** list, WhenEntry* entry)
+{
+    if (!(*list)) {
+        *list = ast_new_when_entry_node(entry);
+        return;
+    }
+
+    WhenEntryList* current = *list;
+    while (current->next) {
+        current = current->next;
+    }
+
+    current->next = ast_new_when_entry_node(entry);
+}
+
+void ast_delete_when_entry_list(WhenEntryList* list)
+{
+    WhenEntryList* current = list;
+    while (current != NULL) {
+        WhenEntryList* next = current->next;
+        ast_delete_when_entry(current->entry);
+        raw_deallocate(current);
+        current = next;
+    }
+}
+
+size_t ast_when_entry_list_length(WhenEntryList* list)
+{
+    size_t length = 0;
+    WhenEntryList* current = list;
 
     while (current) {
         length++;

@@ -81,26 +81,6 @@ Functionally, this is equivalent to the Maybe Monad. The Safe Navigation operato
 
 It may rightfully be stated that this behavior could be the default of any field access. That assessment is fair, but it would move the language closer towards the world of JavaScript, where nothing can really crash but the behavior of the program is unpredictable. In many cases accessing a non-existent field is, in fact, a mistake in the logic and must be reported to let the programmer find the issue. In some cases like the one above, however, it may be a perfectly valid use-case.
 
-### Control Flow
-
-#### Switch Statement
-
-To avoid scenarios where the program needs to choose a single condition out of many using a sequence of `if-else` statements, many programming languages feature `switch` statements. The language could support simple switch cases with the following syntax:
-
-```js
-/* Prints "Work day" */
-var x = "Monday";
-switch (x) {
-    case "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" -> {
-        print "Work day";
-    }
-    case "Saturday", "Sunday" -> {
-        print "Off day";
-    }
-    default -> print "Invalid day of the week";
-}
-```
-
 ### Data Structures
 
 #### Array

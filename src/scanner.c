@@ -211,7 +211,20 @@ static TokenType identifier_type(Scanner* scanner)
             }
         }
         case 'v': return check_keyword(scanner, 1, 2, "ar", TOKEN_VAR);
-        case 'w': return check_keyword(scanner, 1, 4, "hile", TOKEN_WHILE);
+        case 'w': {
+            if (scanner->current - scanner->start > 1) {
+                switch (*(scanner->start + 1)) {
+                    case 'h': {
+                        if (scanner->current - scanner->start > 2) {
+                            switch (*(scanner->start + 2)) {
+                                case 'e': return check_keyword(scanner, 3, 1, "n", TOKEN_WHEN);
+                                case 'i': return check_keyword(scanner, 3, 2, "le", TOKEN_WHILE);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     return TOKEN_IDENTIFIER;
@@ -254,6 +267,7 @@ Token scanner_scan_token(Scanner* scanner)
         case '-': {
             switch (peek(scanner)) {
                 case '=': advance(scanner); return make_token(scanner, TOKEN_MINUS_EQUAL);
+                case '>': advance(scanner); return make_token(scanner, TOKEN_R_ARROW);
                 case '-': advance(scanner); return make_token(scanner, TOKEN_DOUBLE_MINUS);
             }
             return make_token(scanner, TOKEN_MINUS);

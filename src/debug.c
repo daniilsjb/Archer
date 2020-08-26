@@ -155,8 +155,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return jump_instruction("JUMP_IF_FALSE", 1, chunk, offset);
         case OP_POP_JUMP_IF_FALSE:
             return jump_instruction("POP_JUMP_IF_FALSE", 1, chunk, offset);
-        case OP_JUMP_IF_NOT_EQUAL:
-            return jump_instruction("JUMP_IF_NOT_EQUAL", 1, chunk, offset);
+        case OP_POP_JUMP_IF_EQUAL:
+            return jump_instruction("POP_JUMP_IF_EQUAL", 1, chunk, offset);
         case OP_POP:
             return simple_instruction("POP", offset);
         case OP_DUP:

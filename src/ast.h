@@ -9,7 +9,11 @@ typedef struct DeclarationList DeclarationList;
 typedef struct Statement Statement;
 
 typedef struct Expression Expression;
+typedef struct ExpressionList ExpressionList;
 typedef struct ArgumentList ArgumentList;
+
+typedef struct WhenEntry WhenEntry;
+typedef struct WhenEntryList WhenEntryList;
 
 typedef struct Function Function;
 typedef struct FunctionList FunctionList;
@@ -54,6 +58,7 @@ typedef struct Statement {
         STMT_WHILE,
         STMT_BREAK,
         STMT_CONTINUE,
+        STMT_WHEN,
         STMT_IF,
         STMT_RETURN,
         STMT_PRINT,
@@ -82,6 +87,12 @@ typedef struct Statement {
             Token keyword;
         } continueStmt;
 
+        struct {
+            Expression* control;
+            WhenEntryList* entries;
+            Statement* elseBranch;
+        } whenStmt;
+        
         struct {
             Expression* condition;
             Statement* thenBranch;
@@ -194,6 +205,11 @@ typedef struct Expression {
     } as;
 } Expression;
 
+typedef struct ExpressionList {
+    Expression* expression;
+    ExpressionList* next;
+} ExpressionList;
+
 typedef struct ArgumentList {
     Expression* expression;
     ArgumentList* next;
@@ -203,6 +219,16 @@ typedef struct ParameterList {
     Token parameter;
     struct ParameterList* next;
 } ParameterList;
+
+typedef struct WhenEntry {
+    ExpressionList* cases;
+    Statement* body;
+} WhenEntry;
+
+typedef struct WhenEntryList {
+    WhenEntry* entry;
+    WhenEntryList* next;
+} WhenEntryList;
 
 typedef struct Function {
     Token identifier;
@@ -242,6 +268,8 @@ Statement* ast_new_break_stmt(Token keyword);
 void ast_delete_break_stmt(Statement* statement);
 Statement* ast_new_continue_stmt(Token keyword);
 void ast_delete_continue_stmt(Statement* statement);
+Statement* ast_new_when_stmt(Expression* control, WhenEntryList* entries, Statement* elseBranch);
+void ast_delete_when_stmt(Statement* statement);
 Statement* ast_new_if_stmt(Expression* condition, Statement* thenBranch, Statement* elseBranch);
 void ast_delete_if_stmt(Statement* statement);
 Statement* ast_new_return_stmt(Token keyword, Expression* expression);
@@ -281,6 +309,11 @@ void ast_delete_literal_expr(Expression* expression);
 Expression* ast_new_identifier_expr(Token identifier, ExprContext context);
 void ast_delete_identifier_expr(Expression* expression);
 
+ExpressionList* ast_new_expression_node(Expression* expression);
+void ast_expression_list_append(ExpressionList** list, Expression* expression);
+void ast_delete_expression_list(ExpressionList* list);
+size_t ast_expression_list_length(ExpressionList* list);
+
 ArgumentList* ast_new_argument_node(Expression* expression);
 void ast_argument_list_append(ArgumentList** list, Expression* expression);
 void ast_delete_argument_list(ArgumentList* list);
@@ -290,6 +323,14 @@ ParameterList* ast_new_parameter_node(Token parameter);
 void ast_parameter_list_append(ParameterList** list, Token parameter);
 void ast_delete_parameter_list(ParameterList* list);
 size_t ast_parameter_list_length(ParameterList* list);
+
+WhenEntry* ast_new_when_entry(ExpressionList* cases, Statement* body);
+void ast_delete_when_entry(WhenEntry* entry);
+
+WhenEntryList* ast_new_when_entry_node(WhenEntry* entry);
+void ast_when_entry_list_append(WhenEntryList** list, WhenEntry* entry);
+void ast_delete_when_entry_list(WhenEntryList* list);
+size_t ast_when_entry_list_length(WhenEntryList* list);
 
 Function* ast_new_function(Token identifier, ParameterList* parameters, DeclarationList* body);
 void ast_delete_function(Function* function);

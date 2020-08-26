@@ -16,6 +16,7 @@ static void print_for_stmt(int indent, Statement* stmt);
 static void print_while_stmt(int indent, Statement* stmt);
 static void print_break_stmt(int indent, Statement* stmt);
 static void print_continue_stmt(int indent, Statement* stmt);
+static void print_when_stmt(int indent, Statement* stmt);
 static void print_if_stmt(int indent, Statement* stmt);
 static void print_return_stmt(int indent, Statement* stmt);
 static void print_print_stmt(int indent, Statement* stmt);
@@ -37,6 +38,9 @@ static void print_unary_expr(int indent, Expression* expr);
 static void print_literal_expr(int indent, Expression* expr);
 static void print_identifier_expr(int indent, Expression* expr);
 
+static void print_when_entry(int indent, WhenEntry* entry);
+static void print_when_entry_list(int indent, WhenEntryList* list);
+static void print_expression_list(int indent, ExpressionList* list);
 static void print_argument_list(int indent, ArgumentList* list);
 static void print_parameter_list_inline(ParameterList* list);
 static void print_function(int indent, Function* function);
@@ -179,6 +183,7 @@ void print_statement(int indent, Statement* stmt)
         case STMT_WHILE: print_while_stmt(indent, stmt); return;
         case STMT_BREAK: print_break_stmt(indent, stmt); return;
         case STMT_CONTINUE: print_continue_stmt(indent, stmt); return;
+        case STMT_WHEN: print_when_stmt(indent, stmt); return;
         case STMT_IF: print_if_stmt(indent, stmt); return;
         case STMT_RETURN: print_return_stmt(indent, stmt); return;
         case STMT_PRINT: print_print_stmt(indent, stmt); return;
@@ -231,6 +236,24 @@ void print_break_stmt(int indent, Statement* stmt)
 void print_continue_stmt(int indent, Statement* stmt)
 {
     print_header(indent, "Continue");
+}
+
+void print_when_stmt(int indent, Statement* stmt)
+{
+    print_header(indent, "When");
+    indent++;
+
+    Expression* control = stmt->as.whenStmt.control;
+    print_indented(indent, "Control:\n");
+    print_expression(indent + 1, control);
+
+    WhenEntryList* entries = stmt->as.whenStmt.entries;
+    print_indented(indent, "Entries:\n");
+    print_when_entry_list(indent + 1, entries);
+
+    Statement* elseBranch = stmt->as.whenStmt.elseBranch;
+    print_indented(indent, "Else: ");
+    print_optional_statement(indent + 1, elseBranch);
 }
 
 void print_if_stmt(int indent, Statement* stmt)
@@ -481,6 +504,44 @@ void print_identifier_expr(int indent, Expression* expr)
 
     ExprContext context = expr->as.identifierExpr.context;
     print_expr_context(indent, context);
+}
+
+void print_when_entry(int indent, WhenEntry* entry)
+{
+    print_indented(indent, "Cases:\n");
+    print_expression_list(indent + 1, entry->cases);
+
+    print_indented(indent, "Body:\n");
+    print_statement(indent + 1, entry->body);
+}
+
+void print_when_entry_list(int indent, WhenEntryList* list)
+{
+    if (ast_when_entry_list_length(list) == 0) {
+        print_indented(indent, "<Empty>\n");
+        return;
+    }
+
+    WhenEntryList* current = list;
+    while (current) {
+        print_header(indent, "Entry");
+        print_when_entry(indent + 1, current->entry);
+        current = current->next;
+    }
+}
+
+void print_expression_list(int indent, ExpressionList* list)
+{
+    if (ast_expression_list_length(list) == 0) {
+        print_indented(indent, "<Empty>\n");
+        return;
+    }
+
+    ExpressionList* current = list;
+    while (current) {
+        print_expression(indent, current->expression);
+        current = current->next;
+    }
 }
 
 void print_argument_list(int indent, ArgumentList* list)

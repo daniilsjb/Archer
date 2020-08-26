@@ -1,0 +1,76 @@
+//Basic use-case of a when-statement.
+fun dayType(day) {
+    when (day) {
+        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" -> {
+            return "Work day!";
+        }
+        "Saturday", "Sunday" -> {
+            return "Off day!";
+        }
+        else -> {
+            return "Invalid day.";
+        }
+    }
+}
+
+print dayType("Monday");    //Expected: Work day!
+print dayType("Tuesday");   //Expected: Work day!
+print dayType("Wednesday"); //Expected: Work day!
+print dayType("Thursday");  //Expected: Work day!
+print dayType("Friday");    //Expected: Work day!
+print dayType("Saturday");  //Expected: Off day!
+print dayType("Sunday");    //Expected: Off day!
+print dayType("Whatever");  //Expected: Invalid day.
+
+//Cases may contain arbitrarily complex expressions, but comparison is done strictly between values. Booleans
+//may be used to select the first expression that is true.
+when (true) {
+    10 == 9 -> print "This will never be printed";
+    nil and true -> print "This will never be printed";
+    true ? 5 == 5 : 0 -> print "This will be printed"; //Expected: This will be printed
+    true -> print "This will never be printed";
+    else -> print "This will never be printed";
+}
+
+//This will produce no output.
+when (5) {
+    1, 2, 3 -> print "One, two, or three";
+    4 -> print "Four";
+}
+
+
+//Case expressions may contain side-effects, but they are only evaluated if needed.
+fun sum(a, b) {
+    print "Called 'sum'";
+    return a + b;
+}
+
+when (10) {
+    sum(1, 1) -> print "One + One";
+    sum(2, 2) -> print "Two + Two";
+    sum(3, 3) -> print "Three + Three";
+    sum(4, 4) -> print "Four + Four";
+    sum(5, 5) -> print "Five + Five";
+    sum(6, 6) -> print "Six + Six";
+    else -> print "Unknown sum";
+}
+
+//Expected: Called 'sum'
+//Expected: Called 'sum'
+//Expected: Called 'sum'
+//Expected: Called 'sum'
+//Expected: Called 'sum'
+//Expected: Five + Five
+
+//Nested when-statements are also allowed.
+when (5) {
+    0 -> print "This will never be printed";
+    5 -> when (10) {
+        0 -> print "This will never be printed";
+        5 -> print "This will never be printed";
+        10 -> print "Hello from inner!"; //Expected: Hello from inner!
+        else -> print "This will never be printed";
+    }
+    10 -> print "This will never be printed";
+    else -> print "This will never be printed";
+}
