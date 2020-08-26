@@ -11,7 +11,7 @@ for (var i = 0; i < 5; i++) {
 var j = 0;
 for ( ; j < 5; ) {
     print j;
-    j += 1;
+    j++;
 }
 
 //Expected: 0

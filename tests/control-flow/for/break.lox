@@ -1,0 +1,61 @@
+for (;;) {
+    print "Hello!";
+    break;
+    print "This will never be printed.";
+}
+print "Hello from after the first loop!";
+
+//Expected: Hello!
+//Expected: Hello from after the first loop!
+
+for (;;) {
+    for (;;) {
+        print "Hello from inner!";
+        break;
+        print "This will never be printed.";
+    }
+    
+    print "Hello from outer!";
+    break;
+    print "This will never be printed.";
+}
+print "Hello from after the second loop!";
+
+//Expected: Hello from inner!
+//Expected: Hello from outer!
+//Expected: Hello from after the second loop!
+
+for (var i = 0; i < 4; i++) {
+    for (var j = 0; j < 3; j++) {
+        print j;
+        if (j == 1) {
+            break;
+        }
+    }
+    
+    if (i == 2) {
+        break;
+    }
+    print i;
+}
+
+//Expected: 0
+//Expected: 1
+//Expected: 0
+//Expected: 0
+//Expected: 1
+//Expected: 1
+//Expected: 0
+//Expected: 1
+
+for (var i = 0; i < 5; i++) {
+    print i;
+    if (i == 3) {
+        break;
+    }
+}
+
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 3

@@ -1,0 +1,62 @@
+for (var i = 0; i < 5; i++) {
+    if (i == 3) {
+        continue;
+        print "This will never be seen";
+    }
+    
+    print i;
+}
+
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 4
+
+for (var i = 0; i < 3; i++) {
+    if (i == 1) {
+        continue;
+    }
+    
+    for (var j = 0; j < 3; j++) {
+        if (j == 1) {
+            continue;
+        }
+        print "Iterating over j";
+    }
+    
+    print "Iterating over i";
+}
+
+//Expected: Iterating over j
+//Expected: Iterating over j
+//Expected: Iterating over i
+//Expected: Iterating over j
+//Expected: Iterating over j
+//Expected: Iterating over i
+
+var k = 0;
+for ( ; k < 5; ) {
+    k++;
+    
+    if (k == 3) {
+        continue;
+        print "This will never be seen";
+    }
+    
+    print k;
+}
+
+//Expected: 1
+//Expected: 2
+//Expected: 4
+//Expected: 5
+
+for (var i = 0; i < 2; i++) {
+    if (i == 1) {
+        continue;
+    }
+    
+    print "Hello!";
+}
+
+//Expected: Hello!

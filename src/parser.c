@@ -53,6 +53,8 @@ static Declaration* statement_decl(Parser* parser);
 static Statement* statement(Parser* parser);
 static Statement* for_stmt(Parser* parser);
 static Statement* while_stmt(Parser* parser);
+static Statement* break_stmt(Parser* parser);
+static Statement* continue_stmt(Parser* parser);
 static Statement* if_stmt(Parser* parser);
 static Statement* return_stmt(Parser* parser);
 static Statement* print_stmt(Parser* parser);
@@ -357,6 +359,8 @@ Statement* statement(Parser* parser)
     switch (parser->current.type) {
         case TOKEN_FOR: advance(parser); return for_stmt(parser);
         case TOKEN_WHILE: advance(parser); return while_stmt(parser);
+        case TOKEN_BREAK: advance(parser); return break_stmt(parser);
+        case TOKEN_CONTINUE: advance(parser); return continue_stmt(parser);
         case TOKEN_IF: advance(parser); return if_stmt(parser);
         case TOKEN_RETURN: advance(parser); return return_stmt(parser);
         case TOKEN_PRINT: advance(parser);  return print_stmt(parser);
@@ -399,6 +403,18 @@ Statement* while_stmt(Parser* parser)
 
     Statement* body = statement(parser);
     return ast_new_while_stmt(condition, body);
+}
+
+Statement* break_stmt(Parser* parser)
+{
+    consume(parser, TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
+    return ast_new_break_stmt(parser->previous);
+}
+
+Statement* continue_stmt(Parser* parser)
+{
+    consume(parser, TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
+    return ast_new_continue_stmt(parser->previous);
 }
 
 Statement* if_stmt(Parser* parser)

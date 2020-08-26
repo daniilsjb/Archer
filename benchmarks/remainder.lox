@@ -1,6 +1,6 @@
 fun remainder(x, y) {
     while (x >= y) {
-        x = x - y;
+        x -= y;
     }
     return x;
 }

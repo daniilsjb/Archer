@@ -1,0 +1,26 @@
+while (true) {
+    print "Hello!";
+    break;
+    print "This will never be printed.";
+}
+print "Hello from after the first loop!";
+
+//Expected: Hello!
+//Expected: Hello from after the first loop!
+
+while (true) {
+    while (true) {
+        print "Hello from inner!";
+        break;
+        print "This will never be printed.";
+    }
+    
+    print "Hello from outer!";
+    break;
+    print "This will never be printed.";
+}
+print "Hello from after the second loop!";
+
+//Expected: Hello from inner!
+//Expected: Hello from outer!
+//Expected: Hello from after the second loop!

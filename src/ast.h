@@ -52,6 +52,8 @@ typedef struct Statement {
     enum {
         STMT_FOR,
         STMT_WHILE,
+        STMT_BREAK,
+        STMT_CONTINUE,
         STMT_IF,
         STMT_RETURN,
         STMT_PRINT,
@@ -71,6 +73,14 @@ typedef struct Statement {
             Expression* condition;
             Statement* body;
         } whileStmt;
+
+        struct {
+            Token keyword;
+        } breakStmt;
+
+        struct {
+            Token keyword;
+        } continueStmt;
 
         struct {
             Expression* condition;
@@ -228,6 +238,10 @@ Statement* ast_new_for_stmt(Declaration* initializer, Expression* condition, Exp
 void ast_delete_for_stmt(Statement* statement);
 Statement* ast_new_while_stmt(Expression* condition, Statement* body);
 void ast_delete_while_stmt(Statement* statement);
+Statement* ast_new_break_stmt(Token keyword);
+void ast_delete_break_stmt(Statement* statement);
+Statement* ast_new_continue_stmt(Token keyword);
+void ast_delete_continue_stmt(Statement* statement);
 Statement* ast_new_if_stmt(Expression* condition, Statement* thenBranch, Statement* elseBranch);
 void ast_delete_if_stmt(Statement* statement);
 Statement* ast_new_return_stmt(Token keyword, Expression* expression);

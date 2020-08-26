@@ -83,31 +83,6 @@ It may rightfully be stated that this behavior could be the default of any field
 
 ### Control Flow
 
-#### Continue and Break
-
-Many languages support mechanisms for stopping loops or skipping certain iterations, usually via keywords `break` and `continue`, respectively. The same mechanisms are proposed for the language as well:
-
-```js
-/* This loop skips the fifth iteration and never prints 5 */
-for (var i = 0; i < 10; i = i + 1) {
-    if (i == 5) {
-        continue;
-    }
-
-    print i;
-}
-
-/* Breaking allows the program to exit infinite loops based on some internal conditions */
-var x = 10;
-while (true) {
-    if (x > 20) {
-        break;
-    }
-
-    x = x + 1;
-}
-```
-
 #### Switch Statement
 
 To avoid scenarios where the program needs to choose a single condition out of many using a sequence of `if-else` statements, many programming languages feature `switch` statements. The language could support simple switch cases with the following syntax:

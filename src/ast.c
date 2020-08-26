@@ -125,6 +125,8 @@ void ast_delete_statement(Statement* statement)
     switch (statement->type) {
         case STMT_FOR: ast_delete_for_stmt(statement); return;
         case STMT_WHILE: ast_delete_while_stmt(statement); return;
+        case STMT_BREAK: ast_delete_break_stmt(statement); return;
+        case STMT_CONTINUE: ast_delete_continue_stmt(statement); return;
         case STMT_IF: ast_delete_if_stmt(statement); return;
         case STMT_RETURN: ast_delete_return_stmt(statement); return;
         case STMT_PRINT: ast_delete_print_stmt(statement); return;
@@ -173,6 +175,40 @@ void ast_delete_while_stmt(Statement* statement)
 {
     ast_delete_expression(statement->as.whileStmt.condition);
     ast_delete_statement(statement->as.whileStmt.body);
+    raw_deallocate(statement);
+}
+
+Statement* ast_new_break_stmt(Token keyword)
+{
+    Statement* stmt = raw_allocate(sizeof(Statement));
+    if (!stmt) {
+        return NULL;
+    }
+
+    stmt->type = STMT_BREAK;
+    stmt->as.breakStmt.keyword = keyword;
+    return stmt;
+}
+
+void ast_delete_break_stmt(Statement* statement)
+{
+    raw_deallocate(statement);
+}
+
+Statement* ast_new_continue_stmt(Token keyword)
+{
+    Statement* stmt = raw_allocate(sizeof(Statement));
+    if (!stmt) {
+        return NULL;
+    }
+
+    stmt->type = STMT_CONTINUE;
+    stmt->as.continueStmt.keyword = keyword;
+    return stmt;
+}
+
+void ast_delete_continue_stmt(Statement* statement)
+{
     raw_deallocate(statement);
 }
 

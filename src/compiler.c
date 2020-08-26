@@ -8,6 +8,7 @@
 #include "chunk.h"
 #include "parser.h"
 #include "memory.h"
+#include "memlib.h"
 
 #if DEBUG_PRINT_CODE
 #include "debug.h"
@@ -28,6 +29,21 @@ typedef struct {
     bool isLocal;
 } Upvalue;
 
+typedef enum { CONTROL_FOR, CONTROL_WHILE } ControlType;
+
+typedef struct ControlBreak {
+    struct ControlBreak* enclosing;
+    size_t address;
+} ControlBreak;
+
+typedef struct ControlBlock {
+    struct ControlBlock* enclosing;
+    ControlType type;
+    size_t start;
+    size_t end;
+    ControlBreak* breaks;
+} ControlBlock;
+
 typedef enum {
     TYPE_FUNCTION,
     TYPE_METHOD,
@@ -42,6 +58,8 @@ typedef struct Compiler {
 
     ObjFunction* function;
     FunctionType type;
+
+    ControlBlock* controlBlock;
 
     Local locals[UINT8_COUNT];
     int localCount;
@@ -72,6 +90,8 @@ static void compile_statement_decl(Compiler* compiler, Declaration* decl);
 static void compile_statement(Compiler* compiler, Statement* stmt);
 static void compile_for_stmt(Compiler* compiler, Statement* stmt);
 static void compile_while_stmt(Compiler* compiler, Statement* stmt);
+static void compile_break_stmt(Compiler* compiler, Statement* stmt);
+static void compile_continue_stmt(Compiler* compiler, Statement* stmt);
 static void compile_if_stmt(Compiler* compiler, Statement* stmt);
 static void compile_return_stmt(Compiler* compiler, Statement* stmt);
 static void compile_print_stmt(Compiler* compiler, Statement* stmt);
@@ -105,6 +125,8 @@ static void compiler_init(Compiler* compiler, VM* vm, FunctionType type, Token i
     vm->compiler = compiler;
 
     compiler->vm = vm;
+
+    compiler->controlBlock = NULL;
 
     compiler->function = new_function(vm);
     compiler->type = type;
@@ -236,6 +258,17 @@ static void patch_jump(Compiler* compiler, size_t offset)
     current_chunk(compiler)->code[offset + 1] = (jump >> 8) & 0xFF;
 }
 
+static void patch_breaks(Compiler* compiler)
+{
+    ControlBreak* current = compiler->controlBlock->breaks;
+    while (current) {
+        ControlBreak* next = current->enclosing;
+        patch_jump(compiler, current->address);
+        raw_deallocate(current);
+        current = next;
+    }
+}
+
 static ObjFunction* finish_compilation(VM* vm)
 {
     emit_return(vm->compiler);
@@ -249,6 +282,50 @@ static ObjFunction* finish_compilation(VM* vm)
 
     vm->compiler = vm->compiler->enclosing;
     return function;
+}
+
+static void push_control_break(Compiler* compiler, size_t address)
+{
+    if (!compiler->controlBlock) {
+        return;
+    }
+
+    ControlBreak* controlBreak = raw_allocate(sizeof(ControlBreak));
+    controlBreak->address = address;
+
+    controlBreak->enclosing = compiler->controlBlock->breaks;
+    compiler->controlBlock->breaks = controlBreak;
+}
+
+static void push_control_block(Compiler* compiler, ControlType type, size_t start, size_t end)
+{
+    ControlBlock* block = raw_allocate(sizeof(ControlBlock));
+    block->type = type;
+    block->start = start;
+    block->end = end;
+    block->enclosing = compiler->controlBlock;
+    block->breaks = NULL;
+
+    compiler->controlBlock = block;
+}
+
+static void pop_control_block(Compiler* compiler)
+{
+    ControlBlock* next = compiler->controlBlock->enclosing;
+    raw_deallocate(compiler->controlBlock);
+    compiler->controlBlock = next;
+}
+
+static void enter_control_block(Compiler* compiler, ControlType type, size_t start, size_t end)
+{
+    push_control_block(compiler, type, start, end);
+}
+
+static void exit_control_block(Compiler* compiler)
+{
+    compiler->controlBlock->end = current_chunk(compiler)->count;
+    patch_breaks(compiler);
+    pop_control_block(compiler);
 }
 
 static Local* top_local(Compiler* compiler)
@@ -539,6 +616,8 @@ void compile_statement(Compiler* compiler, Statement* stmt)
     switch (stmt->type) {
         case STMT_FOR: compile_for_stmt(compiler, stmt); return;
         case STMT_WHILE: compile_while_stmt(compiler, stmt); return;
+        case STMT_BREAK: compile_break_stmt(compiler, stmt); return;
+        case STMT_CONTINUE: compile_continue_stmt(compiler, stmt); return;
         case STMT_IF: compile_if_stmt(compiler, stmt); return;
         case STMT_RETURN: compile_return_stmt(compiler, stmt); return;
         case STMT_PRINT: compile_print_stmt(compiler, stmt); return;
@@ -563,8 +642,7 @@ void compile_for_stmt(Compiler* compiler, Statement* stmt)
     if (condition) {
         compile_expression(compiler, condition);
 
-        exitJump = emit_jump(compiler, OP_JUMP_IF_FALSE);
-        emit_byte(compiler, OP_POP);
+        exitJump = emit_jump(compiler, OP_POP_JUMP_IF_FALSE);
     }
 
     Expression* increment = stmt->as.forStmt.increment;
@@ -580,6 +658,8 @@ void compile_for_stmt(Compiler* compiler, Statement* stmt)
         patch_jump(compiler, bodyJump);
     }
 
+    enter_control_block(compiler, CONTROL_FOR, loopStart, 0xFFFF);
+
     Statement* body = stmt->as.forStmt.body;
     compile_statement(compiler, body);
 
@@ -587,8 +667,9 @@ void compile_for_stmt(Compiler* compiler, Statement* stmt)
 
     if (exitJump != -1) {
         patch_jump(compiler, exitJump);
-        emit_byte(compiler, OP_POP);
     }
+
+    exit_control_block(compiler);
 
     end_scope(compiler);
 }
@@ -596,20 +677,45 @@ void compile_for_stmt(Compiler* compiler, Statement* stmt)
 void compile_while_stmt(Compiler* compiler, Statement* stmt)
 {
     size_t loopStart = current_chunk(compiler)->count;
+    push_control_block(compiler, CONTROL_WHILE, loopStart, 0xFFFF);
 
     Expression* condition = stmt->as.whileStmt.condition;
     compile_expression(compiler, condition);
 
-    size_t exitJump = emit_jump(compiler, OP_JUMP_IF_FALSE);
-    emit_byte(compiler, OP_POP);
+    size_t exitJump = emit_jump(compiler, OP_POP_JUMP_IF_FALSE);
 
     Statement* body = stmt->as.whileStmt.body;
     compile_statement(compiler, body);
 
     emit_loop(compiler, loopStart);
-
     patch_jump(compiler, exitJump);
-    emit_byte(compiler, OP_POP);
+
+    exit_control_block(compiler);
+}
+
+void compile_break_stmt(Compiler* compiler, Statement* stmt)
+{
+    Token keyword = stmt->as.breakStmt.keyword;
+    compiler->token = keyword;
+
+    if (!compiler->controlBlock) {
+        error(compiler, "Cannot use 'break' outside of a loop.");
+    } else {
+        size_t address = emit_jump(compiler, OP_JUMP);
+        push_control_break(compiler, address);
+    }
+}
+
+void compile_continue_stmt(Compiler* compiler, Statement* stmt)
+{
+    Token keyword = stmt->as.continueStmt.keyword;
+    compiler->token = keyword;
+
+    if (!compiler->controlBlock) {
+        error(compiler, "Cannot use 'continue' outside of a loop.");
+    } else {
+        emit_loop(compiler, compiler->controlBlock->start);
+    }
 }
 
 void compile_if_stmt(Compiler* compiler, Statement* stmt)

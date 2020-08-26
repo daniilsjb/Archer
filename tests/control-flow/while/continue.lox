@@ -1,0 +1,58 @@
+var i = 0;
+while (i < 4) {
+    i++;
+    print i;
+    
+    if (i == 2) {
+        continue;
+        print "This will never be seen";
+    }
+    
+    print "This number is not 2";
+}
+
+//Expected: 1
+//Expected: This number is not 2
+//Expected: 2
+//Expected: 3
+//Expected: This number is not 2
+//Expected: 4
+//Expected: This number is not 2
+
+var j = 0;
+while (j < 3) {
+    j++;
+    
+    if (j == 2) {
+        continue;
+    }
+    
+    var k = 0;
+    while (k < 3) {
+        k++;
+        if (k == 2) {
+            continue;
+        }
+        print "Iterating over k";
+    }
+    
+    print "Iterating over j";
+}
+
+//Expected: Iterating over k
+//Expected: Iterating over k
+//Expected: Iterating over j
+//Expected: Iterating over k
+//Expected: Iterating over k
+//Expected: Iterating over j
+
+var k = 0;
+while (k < 2) {
+    k++;
+    if (k == 2) {
+        continue;
+    }
+    print "Hello!";
+}
+
+//Expected: Hello!

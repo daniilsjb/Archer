@@ -14,6 +14,8 @@ VariableDecl → "var" IDENTIFIER ( "=" Expression )?
 
 Statement → ForStmt
           | WhileStmt
+          | BreakStmt
+          | ContinueStmt
           | IfStmt
           | ReturnStmt
           | PrintStmt
@@ -22,6 +24,8 @@ Statement → ForStmt
 
 ForStmt → "for" "(" ( VariableDecl | ExprStmt | ";" ) Expression? ";" Expression? ")" Statement
 WhileStmt → "while" "(" Expression ")" Statement
+BreakStmt → "break" ";"
+ContinueStmt → "continue" ";"
 IfStmt → "if" "(" Expression ")" Statement ( "else" Statement )?
 ReturnStmt → "return" Expression? ";"
 PrintStmt → "print" Expression ";"

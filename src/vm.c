@@ -576,6 +576,13 @@ static InterpretStatus run(VM* vm)
                 }
                 break;
             }
+            case OP_POP_JUMP_IF_FALSE: {
+                uint16_t offset = READ_SHORT();
+                if (value_is_falsey(POP())) {
+                    ip += offset;
+                }
+                break;
+            }
             case OP_JUMP_IF_NOT_EQUAL: {
                 uint16_t offset = READ_SHORT();
                 if (!values_equal(TOP, SND)) {
