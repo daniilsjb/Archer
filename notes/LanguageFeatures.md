@@ -254,24 +254,6 @@ print "\$50";
 
 ### General
 
-#### Function Expressions
-
-As a language with functions as first-class citizens, it is obligatory that the language has to support anonymous functions, or lambdas. The following is the proposed syntax for them:
-
-```js
-var func = fun(a, b) {
-    return a + b;
-};
-
-print func(2, 5); //Prints 7
-
-fun apply(f, x) {
-    return f(x);
-}
-
-print apply(fun(x) { return x ** 2; }, 5); //Prints 25
-```
-
 #### Constant Values
 
 Programs often deal with scenarios where a certain value needs to be constant accross the entire execution of the program. This is becoming increasingly popular as of late, such that languages like Kotlin assume that idiomatic code always makes variables constant unless it is explicitly needed to be otherwise. As such, it would be beneficial to add constants into the language. Following Kotlin's footsteps, this is the proposed syntax:

@@ -8,8 +8,8 @@ Declaration → ClassDecl
             | VariableDecl
             | Statement
 
-ClassDecl → "class" IDENTIFIER ( "<" IDENTIFIER )? "{" Function* "}"
-FunctionDecl → "fun" Function
+ClassDecl → "class" IDENTIFIER ( "<" IDENTIFIER )? "{" NamedFunction* "}"
+FunctionDecl → "fun" NamedFunction
 VariableDecl → "var" IDENTIFIER ( "=" Expression )?
 
 Statement → ForStmt
@@ -51,11 +51,12 @@ ExponentiationExpr → UnaryExpr ( ( "**" UnaryExpr ) )*
 UnaryExpr → ( "!" | "-" | "++" | "--" ) UnaryExpr | PostfixExpr
 PostfixExpr → PrimaryExpr ( "(" Arguments? ")" | "." IDENTIFIER )* ( "++" | "--" )?
 PrimaryExpr → "true" | "false" | "nil" | "this"
-            | STRING | NUMBER | IDENTIFIER | "(" Expression ")"
+            | STRING | NUMBER | IDENTIFIER | Lambda | "(" Expression ")"
             | "super" "." IDENTIFIER
+Lambda → "\" Parameters? "->" ( Expression | BlockStmt )
 
 WhenEntry → Expression ( "," Expression )* "->" Statement
-Function → IDENTIFIER "(" Parameters? ")" BlockStmt
+NamedFunction → IDENTIFIER "(" Parameters? ")" ( "=" Expression | BlockStmt )
 Parameters → IDENTIFIER ( "," IDENTIFIER )*
 Arguments → Expression ( "," Expression )*
 AssignOp → "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "**=" | ">>=" | "<<=" | "&=" | "|=" | "^="

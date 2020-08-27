@@ -1,0 +1,14 @@
+var identity = \x -> x;
+print identity(5); //Expected: 5
+
+var power = \x, y -> x ** y;
+print power(2, 3); //Expected: 8
+
+var five = \ -> 5;
+print five(); //Expected: 5
+
+fun apply(f, x) {
+    return f(x);
+}
+
+print apply(\x -> x + 1, 5); //Expected: 6

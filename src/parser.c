@@ -64,6 +64,7 @@ static Statement* expression_stmt(Parser* parser);
 
 static Expression* expression(Parser* parser);
 static Expression* literal_expr(Parser* parser);
+static Expression* lambda_expr(Parser* parser);
 static Expression* identifier_expr(Parser* parser);
 static Expression* prefix_inc_expr(Parser* parser);
 static Expression* unary_expr(Parser* parser);
@@ -80,9 +81,10 @@ static Expression* binary_expr(Parser* parser, Expression* prefix);
 
 static WhenEntry* when_entry_rule(Parser* parser);
 static WhenEntryList* when_entries_rule(Parser* parser);
-static ArgumentList* arguments_rule(Parser* parser);
-static Function* function_rule(Parser* parser);
+static Block* block_rule(Parser* parser);
 static ParameterList* parameters_rule(Parser* parser);
+static NamedFunction* named_function_rule(Parser* parser);
+static ArgumentList* arguments_rule(Parser* parser);
 
 typedef struct {
     PrefixParselet prefix;
@@ -103,6 +105,8 @@ ParseRule rules[] = {
     [TOKEN_SEMICOLON]         = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_QUESTION]          = { NULL,            conditional_expr,         PREC_CONDITIONAL,    ASSOC_RIGHT  },
     [TOKEN_COLON]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_R_ARROW]           = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_BACKSLASH]         = { lambda_expr,     NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_TILDE]             = { unary_expr,      NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_MINUS]             = { unary_expr,      binary_expr,              PREC_ADDITIVE,       ASSOC_LEFT   },
     [TOKEN_MINUS_EQUAL]       = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
@@ -324,10 +328,10 @@ Declaration* class_decl(Parser* parser)
         superclass = parser->previous;
     }
 
-    FunctionList* body = NULL;
+    NamedFunctionList* body = NULL;
     consume(parser, TOKEN_L_BRACE, "Expected '{' before class body in declaration.");
     while (!check(parser, TOKEN_R_BRACE) && !check(parser, TOKEN_EOF)) {
-        ast_function_list_append(&body, function_rule(parser));
+        ast_named_function_list_append(&body, named_function_rule(parser));
     }
     consume(parser, TOKEN_R_BRACE, "Expected '}' after class body in declaration.");
 
@@ -336,7 +340,7 @@ Declaration* class_decl(Parser* parser)
 
 Declaration* function_decl(Parser* parser)
 {
-    return ast_new_function_decl(function_rule(parser));
+    return ast_new_function_decl(named_function_rule(parser));
 }
 
 Declaration* variable_decl(Parser* parser)
@@ -479,12 +483,7 @@ Statement* print_stmt(Parser* parser)
 
 Statement* block_stmt(Parser* parser)
 {
-    DeclarationList* body = NULL;
-    while (!check(parser, TOKEN_R_BRACE) && !check(parser, TOKEN_EOF)) {
-        ast_declaration_list_append(&body, declaration(parser));
-    }
-    consume(parser, TOKEN_R_BRACE, "Expected '}' after block.");
-    return ast_new_block_stmt(body);
+    return ast_new_block_stmt(block_rule(parser));
 }
 
 Statement* expression_stmt(Parser* parser)
@@ -502,6 +501,25 @@ Expression* expression(Parser* parser)
 Expression* literal_expr(Parser* parser)
 {
     return ast_new_literal_expr(parser->previous);
+}
+
+Expression* lambda_expr(Parser* parser)
+{
+    ParameterList* parameters = NULL;
+    if (!check(parser, TOKEN_R_ARROW)) {
+        parameters = parameters_rule(parser);
+    }
+    consume(parser, TOKEN_R_ARROW, "Expected '->' after lambda parameters.");
+
+    FunctionBody* body = NULL;
+    if (match(parser, TOKEN_L_BRACE)) {
+        body = ast_new_block_function_body(block_rule(parser));
+    } else {
+        body = ast_new_expression_function_body(expression(parser));
+    }
+
+    Function* function = ast_new_function(parameters, body);
+    return ast_new_lambda_expr(function);
 }
 
 Expression* identifier_expr(Parser* parser)
@@ -638,6 +656,16 @@ WhenEntryList* when_entries_rule(Parser* parser)
     return entries;
 }
 
+Block* block_rule(Parser* parser)
+{
+    DeclarationList* body = NULL;
+    while (!check(parser, TOKEN_R_BRACE) && !check(parser, TOKEN_EOF)) {
+        ast_declaration_list_append(&body, declaration(parser));
+    }
+    consume(parser, TOKEN_R_BRACE, "Expected '}' after block.");
+    return ast_new_block(body);
+}
+
 ArgumentList* arguments_rule(Parser* parser)
 {
     ArgumentList* arguments = NULL;
@@ -653,20 +681,25 @@ ArgumentList* arguments_rule(Parser* parser)
     return arguments;
 }
 
-Function* function_rule(Parser* parser)
+NamedFunction* named_function_rule(Parser* parser)
 {
     consume(parser, TOKEN_IDENTIFIER, "Expected function name in declaration.");
     Token identifier = parser->previous;
-    
+
     consume(parser, TOKEN_L_PAREN, "Expected '(' after function name in declaration.");
     ParameterList* parameters = parameters_rule(parser);
     consume(parser, TOKEN_R_PAREN, "Expected ')' after function parameters in declaration.");
 
-    DeclarationList* body = NULL;
-    consume(parser, TOKEN_L_BRACE, "Expected '{' before function body in declaration.");
-    body = block_stmt(parser)->as.blockStmt.body;
+    FunctionBody* body = NULL;
+    if (match(parser, TOKEN_EQUAL)) {
+        body = ast_new_expression_function_body(expression(parser));
+    } else {
+        consume(parser, TOKEN_L_BRACE, "Expected '{' before function body in declaration.");
+        body = ast_new_block_function_body(block_rule(parser));
+    }
 
-    return ast_new_function(identifier, parameters, body);
+    Function* function = ast_new_function(parameters, body);
+    return ast_new_named_function(identifier, function);
 }
 
 ParameterList* parameters_rule(Parser* parser)

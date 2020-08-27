@@ -1,0 +1,11 @@
+fun makeIncrement() {
+    var step = 1;
+    return \x -> x + step;
+}
+
+var increment = makeIncrement();
+var x = 0;
+
+print x = increment(x); //Expected: 1
+print x = increment(x); //Expected: 2
+print x = increment(x); //Expected: 3

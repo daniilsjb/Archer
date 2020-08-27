@@ -41,9 +41,7 @@ funcA()()();
 fun makeCounter() {
     var i = 0;
     
-    fun counter() {
-        return i = i + 1;
-    }
+    fun counter() = ++i
     
     return counter;
 }

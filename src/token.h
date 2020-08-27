@@ -18,8 +18,9 @@ typedef enum {
     TOKEN_SEMICOLON,
     TOKEN_QUESTION,
     TOKEN_COLON,
-    TOKEN_TILDE,
     TOKEN_R_ARROW,
+    TOKEN_BACKSLASH,
+    TOKEN_TILDE,
 
     /* Arithmetic */
     TOKEN_PLUS,

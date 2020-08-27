@@ -38,7 +38,7 @@ void ast_delete_declaration(Declaration* declaration)
     }
 }
 
-Declaration* ast_new_class_decl(Token identifier, Token superclass, FunctionList* body)
+Declaration* ast_new_class_decl(Token identifier, Token superclass, NamedFunctionList* body)
 {
     Declaration* decl = raw_allocate(sizeof(Declaration));
     if (!decl) {
@@ -54,11 +54,11 @@ Declaration* ast_new_class_decl(Token identifier, Token superclass, FunctionList
 
 void ast_delete_class_decl(Declaration* declaration)
 {
-    ast_delete_function_list(declaration->as.classDecl.body);
+    ast_delete_named_function_list(declaration->as.classDecl.body);
     raw_deallocate(declaration);
 }
 
-Declaration* ast_new_function_decl(Function* function)
+Declaration* ast_new_function_decl(NamedFunction* function)
 {
     Declaration* decl = raw_allocate(sizeof(Declaration));
     if (!decl) {
@@ -72,7 +72,7 @@ Declaration* ast_new_function_decl(Function* function)
 
 void ast_delete_function_decl(Declaration* declaration)
 {
-    ast_delete_function(declaration->as.functionDecl.function);
+    ast_delete_named_function(declaration->as.functionDecl.function);
     raw_deallocate(declaration);
 }
 
@@ -91,10 +91,7 @@ Declaration* ast_new_variable_decl(Token identifier, Expression* value)
 
 void ast_delete_variable_decl(Declaration* declaration)
 {
-    if (declaration->as.variableDecl.value) {
-        ast_delete_expression(declaration->as.variableDecl.value);
-    }
-
+    ast_delete_expression(declaration->as.variableDecl.value);
     raw_deallocate(declaration);
 }
 
@@ -294,7 +291,7 @@ void ast_delete_print_stmt(Statement* statement)
     raw_deallocate(statement);
 }
 
-Statement* ast_new_block_stmt(DeclarationList* body)
+Statement* ast_new_block_stmt(Block* block)
 {
     Statement* stmt = raw_allocate(sizeof(Statement));
     if (!stmt) {
@@ -302,13 +299,13 @@ Statement* ast_new_block_stmt(DeclarationList* body)
     }
 
     stmt->type = STMT_BLOCK;
-    stmt->as.blockStmt.body = body;
+    stmt->as.blockStmt.block = block;
     return stmt;
 }
 
 void ast_delete_block_stmt(Statement* statement)
 {
-    ast_delete_declaration_list(statement->as.blockStmt.body);
+    ast_delete_block(statement->as.blockStmt.block);
     raw_deallocate(statement);
 }
 
@@ -349,6 +346,7 @@ void ast_delete_expression(Expression* expression)
         case EXPR_BINARY: ast_delete_binary_expr(expression); return;
         case EXPR_UNARY: ast_delete_unary_expr(expression); return;
         case EXPR_LITERAL: ast_delete_literal_expr(expression); return;
+        case EXPR_LAMBDA: ast_delete_lambda_expr(expression); return;
         case EXPR_IDENTIFIER: ast_delete_identifier_expr(expression); return;
     }
 }
@@ -587,6 +585,24 @@ Expression* ast_new_literal_expr(Token value)
 
 void ast_delete_literal_expr(Expression* expression)
 {
+    raw_deallocate(expression);
+}
+
+Expression* ast_new_lambda_expr(Function* function)
+{
+    Expression* expr = raw_allocate(sizeof(Expression));
+    if (!expr) {
+        return NULL;
+    }
+
+    expr->type = EXPR_LAMBDA;
+    expr->as.lambdaExpr.function = function;
+    return expr;
+}
+
+void ast_delete_lambda_expr(Expression* expression)
+{
+    ast_delete_function(expression->as.lambdaExpr.function);
     raw_deallocate(expression);
 }
 
@@ -830,14 +846,74 @@ size_t ast_when_entry_list_length(WhenEntryList* list)
     return length;
 }
 
-Function* ast_new_function(Token identifier, ParameterList* parameters, DeclarationList* body)
+Block* ast_new_block(DeclarationList* body)
+{
+    Block* block = raw_allocate(sizeof(Block));
+    if (!block) {
+        return NULL;
+    }
+
+    block->body = body;
+    return block;
+}
+
+void ast_delete_block(Block* block)
+{
+    ast_delete_declaration_list(block->body);
+    raw_deallocate(block);
+}
+
+void ast_delete_function_body(FunctionBody* body)
+{
+    switch (body->notation) {
+        case FUNC_EXPRESSION: ast_delete_expression_function_body(body); return;
+        case FUNC_BLOCK: ast_delete_block_function_body(body); return;
+    }
+}
+
+FunctionBody* ast_new_expression_function_body(Expression* expression)
+{
+    FunctionBody* body = raw_allocate(sizeof(FunctionBody));
+    if (!body) {
+        return NULL;
+    }
+
+    body->notation = FUNC_EXPRESSION;
+    body->as.expression = expression;
+    return body;
+}
+
+void ast_delete_expression_function_body(FunctionBody* body)
+{
+    ast_delete_expression(body->as.expression);
+    raw_deallocate(body);
+}
+
+FunctionBody* ast_new_block_function_body(Block* block)
+{
+    FunctionBody* body = raw_allocate(sizeof(FunctionBody));
+    if (!body) {
+        return NULL;
+    }
+
+    body->notation = FUNC_BLOCK;
+    body->as.block = block;
+    return body;
+}
+
+void ast_delete_block_function_body(FunctionBody* body)
+{
+    ast_delete_block(body->as.block);
+    raw_deallocate(body);
+}
+
+Function* ast_new_function(ParameterList* parameters, FunctionBody* body)
 {
     Function* function = raw_allocate(sizeof(Function));
     if (!function) {
         return NULL;
     }
 
-    function->identifier = identifier;
     function->parameters = parameters;
     function->body = body;
     return function;
@@ -846,13 +922,31 @@ Function* ast_new_function(Token identifier, ParameterList* parameters, Declarat
 void ast_delete_function(Function* function)
 {
     ast_delete_parameter_list(function->parameters);
-    ast_delete_declaration_list(function->body);
+    ast_delete_function_body(function->body);
     raw_deallocate(function);
 }
 
-FunctionList* ast_new_function_node(Function* function)
+NamedFunction* ast_new_named_function(Token identifier, Function* function)
 {
-    FunctionList* list = raw_allocate(sizeof(FunctionList));
+    NamedFunction* namedFunction = raw_allocate(sizeof(NamedFunction));
+    if (!function) {
+        return NULL;
+    }
+
+    namedFunction->identifier = identifier;
+    namedFunction->function = function;
+    return namedFunction;
+}
+
+void ast_delete_named_function(NamedFunction* namedFunction)
+{
+    ast_delete_function(namedFunction->function);
+    raw_deallocate(namedFunction);
+}
+
+NamedFunctionList* ast_new_named_function_node(NamedFunction* function)
+{
+    NamedFunctionList* list = raw_allocate(sizeof(NamedFunctionList));
     if (!list) {
         return NULL;
     }
@@ -862,36 +956,36 @@ FunctionList* ast_new_function_node(Function* function)
     return list;
 }
 
-void ast_function_list_append(FunctionList** list, Function* function)
+void ast_named_function_list_append(NamedFunctionList** list, NamedFunction* function)
 {
     if (!(*list)) {
-        *list = ast_new_function_node(function);
+        *list = ast_new_named_function_node(function);
         return;
     }
 
-    FunctionList* current = *list;
+    NamedFunctionList* current = *list;
     while (current->next) {
         current = current->next;
     }
 
-    current->next = ast_new_function_node(function);
+    current->next = ast_new_named_function_node(function);
 }
 
-void ast_delete_function_list(FunctionList* list)
+void ast_delete_named_function_list(NamedFunctionList* list)
 {
-    FunctionList* current = list;
+    NamedFunctionList* current = list;
     while (current != NULL) {
-        FunctionList* next = current->next;
-        ast_delete_function(current->function);
+        NamedFunctionList* next = current->next;
+        ast_delete_named_function(current->function);
         raw_deallocate(current);
         current = next;
     }
 }
 
-size_t ast_function_list_length(FunctionList* list)
+size_t ast_named_function_list_length(NamedFunctionList* list)
 {
     size_t length = 0;
-    FunctionList* current = list;
+    NamedFunctionList* current = list;
 
     while (current) {
         length++;

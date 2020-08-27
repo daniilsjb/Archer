@@ -15,10 +15,16 @@ typedef struct ArgumentList ArgumentList;
 typedef struct WhenEntry WhenEntry;
 typedef struct WhenEntryList WhenEntryList;
 
+typedef struct Block Block;
+typedef struct FunctionBody FunctionBody;
+typedef struct ParameterList ParameterList;
 typedef struct Function Function;
-typedef struct FunctionList FunctionList;
+typedef struct NamedFunction NamedFunction;
+typedef struct NamedFunctionList NamedFunctionList;
 
 typedef enum ExprContext { LOAD, STORE } ExprContext;
+
+typedef enum FunctionNotation { FUNC_EXPRESSION, FUNC_BLOCK } FunctionNotation;
 
 typedef struct AST {
     DeclarationList* body;
@@ -36,11 +42,11 @@ typedef struct Declaration {
         struct {
             Token identifier;
             Token superclass;
-            FunctionList* body;
+            NamedFunctionList* body;
         } classDecl;
 
         struct {
-            Function* function;
+            NamedFunction* function;
         } functionDecl;
 
         struct {
@@ -109,7 +115,7 @@ typedef struct Statement {
         } printStmt;
 
         struct {
-            DeclarationList* body;
+            Block* block;
         } blockStmt;
 
         Expression* expression;
@@ -130,7 +136,8 @@ typedef struct Expression {
         EXPR_PREFIX_INC,
         EXPR_POSTFIX_INC,
         EXPR_LITERAL,
-        EXPR_IDENTIFIER
+        EXPR_LAMBDA,
+        EXPR_IDENTIFIER,
     } type;
 
     union {
@@ -199,6 +206,10 @@ typedef struct Expression {
         } literalExpr;
 
         struct {
+            Function* function;
+        } lambdaExpr;
+
+        struct {
             Token identifier;
             ExprContext context;
         } identifierExpr;
@@ -215,11 +226,6 @@ typedef struct ArgumentList {
     ArgumentList* next;
 } ArgumentList;
 
-typedef struct ParameterList {
-    Token parameter;
-    struct ParameterList* next;
-} ParameterList;
-
 typedef struct WhenEntry {
     ExpressionList* cases;
     Statement* body;
@@ -230,16 +236,37 @@ typedef struct WhenEntryList {
     WhenEntryList* next;
 } WhenEntryList;
 
-typedef struct Function {
-    Token identifier;
-    ParameterList* parameters;
+typedef struct Block {
     DeclarationList* body;
+} Block;
+
+typedef struct FunctionBody {
+    FunctionNotation notation;
+    union {
+        Expression* expression;
+        Block* block;
+    } as;
+} FunctionBody;
+
+typedef struct ParameterList {
+    Token parameter;
+    ParameterList* next;
+} ParameterList;
+
+typedef struct Function {
+    ParameterList* parameters;
+    FunctionBody* body;
 } Function;
 
-typedef struct FunctionList {
+typedef struct NamedFunction {
+    Token identifier;
     Function* function;
-    FunctionList* next;
-} FunctionList;
+} NamedFunction;
+
+typedef struct NamedFunctionList {
+    NamedFunction* function;
+    NamedFunctionList* next;
+} NamedFunctionList;
 
 typedef struct DeclarationList {
     Declaration* declaration;
@@ -250,9 +277,9 @@ AST* ast_new_tree(DeclarationList* body);
 void ast_delete_tree(AST* ast);
 
 void ast_delete_declaration(Declaration* declaration);
-Declaration* ast_new_class_decl(Token identifier, Token superclass, FunctionList* body);
+Declaration* ast_new_class_decl(Token identifier, Token superclass, NamedFunctionList* body);
 void ast_delete_class_decl(Declaration* declaration);
-Declaration* ast_new_function_decl(Function* function);
+Declaration* ast_new_function_decl(NamedFunction* function);
 void ast_delete_function_decl(Declaration* declaration);
 Declaration* ast_new_variable_decl(Token identifier, Expression* value);
 void ast_delete_variable_decl(Declaration* declaration);
@@ -276,7 +303,7 @@ Statement* ast_new_return_stmt(Token keyword, Expression* expression);
 void ast_delete_return_stmt(Statement* statement);
 Statement* ast_new_print_stmt(Expression* expression);
 void ast_delete_print_stmt(Statement* statement);
-Statement* ast_new_block_stmt(DeclarationList* body);
+Statement* ast_new_block_stmt(Block* block);
 void ast_delete_block_stmt(Statement* statement);
 Statement* ast_new_expression_stmt(Expression* expression);
 void ast_delete_expression_stmt(Statement* statement);
@@ -306,6 +333,8 @@ Expression* ast_new_prefix_inc_expr(Token op, Expression* expression);
 void ast_delete_prefix_inc_expr(Expression* expression);
 Expression* ast_new_literal_expr(Token value);
 void ast_delete_literal_expr(Expression* expression);
+Expression* ast_new_lambda_expr(Function* function);
+void ast_delete_lambda_expr(Expression* expression);
 Expression* ast_new_identifier_expr(Token identifier, ExprContext context);
 void ast_delete_identifier_expr(Expression* expression);
 
@@ -332,13 +361,25 @@ void ast_when_entry_list_append(WhenEntryList** list, WhenEntry* entry);
 void ast_delete_when_entry_list(WhenEntryList* list);
 size_t ast_when_entry_list_length(WhenEntryList* list);
 
-Function* ast_new_function(Token identifier, ParameterList* parameters, DeclarationList* body);
+Block* ast_new_block(DeclarationList* body);
+void ast_delete_block(Block* block);
+
+void ast_delete_function_body(FunctionBody* body);
+FunctionBody* ast_new_expression_function_body(Expression* expression);
+void ast_delete_expression_function_body(FunctionBody* body);
+FunctionBody* ast_new_block_function_body(Block* block);
+void ast_delete_block_function_body(FunctionBody* body);
+
+Function* ast_new_function(ParameterList* parameters, FunctionBody* body);
 void ast_delete_function(Function* function);
 
-FunctionList* ast_new_function_node(Function* function);
-void ast_function_list_append(FunctionList** list, Function* function);
-void ast_delete_function_list(FunctionList* list);
-size_t ast_function_list_length(FunctionList* list);
+NamedFunction* ast_new_named_function(Token identifier, Function* function);
+void ast_delete_named_function(NamedFunction* function);
+
+NamedFunctionList* ast_new_named_function_node(NamedFunction* function);
+void ast_named_function_list_append(NamedFunctionList** list, NamedFunction* function);
+void ast_delete_named_function_list(NamedFunctionList* list);
+size_t ast_named_function_list_length(NamedFunctionList* list);
 
 DeclarationList* ast_new_declaration_node(Declaration* declaration);
 void ast_declaration_list_append(DeclarationList** list, Declaration* declaration);

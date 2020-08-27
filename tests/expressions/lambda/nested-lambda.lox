@@ -1,0 +1,2 @@
+var foo = \x -> \y -> x + y;
+print foo(2)(5); //Expected: 7

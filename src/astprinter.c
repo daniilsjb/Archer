@@ -36,15 +36,19 @@ static void print_conditional_expr(int indent, Expression* expr);
 static void print_binary_expr(int indent, Expression* expr);
 static void print_unary_expr(int indent, Expression* expr);
 static void print_literal_expr(int indent, Expression* expr);
+static void print_lambda_expr(int indent, Expression* expr);
 static void print_identifier_expr(int indent, Expression* expr);
 
 static void print_when_entry(int indent, WhenEntry* entry);
 static void print_when_entry_list(int indent, WhenEntryList* list);
 static void print_expression_list(int indent, ExpressionList* list);
 static void print_argument_list(int indent, ArgumentList* list);
+static void print_block(int indent, Block* block);
+static void print_function_body(int indent, FunctionBody* body);
 static void print_parameter_list_inline(ParameterList* list);
 static void print_function(int indent, Function* function);
-static void print_function_list(int indent, FunctionList* list);
+static void print_named_function(int indent, NamedFunction* function);
+static void print_named_function_list(int indent, NamedFunctionList* list);
 static void print_declaration_list(int indent, DeclarationList* list);
 
 static void print_indented(int indent, const char* format, ...)
@@ -138,7 +142,7 @@ void print_declaration(int indent, Declaration* decl)
 
 void print_class_decl(int indent, Declaration* decl)
 {
-    print_header(indent, "Class");
+    print_header(indent, "Class Declaration");
     indent++;
 
     Token identifier = decl->as.classDecl.identifier;
@@ -148,18 +152,18 @@ void print_class_decl(int indent, Declaration* decl)
     print_token_field(indent, "Superclass", superclass);
 
     print_indented(indent, "Methods:\n");
-    print_function_list(indent + 1, decl->as.classDecl.body);
+    print_named_function_list(indent + 1, decl->as.classDecl.body);
 }
 
 void print_function_decl(int indent, Declaration* decl)
 {
-    print_header(indent, "Function");
-    print_function(indent + 1, decl->as.functionDecl.function);
+    print_header(indent, "Function Declaration");
+    print_named_function(indent + 1, decl->as.functionDecl.function);
 }
 
 void print_variable_decl(int indent, Declaration* decl)
 {
-    print_header(indent, "Variable");
+    print_header(indent, "Variable Declaration");
     indent++;
 
     Token identifier = decl->as.variableDecl.identifier;
@@ -297,7 +301,7 @@ void print_print_stmt(int indent, Statement* stmt)
 void print_block_stmt(int indent, Statement* stmt)
 {
     print_header(indent, "Block");
-    print_declaration_list(indent + 1, stmt->as.blockStmt.body);
+    print_block(indent + 1, stmt->as.blockStmt.block);
 }
 
 void print_expression_stmt(int indent, Statement* stmt)
@@ -321,6 +325,7 @@ void print_expression(int indent, Expression* expr)
         case EXPR_BINARY: print_binary_expr(indent, expr); return;
         case EXPR_UNARY: print_unary_expr(indent, expr); return;
         case EXPR_LITERAL: print_literal_expr(indent, expr); return;
+        case EXPR_LAMBDA: print_lambda_expr(indent, expr); return;
         case EXPR_IDENTIFIER: print_identifier_expr(indent, expr); return;
     }
 }
@@ -494,6 +499,12 @@ void print_literal_expr(int indent, Expression* expr)
     print_token_field(indent, "Value", value);
 }
 
+void print_lambda_expr(int indent, Expression* expr)
+{
+    print_header(indent, "Lambda");
+    print_function(indent + 1, expr->as.lambdaExpr.function);
+}
+
 void print_identifier_expr(int indent, Expression* expr)
 {
     print_header(indent, "Identifier");
@@ -558,6 +569,27 @@ void print_argument_list(int indent, ArgumentList* list)
     }
 }
 
+void print_block(int indent, Block* block)
+{
+    print_declaration_list(indent, block->body);
+}
+
+void print_function_body(int indent, FunctionBody* body)
+{
+    switch (body->notation) {
+        case FUNC_EXPRESSION: {
+            print_header(indent, "Expression");
+            print_expression(indent + 1, body->as.expression);
+            break;
+        }
+        case FUNC_BLOCK: {
+            print_header(indent, "Block");
+            print_block(indent + 1, body->as.block);
+            break;
+        }
+    }
+}
+
 void print_parameter_list_inline(ParameterList* list)
 {
     if (ast_parameter_list_length(list) == 0) {
@@ -576,27 +608,35 @@ void print_parameter_list_inline(ParameterList* list)
 
 void print_function(int indent, Function* function)
 {
-    Token identifier = function->identifier;
-    print_token_field(indent, "Identifier", identifier);
-
     print_indented(indent, "Parameters: ");
     print_parameter_list_inline(function->parameters);
     printf("\n");
 
     print_indented(indent, "Body:\n");
-    print_declaration_list(indent + 1, function->body);
+    print_function_body(indent + 1, function->body);
 }
 
-void print_function_list(int indent, FunctionList* list)
+void print_named_function(int indent, NamedFunction* namedFunction)
 {
-    if (ast_function_list_length(list) == 0) {
+    print_header(indent, "Named Function");
+    indent++;
+
+    print_token_field(indent, "Identifier", namedFunction->identifier);
+
+    print_indented(indent, "Function:\n");
+    print_function(indent + 1, namedFunction->function);
+}
+
+void print_named_function_list(int indent, NamedFunctionList* list)
+{
+    if (ast_named_function_list_length(list) == 0) {
         print_indented(indent, "<Empty>\n");
         return;
     }
 
-    FunctionList* current = list;
+    NamedFunctionList* current = list;
     while (current) {
-        print_function(indent, current->function);
+        print_named_function(indent, current->function);
         current = current->next;
     }
 }

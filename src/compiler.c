@@ -45,6 +45,7 @@ typedef struct ControlBlock {
 } ControlBlock;
 
 typedef enum {
+    TYPE_LAMBDA,
     TYPE_FUNCTION,
     TYPE_METHOD,
     TYPE_INITIALIZER,
@@ -112,14 +113,18 @@ static void compile_conditional_expr(Compiler* compiler, Expression* expr);
 static void compile_binary_expr(Compiler* compiler, Expression* expr);
 static void compile_unary_expr(Compiler* compiler, Expression* expr);
 static void compile_literal_expr(Compiler* compiler, Expression* expr);
+static void compile_lambda_expr(Compiler* compiler, Expression* expr);
 static void compile_identifier_expr(Compiler* compiler, Expression* expr);
 
 static void compile_when_entry(Compiler* compiler, WhenEntry* entry);
 static size_t compile_when_entry_list(Compiler* compiler, WhenEntryList* list);
-static size_t compile_argument_list(Compiler* compiler, ArgumentList* list);
+static void compile_block(Compiler* compiler, Block* block);
 static size_t compile_parameter_list(Compiler* compiler, ParameterList* list);
-static void compile_function(Compiler* compiler, Function* function, FunctionType type);
-static size_t compile_function_list(Compiler* compiler, FunctionList* list);
+static void compile_function_body(Compiler* compiler, FunctionBody* body);
+static void compile_function(Compiler* compiler, Function* function, FunctionType type, Token identifier);
+static void compile_named_function(Compiler* compiler, NamedFunction* function, FunctionType type);
+static size_t compile_named_function_list(Compiler* compiler, NamedFunctionList* list);
+static size_t compile_argument_list(Compiler* compiler, ArgumentList* list);
 static size_t compile_declaration_list(Compiler* compiler, DeclarationList* list);
 
 static void compiler_init(Compiler* compiler, VM* vm, FunctionType type, Token identifier)
@@ -137,18 +142,21 @@ static void compiler_init(Compiler* compiler, VM* vm, FunctionType type, Token i
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
 
-    if (type != TYPE_SCRIPT) {
-        compiler->token = identifier;
+    compiler->token = identifier;
+
+    if (type == TYPE_LAMBDA) {
+        compiler->function->name = copy_string(vm, "lambda", 8);
+    } else if (type == TYPE_FUNCTION || type == TYPE_METHOD || type == TYPE_INITIALIZER) {
         compiler->function->name = copy_string(vm, identifier.start, identifier.length);
-    } else {
-        compiler->token = empty_token();
+    } else if (type == TYPE_SCRIPT) {
+        compiler->function->name = copy_string(vm, "<script>", 8);
     }
 
     Local* local = &compiler->locals[compiler->localCount++];
     local->scopeDepth = 0;
     local->captured = false;
 
-    if (type != TYPE_FUNCTION) {
+    if (type == TYPE_METHOD || type == TYPE_INITIALIZER) {
         local->identifier.start = "this";
         local->identifier.length = 4;
     } else {
@@ -164,6 +172,12 @@ static void enter_error_mode(Compiler* compiler)
 {
     compiler->error = true;
     compiler->panic = true;
+    
+    Compiler* current = compiler->enclosing;
+    while (current) {
+        current->error = true;
+        current = current->enclosing;
+    }
 }
 
 static void error(Compiler* compiler, const char* message)
@@ -279,7 +293,7 @@ static ObjFunction* finish_compilation(VM* vm)
 
 #if DEBUG_PRINT_CODE
     if (!vm->compiler->error) {
-        disassemble_chunk(current_chunk(vm->compiler), function->name != NULL ? function->name->chars : "<script>");
+        disassemble_chunk(current_chunk(vm->compiler), function->name->chars);
     }
 #endif
 
@@ -525,9 +539,9 @@ void compile_declaration(Compiler* compiler, Declaration* decl)
     }
 }
 
-static void compile_method(Compiler* compiler, Function* function)
+static void compile_method(Compiler* compiler, NamedFunction* method)
 {
-    Token identifier = function->identifier;
+    Token identifier = method->identifier;
     compiler->token = identifier;
     uint8_t name = make_identifier_constant(compiler, identifier);
 
@@ -536,7 +550,7 @@ static void compile_method(Compiler* compiler, Function* function)
         type = TYPE_INITIALIZER;
     }
 
-    compile_function(compiler, function, type);
+    compile_named_function(compiler, method, type);
     emit_bytes(compiler, OP_METHOD, name);
 }
 
@@ -575,7 +589,7 @@ void compile_class_decl(Compiler* compiler, Declaration* decl)
 
     named_variable(compiler, identifier, LOAD);
 
-    FunctionList* current = decl->as.classDecl.body;
+    NamedFunctionList* current = decl->as.classDecl.body;
     while (current) {
         compile_method(compiler, current->function);
         current = current->next;
@@ -596,7 +610,7 @@ void compile_function_decl(Compiler* compiler, Declaration* decl)
     compiler->token = identifier;
     uint8_t global = declare_variable(compiler, identifier);
     initialize_local(compiler);
-    compile_function(compiler, decl->as.functionDecl.function, TYPE_FUNCTION);
+    compile_named_function(compiler, decl->as.functionDecl.function, TYPE_FUNCTION);
     define_variable(compiler, global);
 }
 
@@ -808,7 +822,7 @@ void compile_print_stmt(Compiler* compiler, Statement* stmt)
 void compile_block_stmt(Compiler* compiler, Statement* stmt)
 {
     begin_scope(compiler);
-    compile_declaration_list(compiler, stmt->as.blockStmt.body);
+    compile_block(compiler, stmt->as.blockStmt.block);
     end_scope(compiler);
 }
 
@@ -833,6 +847,7 @@ void compile_expression(Compiler* compiler, Expression* expr)
         case EXPR_BINARY: compile_binary_expr(compiler, expr); return;
         case EXPR_UNARY: compile_unary_expr(compiler, expr); return;
         case EXPR_LITERAL: compile_literal_expr(compiler, expr); return;
+        case EXPR_LAMBDA: compile_lambda_expr(compiler, expr); return;
         case EXPR_IDENTIFIER: compile_identifier_expr(compiler, expr); return;
     }
 }
@@ -1273,6 +1288,11 @@ void compile_literal_expr(Compiler* compiler, Expression* expr)
     }
 }
 
+void compile_lambda_expr(Compiler* compiler, Expression* expr)
+{
+    compile_function(compiler, expr->as.lambdaExpr.function, TYPE_LAMBDA, empty_token());
+}
+
 void compile_identifier_expr(Compiler* compiler, Expression* expr)
 {
     Token identifier = expr->as.identifierExpr.identifier;
@@ -1320,6 +1340,11 @@ size_t compile_when_entry_list(Compiler* compiler, WhenEntryList* list)
     return count;
 }
 
+void compile_block(Compiler* compiler, Block* block)
+{
+    compile_declaration_list(compiler, block->body);
+}
+
 size_t compile_argument_list(Compiler* compiler, ArgumentList* list)
 {
     ArgumentList* current = list;
@@ -1362,18 +1387,36 @@ size_t compile_parameter_list(Compiler* compiler, ParameterList* list)
     return count;
 }
 
-void compile_function(Compiler* compiler, Function* function, FunctionType type)
+void compile_function_body(Compiler* compiler, FunctionBody* body)
+{
+    switch (body->notation) {
+        case FUNC_EXPRESSION: {
+            if (compiler->type == TYPE_INITIALIZER) {
+                error(compiler, "Initializer cannot be an expression.");
+            }
+
+            compile_expression(compiler, body->as.expression);
+            emit_byte(compiler, OP_RETURN);
+            break;
+        }
+        case FUNC_BLOCK: {
+            begin_scope(compiler);
+            compile_block(compiler, body->as.block);
+            end_scope(compiler);
+            break;
+        }
+    }
+}
+
+void compile_function(Compiler* compiler, Function* function, FunctionType type, Token identifier)
 {
     Compiler newCompiler;
-    compiler->token = function->identifier;
-    compiler_init(&newCompiler, compiler->vm, type, function->identifier);
+    compiler_init(&newCompiler, compiler->vm, type, identifier);
     begin_scope(&newCompiler);
 
     newCompiler.function->arity = (int)compile_parameter_list(&newCompiler, function->parameters);
 
-    begin_scope(&newCompiler);
-    compile_declaration_list(&newCompiler, function->body);
-    end_scope(&newCompiler);
+    compile_function_body(&newCompiler, function->body);
 
     ObjFunction* compiled = finish_compilation(newCompiler.vm);
 
@@ -1384,12 +1427,17 @@ void compile_function(Compiler* compiler, Function* function, FunctionType type)
     }
 }
 
-size_t compile_function_list(Compiler* compiler, FunctionList* list)
+void compile_named_function(Compiler* compiler, NamedFunction* namedFunction, FunctionType type)
 {
-    FunctionList* current = list;
+    compile_function(compiler, namedFunction->function, type, namedFunction->identifier);
+}
+
+size_t compile_named_function_list(Compiler* compiler, NamedFunctionList* list)
+{
+    NamedFunctionList* current = list;
     size_t count = 0;
     while (current) {
-        compile_function(compiler, current->function, TYPE_METHOD);
+        compile_named_function(compiler, current->function, TYPE_METHOD);
         current = current->next;
         count++;
     }

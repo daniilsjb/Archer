@@ -1,0 +1,26 @@
+var greeting = \name -> {
+    print "Hello, " + name;
+};
+
+greeting("Benedict"); //Expected: Hello, Benedict
+
+var block = \ -> {
+    var x = 3;
+    for (var i = 0; i < x; i++) {
+        print i;
+    }
+};
+
+block();
+//Expected: 0
+//Expected: 1
+//Expected: 2
+
+fun execute(f) {
+    f();
+}
+
+execute(\ -> {
+    print "Hello there!";                   //Expected: Hello there!
+    print "I was called from 'execute'!";   //Expected: I was called from 'execute'!
+});
