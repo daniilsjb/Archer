@@ -65,20 +65,28 @@ ObjNative* new_native(VM* vm, NativeFn function, int arity)
     return native;
 }
 
-ObjClass* new_class(VM* vm, ObjString* name)
-{
-    ObjClass* loxClass = ALLOCATE_OBJ(vm, ObjClass, OBJ_CLASS);
-    loxClass->name = name;
-    table_init(&loxClass->methods);
-    return loxClass;
-}
-
 ObjInstance* new_instance(VM* vm, ObjClass* loxClass)
 {
     ObjInstance* instance = ALLOCATE_OBJ(vm, ObjInstance, OBJ_INSTANCE);
     instance->loxClass = loxClass;
     table_init(&instance->fields);
     return instance;
+}
+
+ObjClass* new_class(VM* vm, ObjString* name)
+{
+    ObjClass* metaClass = ALLOCATE_OBJ(vm, ObjClass, OBJ_CLASS);
+    metaClass->obj.loxClass = NULL;
+    metaClass->name = concatenate_strings(vm, name, copy_string(vm, " meta", 5));
+    table_init(&metaClass->methods);
+    table_init(&metaClass->obj.fields);
+
+    ObjClass* loxClass = ALLOCATE_OBJ(vm, ObjClass, OBJ_CLASS);
+    loxClass->name = name;
+    table_init(&loxClass->methods);
+    loxClass->obj.loxClass = metaClass;
+    table_init(&loxClass->obj.fields);
+    return loxClass;
 }
 
 ObjBoundMethod* new_bound_method(VM* vm, Value receiver, ObjClosure* method)

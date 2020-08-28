@@ -188,28 +188,6 @@ val pi = 3.1415926535;
 pi = 3; //Illegal operation, this should preferably be a compile-time error
 ```
 
-#### Static Fields and Methods
-
-A very useful feature of classes in many object-oriented languages is the ability to provide functionality without relying on any particular instance. This serves mainly as a namespacing mechanism, but it has an advantage of being able to access the class' static fields as well. As such, it would be beneficial to implement statics into the language. The following is an example:
-
-```js
-
-class Calculator {
-
-    //Called once after class declaration is finished executing, does not interfere with ordinary `init` constructor
-    static init() {
-        Calculator.pi = 3.1415926535; //Static field
-    }
-
-    static circleArea(r) {
-        return Calculator.pi * r ** 2;
-    }
-
-}
-
-print Calculator.circleArea(1); //Prints 3.1415926535
-```
-
 #### Error Handling
 
 It is very important for the language to be able to handle runtime errors well, as often it is really difficult or purely impossible to recognize if something will go wrong upfront. Languages like C fail silently and delegate the responsibility of checking validity of operation outputs to the programmer. This is a possible approach, but in certain cases it may be difficult to use as it is difficult to come up with a suitable "identity" value representing invalid state of the output. In addition, the language already throws various runtime errors under certain circumstances. As such, it would be desirable to have some notion of a `try-catch` block, like this:

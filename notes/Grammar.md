@@ -8,7 +8,7 @@ Declaration → ClassDecl
             | VariableDecl
             | Statement
 
-ClassDecl → "class" IDENTIFIER ( "<" IDENTIFIER )? "{" NamedFunction* "}"
+ClassDecl → "class" IDENTIFIER ( "<" IDENTIFIER )? "{" Method* "}"
 FunctionDecl → "fun" NamedFunction
 VariableDecl → "var" IDENTIFIER ( "=" Expression )?
 
@@ -56,6 +56,7 @@ PrimaryExpr → "true" | "false" | "nil" | "this"
 Lambda → "\" Parameters? "->" ( Expression | BlockStmt )
 
 WhenEntry → Expression ( "," Expression )* "->" Statement
+Method → ( "static" )? NamedFunction
 NamedFunction → IDENTIFIER "(" Parameters? ")" ( "=" Expression | BlockStmt )
 Parameters → IDENTIFIER ( "," IDENTIFIER )*
 Arguments → Expression ( "," Expression )*

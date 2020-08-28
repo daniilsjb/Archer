@@ -205,12 +205,16 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return constant_instruction("CLASS", chunk, offset);
         case OP_METHOD:
             return constant_instruction("METHOD", chunk, offset);
+        case OP_STATIC_METHOD:
+            return constant_instruction("STATIC_METHOD", chunk, offset);
         case OP_INHERIT:
             return simple_instruction("INHERIT", offset);
         case OP_GET_SUPER:
             return constant_instruction("GET_SUPER", chunk, offset);
         case OP_SUPER_INVOKE:
             return invoke_instruction("SUPER_INVOKE", chunk, offset);
+        case OP_END_CLASS:
+            return simple_instruction("END_CLASS", offset);
         default:
             return unknown_instruction(instruction, offset);
     }

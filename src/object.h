@@ -14,8 +14,8 @@ struct VM;
 #define IS_FUNCTION(object)     isObjType(object, OBJ_FUNCTION)
 #define IS_CLOSURE(object)      isObjType(object, OBJ_CLOSURE)
 #define IS_NATIVE(object)       isObjType(object, OBJ_NATIVE)
+#define IS_INSTANCE(object)     (isObjType(object, OBJ_INSTANCE) || isObjType(object, OBJ_CLASS))
 #define IS_CLASS(object)        isObjType(object, OBJ_CLASS)
-#define IS_INSTANCE(object)     isObjType(object, OBJ_INSTANCE)
 #define IS_BOUND_METHOD(object) isObjType(object, OBJ_BOUND_METHOD)
 
 #define AS_STRING(object)       ((ObjString*)AS_OBJ(object))
@@ -23,8 +23,8 @@ struct VM;
 #define AS_FUNCTION(object)     ((ObjFunction*)AS_OBJ(object))
 #define AS_CLOSURE(object)      ((ObjClosure*)AS_OBJ(object))
 #define AS_NATIVE(object)       ((ObjNative*)AS_OBJ(object))
-#define AS_CLASS(object)        ((ObjClass*)AS_OBJ(object))
 #define AS_INSTANCE(object)     ((ObjInstance*)AS_OBJ(object))
+#define AS_CLASS(object)        ((ObjClass*)AS_OBJ(object))
 #define AS_BOUND_METHOD(object) ((ObjBoundMethod*)AS_OBJ(object))
 
 typedef enum {
@@ -66,17 +66,19 @@ typedef struct {
     size_t upvalueCount;
 } ObjClosure;
 
-typedef struct {
-    Obj obj;
-    ObjString* name;
-    Table methods;
-} ObjClass;
+typedef struct ObjClass ObjClass;
 
 typedef struct {
     Obj obj;
     ObjClass* loxClass;
     Table fields;
 } ObjInstance;
+
+typedef struct ObjClass {
+    ObjInstance obj;
+    ObjString* name;
+    Table methods;
+} ObjClass;
 
 typedef struct {
     Obj obj;
@@ -105,8 +107,8 @@ ObjFunction* new_function(struct VM* vm);
 ObjClosure* new_closure(struct VM* vm, ObjFunction* function);
 ObjUpvalue* new_upvalue(struct VM* vm, Value* slot);
 ObjNative* new_native(struct VM* vm, NativeFn function, int arity);
-ObjClass* new_class(struct VM* vm, ObjString* name);
 ObjInstance* new_instance(struct VM* vm, ObjClass* loxClass);
+ObjClass* new_class(struct VM* vm, ObjString* name);
 ObjBoundMethod* new_bound_method(struct VM* vm, Value receiver, ObjClosure* method);
 
 ObjString* make_string(struct VM* vm, size_t length);

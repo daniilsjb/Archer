@@ -38,7 +38,7 @@ void ast_delete_declaration(Declaration* declaration)
     }
 }
 
-Declaration* ast_new_class_decl(Token identifier, Token superclass, NamedFunctionList* body)
+Declaration* ast_new_class_decl(Token identifier, Token superclass, MethodList* body)
 {
     Declaration* decl = raw_allocate(sizeof(Declaration));
     if (!decl) {
@@ -54,7 +54,7 @@ Declaration* ast_new_class_decl(Token identifier, Token superclass, NamedFunctio
 
 void ast_delete_class_decl(Declaration* declaration)
 {
-    ast_delete_named_function_list(declaration->as.classDecl.body);
+    ast_delete_method_list(declaration->as.classDecl.body);
     raw_deallocate(declaration);
 }
 
@@ -1008,6 +1008,75 @@ size_t ast_named_function_list_length(NamedFunctionList* list)
 {
     size_t length = 0;
     NamedFunctionList* current = list;
+
+    while (current) {
+        length++;
+        current = current->next;
+    }
+
+    return length;
+}
+
+Method* ast_new_method(bool isStatic, NamedFunction* namedFunction)
+{
+    Method* method = raw_allocate(sizeof(Method));
+    if (!method) {
+        return NULL;
+    }
+
+    method->isStatic = isStatic;
+    method->namedFunction = namedFunction;
+    return method;
+}
+
+void ast_delete_method(Method* method)
+{
+    ast_delete_named_function(method->namedFunction);
+    raw_deallocate(method);
+}
+
+MethodList* ast_new_method_node(Method* method)
+{
+    MethodList* list = raw_allocate(sizeof(MethodList));
+    if (!list) {
+        return NULL;
+    }
+
+    list->method = method;
+    list->next = NULL;
+    return list;
+}
+
+void ast_method_list_append(MethodList** list, Method* method)
+{
+    if (!(*list)) {
+        *list = ast_new_method_node(method);
+        return;
+    }
+
+    MethodList* current = *list;
+    while (current->next) {
+        current = current->next;
+    }
+
+    current->next = ast_new_method_node(method);
+}
+
+void ast_delete_method_list(MethodList* list)
+{
+    MethodList* current = list;
+    while (current != NULL) {
+        MethodList* next = current->next;
+        ast_delete_method(current->method);
+        raw_deallocate(current);
+        current = next;
+    }
+}
+
+size_t ast_method_list_length(MethodList* list)
+{
+    size_t length = 0;
+    MethodList* current = list;
 
     while (current) {
         length++;

@@ -48,7 +48,9 @@ typedef enum {
     TYPE_LAMBDA,
     TYPE_FUNCTION,
     TYPE_METHOD,
+    TYPE_STATIC_METHOD,
     TYPE_INITIALIZER,
+    TYPE_STATIC_INITIALIZER,
     TYPE_SCRIPT
 } FunctionType;
 
@@ -124,7 +126,7 @@ static size_t compile_parameter_list(Compiler* compiler, ParameterList* list);
 static void compile_function_body(Compiler* compiler, FunctionBody* body);
 static void compile_function(Compiler* compiler, Function* function, FunctionType type, Token identifier);
 static void compile_named_function(Compiler* compiler, NamedFunction* function, FunctionType type);
-static size_t compile_named_function_list(Compiler* compiler, NamedFunctionList* list);
+static size_t compile_method_list(Compiler* compiler, MethodList* list);
 static size_t compile_argument_list(Compiler* compiler, ArgumentList* list);
 static size_t compile_declaration_list(Compiler* compiler, DeclarationList* list);
 
@@ -147,17 +149,17 @@ static void compiler_init(Compiler* compiler, VM* vm, FunctionType type, Token i
 
     if (type == TYPE_LAMBDA) {
         compiler->function->name = copy_string(vm, "lambda", 8);
-    } else if (type == TYPE_FUNCTION || type == TYPE_METHOD || type == TYPE_INITIALIZER) {
-        compiler->function->name = copy_string(vm, identifier.start, identifier.length);
     } else if (type == TYPE_SCRIPT) {
-        compiler->function->name = copy_string(vm, "<script>", 8);
+        compiler->function->name = copy_string(vm, "script", 8);
+    } else {
+        compiler->function->name = copy_string(vm, identifier.start, identifier.length);
     }
 
     Local* local = &compiler->locals[compiler->localCount++];
     local->scopeDepth = 0;
     local->captured = false;
 
-    if (type == TYPE_METHOD || type == TYPE_INITIALIZER) {
+    if (type == TYPE_METHOD || type == TYPE_STATIC_METHOD || type == TYPE_INITIALIZER || type == TYPE_STATIC_INITIALIZER) {
         local->identifier.start = "this";
         local->identifier.length = 4;
     } else {
@@ -226,7 +228,7 @@ static size_t emit_jump(Compiler* compiler, uint8_t instruction)
 
 static void emit_return(Compiler* compiler)
 {
-    if (compiler->type == TYPE_INITIALIZER) {
+    if (compiler->type == TYPE_INITIALIZER || compiler->type == TYPE_STATIC_INITIALIZER) {
         emit_bytes(compiler, OP_LOAD_LOCAL, 0);
     } else {
         emit_byte(compiler, OP_LOAD_NIL);
@@ -540,19 +542,21 @@ void compile_declaration(Compiler* compiler, Declaration* decl)
     }
 }
 
-static void compile_method(Compiler* compiler, NamedFunction* method)
+static void compile_method(Compiler* compiler, Method* method)
 {
-    Token identifier = method->identifier;
+    NamedFunction* function = method->namedFunction;
+
+    Token identifier = function->identifier;
     compiler->token = identifier;
     uint8_t name = make_identifier_constant(compiler, identifier);
 
-    FunctionType type = TYPE_METHOD;
+    FunctionType type = method->isStatic ? TYPE_STATIC_METHOD : TYPE_METHOD;
     if (identifier.length == 4 && memcmp(identifier.start, "init", 4) == 0) {
-        type = TYPE_INITIALIZER;
+        type = method->isStatic ? TYPE_STATIC_INITIALIZER : TYPE_INITIALIZER;
     }
 
-    compile_named_function(compiler, method, type);
-    emit_bytes(compiler, OP_METHOD, name);
+    compile_named_function(compiler, function, type);
+    emit_bytes(compiler, method->isStatic ? OP_STATIC_METHOD : OP_METHOD, name);
 }
 
 void compile_class_decl(Compiler* compiler, Declaration* decl)
@@ -590,13 +594,9 @@ void compile_class_decl(Compiler* compiler, Declaration* decl)
 
     named_variable(compiler, identifier, LOAD);
 
-    NamedFunctionList* current = decl->as.classDecl.body;
-    while (current) {
-        compile_method(compiler, current->function);
-        current = current->next;
-    }
+    compile_method_list(compiler, decl->as.classDecl.body);
 
-    emit_byte(compiler, OP_POP);
+    emit_byte(compiler, OP_END_CLASS);
 
     if (classCompiler.hasSuperclass) {
         end_scope(compiler);
@@ -804,7 +804,7 @@ void compile_return_stmt(Compiler* compiler, Statement* stmt)
 
     Expression* value = stmt->as.returnStmt.expression;
     if (value) {
-        if (compiler->type == TYPE_INITIALIZER) {
+        if (compiler->type == TYPE_INITIALIZER || compiler->type == TYPE_STATIC_INITIALIZER) {
             error(compiler, "Cannot return a value from an initializer.");
         }
         compile_expression(compiler, value);
@@ -884,6 +884,8 @@ static void compile_super_invocation(Compiler* compiler, Expression* expr)
         error(compiler, "Cannot use 'super' outside of a class.");
     } else if (!compiler->vm->classCompiler->hasSuperclass) {
         error(compiler, "Cannot use 'super' in a class with no superclass.");
+    } else if (compiler->type == TYPE_STATIC_METHOD) {
+        error(compiler, "Cannot use 'super' in a static method.");
     }
 
     Token method = callee->as.superExpr.method;
@@ -941,6 +943,8 @@ void compile_super_expr(Compiler* compiler, Expression* expr)
         error(compiler, "Cannot use 'super' outside of a class.");
     } else if (!compiler->vm->classCompiler->hasSuperclass) {
         error(compiler, "Cannot use 'super' in a class with no superclass.");
+    } else if (compiler->type == TYPE_STATIC_METHOD) {
+        error(compiler, "Cannot use 'super' in a static method.");
     }
 
     Token method = expr->as.superExpr.method;
@@ -1411,7 +1415,7 @@ void compile_function_body(Compiler* compiler, FunctionBody* body)
 {
     switch (body->notation) {
         case FUNC_EXPRESSION: {
-            if (compiler->type == TYPE_INITIALIZER) {
+            if (compiler->type == TYPE_INITIALIZER || compiler->type == TYPE_STATIC_INITIALIZER) {
                 error(compiler, "Initializer cannot be an expression.");
             }
 
@@ -1435,6 +1439,9 @@ void compile_function(Compiler* compiler, Function* function, FunctionType type,
     begin_scope(&newCompiler);
 
     newCompiler.function->arity = (int)compile_parameter_list(&newCompiler, function->parameters);
+    if (type == TYPE_STATIC_INITIALIZER && newCompiler.function->arity > 0) {
+        error(compiler, "Static initializer cannot accept parameters.");
+    }
 
     compile_function_body(&newCompiler, function->body);
 
@@ -1452,12 +1459,12 @@ void compile_named_function(Compiler* compiler, NamedFunction* namedFunction, Fu
     compile_function(compiler, namedFunction->function, type, namedFunction->identifier);
 }
 
-size_t compile_named_function_list(Compiler* compiler, NamedFunctionList* list)
+size_t compile_method_list(Compiler* compiler, MethodList* list)
 {
-    NamedFunctionList* current = list;
+    MethodList* current = list;
     size_t count = 0;
     while (current) {
-        compile_named_function(compiler, current->function, TYPE_METHOD);
+        compile_method(compiler, current->method);
         current = current->next;
         count++;
     }

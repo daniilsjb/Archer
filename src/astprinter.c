@@ -50,6 +50,8 @@ static void print_parameter_list_inline(ParameterList* list);
 static void print_function(int indent, Function* function);
 static void print_named_function(int indent, NamedFunction* function);
 static void print_named_function_list(int indent, NamedFunctionList* list);
+static void print_method(int indent, Method* method);
+static void print_method_list(int indent, MethodList* list);
 static void print_declaration_list(int indent, DeclarationList* list);
 
 static void print_indented(int indent, const char* format, ...)
@@ -153,7 +155,7 @@ void print_class_decl(int indent, Declaration* decl)
     print_token_field(indent, "Superclass", superclass);
 
     print_indented(indent, "Methods:\n");
-    print_named_function_list(indent + 1, decl->as.classDecl.body);
+    print_method_list(indent + 1, decl->as.classDecl.body);
 }
 
 void print_function_decl(int indent, Declaration* decl)
@@ -654,6 +656,31 @@ void print_named_function_list(int indent, NamedFunctionList* list)
     NamedFunctionList* current = list;
     while (current) {
         print_named_function(indent, current->function);
+        current = current->next;
+    }
+}
+
+void print_method(int indent, Method* method)
+{
+    print_header(indent, "Method");
+    indent++;
+
+    print_indented(indent, "Static: %s\n", method->isStatic ? "true" : "false");
+
+    print_indented(indent, "Named Function:\n");
+    print_named_function(indent + 1, method->namedFunction);
+}
+
+void print_method_list(int indent, MethodList* list)
+{
+    if (ast_method_list_length(list) == 0) {
+        print_indented(indent, "<Empty>\n");
+        return;
+    }
+
+    MethodList* current = list;
+    while (current) {
+        print_method(indent, current->method);
         current = current->next;
     }
 }

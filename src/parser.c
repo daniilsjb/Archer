@@ -85,6 +85,7 @@ static WhenEntryList* when_entries_rule(Parser* parser);
 static Block* block_rule(Parser* parser);
 static ParameterList* parameters_rule(Parser* parser);
 static NamedFunction* named_function_rule(Parser* parser);
+static Method* method_rule(Parser* parser);
 static ArgumentList* arguments_rule(Parser* parser);
 
 typedef struct {
@@ -331,10 +332,10 @@ Declaration* class_decl(Parser* parser)
         superclass = parser->previous;
     }
 
-    NamedFunctionList* body = NULL;
+    MethodList* body = NULL;
     consume(parser, TOKEN_L_BRACE, "Expected '{' before class body in declaration.");
     while (!check(parser, TOKEN_R_BRACE) && !check(parser, TOKEN_EOF)) {
-        ast_named_function_list_append(&body, named_function_rule(parser));
+        ast_method_list_append(&body, method_rule(parser));
     }
     consume(parser, TOKEN_R_BRACE, "Expected '}' after class body in declaration.");
 
@@ -710,6 +711,13 @@ NamedFunction* named_function_rule(Parser* parser)
 
     Function* function = ast_new_function(parameters, body);
     return ast_new_named_function(identifier, function);
+}
+
+Method* method_rule(Parser* parser)
+{
+    bool isStatic = match(parser, TOKEN_STATIC);
+    NamedFunction* namedFunction = named_function_rule(parser);
+    return ast_new_method(isStatic, namedFunction);
 }
 
 ParameterList* parameters_rule(Parser* parser)

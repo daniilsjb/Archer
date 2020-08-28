@@ -200,6 +200,10 @@ static void traverse_object(VM* vm, Obj* object)
             ObjClass* loxClass = (ObjClass*)object;
             gc_mark_object(vm, (Obj*)loxClass->name);
             mark_table(vm, &loxClass->methods);
+
+            ObjInstance* instance = (ObjInstance*)&loxClass->obj;
+            gc_mark_object(vm, (Obj*)instance->loxClass);
+            mark_table(vm, &instance->fields);
             break;
         }
         case OBJ_INSTANCE: {

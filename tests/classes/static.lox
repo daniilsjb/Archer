@@ -1,0 +1,48 @@
+class Math {
+    
+    static init() {
+        print "Hello from static initializer!";
+        this.pi = 3.14159;
+    }
+    
+    static circleArea(r) = this.pi * r ** 2
+    
+}
+
+//Static initializer is called automatically at the end of class declaration
+//Expected: Hello from static initializer!
+
+print Math.pi;            //Expected: 3.14159
+print Math.circleArea(1); //Expected: 3.14159
+
+//Static fields may be added to the class even outside the static initializer
+Math.e = 2.71828;
+print Math.e; //Expected: 2.71828
+
+//Static methods exist in a separate namespace, meaning they don't conflict with instance methods
+class Foo {
+    
+    static init() {
+        print "Static initializer";
+    }
+    
+    static talk() {
+        print "Talking from static";
+    }
+    
+    init() {
+        print "Instance initializer";
+    }
+    
+    talk() {
+        print "Talking from instance";
+    }
+    
+}
+
+//Expected: Static initializer
+Foo.talk(); //Expected: Talking from static
+
+Foo().talk();
+//Expected: Instance initializer
+//Expected: Talking from instance

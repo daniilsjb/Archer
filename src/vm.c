@@ -280,6 +280,14 @@ static void close_upvalues(VM* vm, Value* last)
     }
 }
 
+static void define_static_method(VM* vm, ObjString* name)
+{
+    Value method = peek(vm, 0);
+    ObjInstance* metaInstance = AS_INSTANCE(peek(vm, 1));
+    table_put(vm, &metaInstance->loxClass->methods, name, method);
+    vm_pop(vm);
+}
+
 static void define_method(VM* vm, ObjString* name)
 {
     Value method = peek(vm, 0);
@@ -300,6 +308,18 @@ static bool bind_method(VM* vm, ObjClass* loxClass, ObjString* name)
     vm_pop(vm);
     vm_push(vm, OBJ_VAL(bound));
     return true;
+}
+
+static bool invoke_static_constructor(VM* vm, ObjClass* loxClass)
+{
+    ObjInstance* metaInstance = (ObjInstance*)loxClass;
+
+    Value method;
+    if (table_get(&metaInstance->loxClass->methods, vm->initString, &method)) {
+        return call(vm, AS_CLOSURE(method), 0);
+    }
+
+    return false;
 }
 
 static InterpretStatus run(VM* vm)
@@ -689,6 +709,7 @@ static InterpretStatus run(VM* vm)
                     break;
                 }
 
+                frame->ip = ip;
                 if (!bind_method(vm, instance->loxClass, name)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -745,6 +766,7 @@ static InterpretStatus run(VM* vm)
                 uint8_t argCount = READ_BYTE();
                 frame->ip = ip;
 
+                frame->ip = ip;
                 if (!call_value(vm, peek(vm, argCount), argCount)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -766,7 +788,6 @@ static InterpretStatus run(VM* vm)
                 uint8_t argCount = READ_BYTE();
 
                 frame->ip = ip;
-
                 if (!invoke(vm, method, argCount)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -797,6 +818,10 @@ static InterpretStatus run(VM* vm)
                 PUSH(OBJ_VAL(new_class(vm, READ_STRING())));
                 break;
             }
+            case OP_STATIC_METHOD: {
+                define_static_method(vm, READ_STRING());
+                break;
+            }
             case OP_METHOD: {
                 define_method(vm, READ_STRING());
                 break;
@@ -816,6 +841,8 @@ static InterpretStatus run(VM* vm)
             case OP_GET_SUPER: {
                 ObjString* name = READ_STRING();
                 ObjClass* superclass = AS_CLASS(POP());
+
+                frame->ip = ip;
                 if (!bind_method(vm, superclass, name)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -825,12 +852,21 @@ static InterpretStatus run(VM* vm)
                 ObjString* method = READ_STRING();
                 uint8_t argCount = READ_BYTE();
                 ObjClass* superclass = AS_CLASS(POP());
-                frame->ip = ip;
 
+                frame->ip = ip;
                 if (!invoke_from_class(vm, superclass, method, argCount)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
+                frame = &vm->frames[vm->frameCount - 1];
+                ip = frame->ip;
+                break;
+            }
+            case OP_END_CLASS: {
+                frame->ip = ip;
+                if (!invoke_static_constructor(vm, AS_CLASS(TOP))) {
+                    POP();
+                }
                 frame = &vm->frames[vm->frameCount - 1];
                 ip = frame->ip;
                 break;
@@ -842,6 +878,9 @@ static InterpretStatus run(VM* vm)
 #undef READ_SHORT
 #undef READ_CONSTANT
 #undef READ_STRING
+
+#undef PEEK_BYTE
+#undef PEEK_NEXT_BYTE
 
 #undef AS_COMPLEMENT
 

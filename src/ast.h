@@ -21,6 +21,8 @@ typedef struct ParameterList ParameterList;
 typedef struct Function Function;
 typedef struct NamedFunction NamedFunction;
 typedef struct NamedFunctionList NamedFunctionList;
+typedef struct Method Method;
+typedef struct MethodList MethodList;
 
 typedef enum ExprContext { LOAD, STORE } ExprContext;
 
@@ -42,7 +44,7 @@ typedef struct Declaration {
         struct {
             Token identifier;
             Token superclass;
-            NamedFunctionList* body;
+            MethodList* body;
         } classDecl;
 
         struct {
@@ -275,6 +277,16 @@ typedef struct NamedFunctionList {
     NamedFunctionList* next;
 } NamedFunctionList;
 
+typedef struct Method {
+    bool isStatic;
+    NamedFunction* namedFunction;
+} Method;
+
+typedef struct MethodList {
+    Method* method;
+    MethodList* next;
+} MethodList;
+
 typedef struct DeclarationList {
     Declaration* declaration;
     DeclarationList* next;
@@ -284,7 +296,7 @@ AST* ast_new_tree(DeclarationList* body);
 void ast_delete_tree(AST* ast);
 
 void ast_delete_declaration(Declaration* declaration);
-Declaration* ast_new_class_decl(Token identifier, Token superclass, NamedFunctionList* body);
+Declaration* ast_new_class_decl(Token identifier, Token superclass, MethodList* body);
 void ast_delete_class_decl(Declaration* declaration);
 Declaration* ast_new_function_decl(NamedFunction* function);
 void ast_delete_function_decl(Declaration* declaration);
@@ -389,6 +401,14 @@ NamedFunctionList* ast_new_named_function_node(NamedFunction* function);
 void ast_named_function_list_append(NamedFunctionList** list, NamedFunction* function);
 void ast_delete_named_function_list(NamedFunctionList* list);
 size_t ast_named_function_list_length(NamedFunctionList* list);
+
+Method* ast_new_method(bool isStatic, NamedFunction* namedFunction);
+void ast_delete_method(Method* method);
+
+MethodList* ast_new_method_node(Method* method);
+void ast_method_list_append(MethodList** list, Method* method);
+void ast_delete_method_list(MethodList* list);
+size_t ast_method_list_length(MethodList* list);
 
 DeclarationList* ast_new_declaration_node(Declaration* declaration);
 void ast_declaration_list_append(DeclarationList** list, Declaration* declaration);
