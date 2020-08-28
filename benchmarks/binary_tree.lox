@@ -12,25 +12,17 @@ class Node {
         }
         
         if (value < this.value) {
-            return this.left ? this.left.search(value) : nil;
+            return this.left?.search(value);
         } else {
-            return this.right ? this.right.search(value) : nil;
+            return this.right?.search(value);
         }
     }
     
     insert(value) {
         if (value <= this.value) {
-            if (this.left != nil) {
-                this.left.insert(value);
-            } else {
-                this.left = Node(value);
-            }
+            this.left?.insert(value) ?: this.left = Node(value);
         } else if (value > this.value) {
-            if (this.right != nil) {
-                this.right.insert(value);
-            } else {
-                this.right = Node(value);
-            }
+            this.right?.insert(value) ?: this.right = Node(value);
         }
     }
     

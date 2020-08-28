@@ -33,6 +33,7 @@ static void print_postfix_inc_expr(int indent, Expression* expr);
 static void print_prefix_inc_expr(int indent, Expression* expr);
 static void print_logical_expr(int indent, Expression* expr);
 static void print_conditional_expr(int indent, Expression* expr);
+static void print_elvis_expr(int indent, Expression* expr);
 static void print_binary_expr(int indent, Expression* expr);
 static void print_unary_expr(int indent, Expression* expr);
 static void print_literal_expr(int indent, Expression* expr);
@@ -322,6 +323,7 @@ void print_expression(int indent, Expression* expr)
         case EXPR_PREFIX_INC: print_prefix_inc_expr(indent, expr); return;
         case EXPR_LOGICAL: print_logical_expr(indent, expr); return;
         case EXPR_CONDITIONAL: print_conditional_expr(indent, expr); return;
+        case EXPR_ELVIS: print_elvis_expr(indent, expr); return;
         case EXPR_BINARY: print_binary_expr(indent, expr); return;
         case EXPR_UNARY: print_unary_expr(indent, expr); return;
         case EXPR_LITERAL: print_literal_expr(indent, expr); return;
@@ -358,6 +360,9 @@ void print_property_expr(int indent, Expression* expr)
 
     ExprContext context = expr->as.propertyExpr.context;
     print_expr_context(indent, context);
+
+    bool safe = expr->as.propertyExpr.safe;
+    print_indented(indent, "Safe: %s\n", safe ? "true" : "false");
 }
 
 void print_super_expr(int indent, Expression* expr)
@@ -459,6 +464,18 @@ void print_conditional_expr(int indent, Expression* expr)
     Expression* elseBranch = expr->as.conditionalExpr.elseBranch;
     print_indented(indent, "Else:\n");
     print_expression(indent + 1, elseBranch);
+}
+
+void print_elvis_expr(int indent, Expression* expr)
+{
+    print_header(indent, "Elvis");
+    indent++;
+
+    print_indented(indent, "Left:\n");
+    print_expression(indent + 1, expr->as.elvisExpr.left);
+
+    print_indented(indent, "Right:\n");
+    print_expression(indent + 1, expr->as.elvisExpr.right);
 }
 
 void print_binary_expr(int indent, Expression* expr)

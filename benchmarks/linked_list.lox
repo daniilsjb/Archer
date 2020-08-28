@@ -6,11 +6,7 @@ class Node {
     }
     
     append(value) {
-        if (this.next == nil) {
-            this.next = Node(value);
-        } else {
-            this.next.append(value);
-        } 
+        this.next?.append(value) ?: this.next = Node(value);
     }
     
     search(value) {
@@ -18,7 +14,7 @@ class Node {
             return this;
         }
         
-        return this.next ? this.next.search(value) : nil;
+        return this.next?.search(value);
     }
     
 }

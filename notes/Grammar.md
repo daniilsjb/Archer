@@ -35,8 +35,8 @@ BlockStmt → "{" Declaration* "}"
 ExprStmt → Expression ";"
 
 Expression → AssignmentExpr
-AssignmentExpr → ( ( PostfixExpr "." )? IDENTIFIER AssignOp AssignmentExpr ) | ConditionalExpr
-ConditionalExpr → LogicOrExpr ( "?" Expression ":" ConditionlExpr )?
+AssignmentExpr → ( ( PostfixExpr ( "?." | "." ) )? IDENTIFIER AssignOp AssignmentExpr ) | ConditionalExpr
+ConditionalExpr → LogicOrExpr ( ( "?" Expression ":" ConditionalExpr ) | ( "?:" ConditionalExpr ) )?
 LogicOrExpr → LogicAndExpr ( "or" LogicAndExpr )*
 LogicAndExpr → BitwiseOrExpr ( "and" BitwiseOrExpr )*
 BitwiseOrExpr → BitwiseXorExpr ( "|" BitwiseXorExpr )*
@@ -49,7 +49,7 @@ AdditionExpr → MultiplicationExpr ( ( "+" | "-" ) MultiplicationExpr )*
 MultiplicationExpr → ExponentiationExpr ( ( "*" | "/" | "%" ) ExponentiationExpr )*
 ExponentiationExpr → UnaryExpr ( ( "**" UnaryExpr ) )*
 UnaryExpr → ( "!" | "-" | "++" | "--" ) UnaryExpr | PostfixExpr
-PostfixExpr → PrimaryExpr ( "(" Arguments? ")" | "." IDENTIFIER )* ( "++" | "--" )?
+PostfixExpr → PrimaryExpr ( "(" Arguments? ")" | ( "?." | "." ) IDENTIFIER )* ( "++" | "--" )?
 PrimaryExpr → "true" | "false" | "nil" | "this"
             | STRING | NUMBER | IDENTIFIER | Lambda | "(" Expression ")"
             | "super" "." IDENTIFIER

@@ -312,6 +312,9 @@ static InterpretStatus run(VM* vm)
 #define READ_CONSTANT() frame->closure->function->chunk.constants.data[READ_BYTE()]
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 
+#define PEEK_BYTE() (*ip)
+#define PEEK_NEXT_BYTE() (*(ip + 1))
+
 #define AS_COMPLEMENT(value) ((int64_t)AS_NUMBER(value))
 
 #define TOP vm->stackTop[-1]
@@ -591,6 +594,13 @@ static InterpretStatus run(VM* vm)
                 }
                 break;
             }
+            case OP_JUMP_IF_NOT_NIL: {
+                uint16_t offset = READ_SHORT();
+                if (!IS_NIL(TOP)) {
+                    ip += offset;
+                }
+                break;
+            }
             case OP_POP: {
                 POP();
                 break;
@@ -656,6 +666,12 @@ static InterpretStatus run(VM* vm)
                 *frame->closure->upvalues[READ_BYTE()]->location = TOP;
                 break;
             }
+            case OP_LOAD_PROPERTY_SAFE: {
+                if (IS_NIL(TOP)) {
+                    READ_STRING();
+                    break;
+                }
+            }
             case OP_LOAD_PROPERTY: {
                 if (!IS_INSTANCE(TOP)) {
                     frame->ip = ip;
@@ -678,6 +694,14 @@ static InterpretStatus run(VM* vm)
                 }
 
                 break;
+            }
+            case OP_STORE_PROPERTY_SAFE: {
+                if (IS_NIL(TOP)) {
+                    READ_STRING();
+                    POP();
+                    TOP = NIL_VAL();
+                    break;
+                }
             }
             case OP_STORE_PROPERTY: {
                 if (!IS_INSTANCE(TOP)) {
@@ -728,6 +752,14 @@ static InterpretStatus run(VM* vm)
                 frame = &vm->frames[vm->frameCount - 1];
                 ip = frame->ip;
                 break;
+            }
+            case OP_INVOKE_SAFE: {
+                if (IS_NIL(peek(vm, PEEK_NEXT_BYTE()))) {
+                    ObjString* method = READ_STRING();
+                    uint8_t argCount = READ_BYTE();
+                    vm->stackTop -= argCount;
+                    break;
+                }
             }
             case OP_INVOKE: {
                 ObjString* method = READ_STRING();

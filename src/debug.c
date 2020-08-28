@@ -157,6 +157,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return jump_instruction("POP_JUMP_IF_FALSE", 1, chunk, offset);
         case OP_POP_JUMP_IF_EQUAL:
             return jump_instruction("POP_JUMP_IF_EQUAL", 1, chunk, offset);
+        case OP_JUMP_IF_NOT_NIL:
+            return jump_instruction("JUMP_IF_NOT_NIL", 1, chunk, offset);
         case OP_POP:
             return simple_instruction("POP", offset);
         case OP_DUP:
@@ -181,8 +183,12 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return byte_instruction("STORE_UPVALUE", chunk, offset);
         case OP_LOAD_PROPERTY:
             return constant_instruction("LOAD_PROPERTY", chunk, offset);
+        case OP_LOAD_PROPERTY_SAFE:
+            return constant_instruction("LOAD_PROPERTY_SAFE", chunk, offset);
         case OP_STORE_PROPERTY:
             return constant_instruction("STORE_PROPERTY", chunk, offset);
+        case OP_STORE_PROPERTY_SAFE:
+            return constant_instruction("STORE_PROPERTY_SAFE", chunk, offset);
         case OP_CLOSURE:
             return closure_instruction(chunk, offset);
         case OP_CLOSE_UPVALUE:
@@ -191,6 +197,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return byte_instruction("CALL", chunk, offset);
         case OP_INVOKE:
             return invoke_instruction("INVOKE", chunk, offset);
+        case OP_INVOKE_SAFE:
+            return invoke_instruction("INVOKE_SAFE", chunk, offset);
         case OP_RETURN:
             return simple_instruction("RETURN", offset);
         case OP_CLASS:

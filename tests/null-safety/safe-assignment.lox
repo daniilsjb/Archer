@@ -1,0 +1,9 @@
+class Foo {}
+
+var foo = nil;
+print foo?.bar = 10; //Expected: nil
+print foo?.bar += 5; //Expected: nil
+
+foo = Foo();
+print foo?.bar = 10; //Expected: 10
+print foo?.bar += 3; //Expected: 13

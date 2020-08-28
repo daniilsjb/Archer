@@ -343,6 +343,7 @@ void ast_delete_expression(Expression* expression)
         case EXPR_PREFIX_INC: ast_delete_prefix_inc_expr(expression); return;
         case EXPR_LOGICAL: ast_delete_logical_expr(expression); return;
         case EXPR_CONDITIONAL: ast_delete_conditional_expr(expression); return;
+        case EXPR_ELVIS: ast_delete_elvis_expr(expression); return;
         case EXPR_BINARY: ast_delete_binary_expr(expression); return;
         case EXPR_UNARY: ast_delete_unary_expr(expression); return;
         case EXPR_LITERAL: ast_delete_literal_expr(expression); return;
@@ -371,7 +372,7 @@ void ast_delete_call_expr(Expression* expression)
     raw_deallocate(expression);
 }
 
-Expression* ast_new_property_expr(Expression* object, Token property, ExprContext context)
+Expression* ast_new_property_expr(Expression* object, Token property, ExprContext context, bool safe)
 {
     Expression* expr = raw_allocate(sizeof(Expression));
     if (!expr) {
@@ -382,6 +383,7 @@ Expression* ast_new_property_expr(Expression* object, Token property, ExprContex
     expr->as.propertyExpr.object = object;
     expr->as.propertyExpr.property = property;
     expr->as.propertyExpr.context = context;
+    expr->as.propertyExpr.safe = safe;
     return expr;
 }
 
@@ -490,6 +492,26 @@ void ast_delete_conditional_expr(Expression* expression)
     ast_delete_expression(expression->as.conditionalExpr.condition);
     ast_delete_expression(expression->as.conditionalExpr.thenBranch);
     ast_delete_expression(expression->as.conditionalExpr.elseBranch);
+    raw_deallocate(expression);
+}
+
+Expression* ast_new_elvis_expr(Expression* left, Expression* right)
+{
+    Expression* expr = raw_allocate(sizeof(Expression));
+    if (!expr) {
+        return NULL;
+    }
+
+    expr->type = EXPR_ELVIS;
+    expr->as.elvisExpr.left = left;
+    expr->as.elvisExpr.right = right;
+    return expr;
+}
+
+void ast_delete_elvis_expr(Expression* expression)
+{
+    ast_delete_expression(expression->as.elvisExpr.left);
+    ast_delete_expression(expression->as.elvisExpr.right);
     raw_deallocate(expression);
 }
 

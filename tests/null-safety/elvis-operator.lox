@@ -1,0 +1,7 @@
+print 10 ?: 5;             //Expected: 10
+print nil ?: 5;            //Expected: 5
+
+var x = nil;
+var y = nil;
+print x = y?.z ?: 3;       //Expected: 3
+print x = (y?.z = 1) ?: 6; //Expected: 6

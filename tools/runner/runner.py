@@ -188,7 +188,7 @@ def benchmark_file(args):
         print(f"Interpreter '{interpreter_alias}' - {interpreter_result.elapsed} seconds{' [Best]' if     interpreter_is_best else ''}")
         print(f"Interpreter '{   compared_alias}' - {   compared_result.elapsed} seconds{' [Best]' if not interpreter_is_best else ''}")
     else:
-        result = run_benchmark(args.interpreter, interpreter_alias, file, args)
+        result = run_benchmark(args.interpreter, file, interpreter_alias, args)
         print(f"The {args.select} elapsed time across file '{file}' run against '{interpreter_alias}' {args.repeat} times is {result.elapsed} seconds.")
 
 def benchmark_directory(args):

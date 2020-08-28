@@ -131,6 +131,7 @@ typedef struct Expression {
         EXPR_COMPOUND_ASSIGNMNET,
         EXPR_LOGICAL,
         EXPR_CONDITIONAL,
+        EXPR_ELVIS,
         EXPR_BINARY,
         EXPR_UNARY,
         EXPR_PREFIX_INC,
@@ -150,6 +151,7 @@ typedef struct Expression {
             Expression* object;
             Token property;
             ExprContext context;
+            bool safe;
         } propertyExpr;
 
         struct {
@@ -179,6 +181,11 @@ typedef struct Expression {
             Expression* thenBranch;
             Expression* elseBranch;
         } conditionalExpr;
+
+        struct {
+            Expression* left;
+            Expression* right;
+        } elvisExpr;
 
         struct {
             Expression* left;
@@ -311,7 +318,7 @@ void ast_delete_expression_stmt(Statement* statement);
 void ast_delete_expression(Expression* expression);
 Expression* ast_new_call_expr(Expression* callee, ArgumentList* arguments);
 void ast_delete_call_expr(Expression* expression);
-Expression* ast_new_property_expr(Expression* object, Token property, ExprContext context);
+Expression* ast_new_property_expr(Expression* object, Token property, ExprContext context, bool safe);
 void ast_delete_property_expr(Expression* expression);
 Expression* ast_new_super_expr(Token keyword, Token method);
 void ast_delete_super_expr(Expression* expression);
@@ -323,6 +330,8 @@ Expression* ast_new_logical_expr(Expression* left, Token op, Expression* right);
 void ast_delete_logical_expr(Expression* expression);
 Expression* ast_new_conditional_expr(Expression* condition, Expression* thenBranch, Expression* elseBranch);
 void ast_delete_conditional_expr(Expression* expression);
+Expression* ast_new_elvis_expr(Expression* left, Expression* right);
+void ast_delete_elvis_expr(Expression* expression);
 Expression* ast_new_binary_expr(Expression* left, Token op, Expression* right);
 void ast_delete_binary_expr(Expression* expression);
 Expression* ast_new_unary_expr(Token op, Expression* expression);

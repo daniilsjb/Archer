@@ -77,6 +77,7 @@ static Expression* assignment_expr(Parser* parser, Expression* prefix);
 static Expression* compound_assignment_expr(Parser* parser, Expression* prefix);
 static Expression* logical_expr(Parser* parser, Expression* prefix);
 static Expression* conditional_expr(Parser* parser, Expression* prefix);
+static Expression* elvis_expr(Parser* parser, Expression* prefix);
 static Expression* binary_expr(Parser* parser, Expression* prefix);
 
 static WhenEntry* when_entry_rule(Parser* parser);
@@ -107,6 +108,8 @@ ParseRule rules[] = {
     [TOKEN_COLON]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_R_ARROW]           = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_BACKSLASH]         = { lambda_expr,     NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_QUESTION_DOT]      = { NULL,            property_expr,            PREC_POSTFIX,        ASSOC_LEFT   },
+    [TOKEN_QUESTION_COLON]    = { NULL,            elvis_expr,               PREC_CONDITIONAL,    ASSOC_LEFT   },
     [TOKEN_TILDE]             = { unary_expr,      NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_MINUS]             = { unary_expr,      binary_expr,              PREC_ADDITIVE,       ASSOC_LEFT   },
     [TOKEN_MINUS_EQUAL]       = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
@@ -578,8 +581,9 @@ Expression* call_expr(Parser* parser, Expression* prefix)
 
 Expression* property_expr(Parser* parser, Expression* prefix)
 {
+    bool safe = parser->previous.type == TOKEN_QUESTION_DOT;
     consume(parser, TOKEN_IDENTIFIER, "Expected property name.");
-    return ast_new_property_expr(prefix, parser->previous, LOAD);
+    return ast_new_property_expr(prefix, parser->previous, LOAD, safe);
 }
 
 Expression* postfix_inc_expr(Parser* parser, Expression* prefix)
@@ -631,6 +635,12 @@ Expression* conditional_expr(Parser* parser, Expression* prefix)
     consume(parser, TOKEN_COLON, "Expected ':' in conditional expression.");
     Expression* elseBranch = parse_precedence(parser, PREC_CONDITIONAL);
     return ast_new_conditional_expr(prefix, thenBranch, elseBranch);
+}
+
+Expression* elvis_expr(Parser* parser, Expression* prefix)
+{
+    Expression* right = expression(parser);
+    return ast_new_elvis_expr(prefix, right);
 }
 
 WhenEntry* when_entry_rule(Parser* parser)

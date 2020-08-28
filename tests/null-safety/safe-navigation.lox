@@ -1,0 +1,36 @@
+class Foo {
+    
+    talk() {
+        print "Hello!";
+        return 10;
+    }
+    
+    greet(name) {
+        print "Hello " + name;
+        return 20;
+    }
+        
+}
+
+var foo = nil;
+print foo?.bar?.baz?.talk();            //Expected: nil
+print foo?.bar?.baz?.greet("Benedict"); //Expected: nil
+
+foo = Foo();
+foo.bar = nil;
+print foo?.bar?.baz?.talk();            //Expected: nil
+print foo?.bar?.baz?.greet("Benedict"); //Expected: nil
+
+foo.bar = Foo();
+foo.bar.baz = nil;
+print foo?.bar?.baz?.talk();            //Expected: nil
+print foo?.bar?.baz?.greet("Benedict"); //Expected: nil
+
+foo.bar.baz = Foo();
+print foo?.bar?.baz?.talk();
+//Expected: Hello!
+//Expected: 10
+
+print foo?.bar?.baz?.greet("Benedict");
+//Expected: Hello Benedict
+//Expected: 20

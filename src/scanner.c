@@ -262,7 +262,13 @@ Token scanner_scan_token(Scanner* scanner)
         case ';': return make_token(scanner, TOKEN_SEMICOLON);
         case ',': return make_token(scanner, TOKEN_COMMA);
         case '.': return make_token(scanner, TOKEN_DOT);
-        case '?': return make_token(scanner, TOKEN_QUESTION);
+        case '?': {
+            switch (peek(scanner)) {
+                case '.': advance(scanner); return make_token(scanner, TOKEN_QUESTION_DOT);
+                case ':': advance(scanner); return make_token(scanner, TOKEN_QUESTION_COLON);
+            }
+            return make_token(scanner, TOKEN_QUESTION);
+        }
         case ':': return make_token(scanner, TOKEN_COLON);
         case '\\': return make_token(scanner, TOKEN_BACKSLASH);
         case '-': {

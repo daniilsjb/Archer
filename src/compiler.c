@@ -110,6 +110,7 @@ static void compile_postfix_inc_expr(Compiler* compiler, Expression* expr);
 static void compile_prefix_inc_expr(Compiler* compiler, Expression* expr);
 static void compile_logical_expr(Compiler* compiler, Expression* expr);
 static void compile_conditional_expr(Compiler* compiler, Expression* expr);
+static void compile_elvis_expr(Compiler* compiler, Expression* expr);
 static void compile_binary_expr(Compiler* compiler, Expression* expr);
 static void compile_unary_expr(Compiler* compiler, Expression* expr);
 static void compile_literal_expr(Compiler* compiler, Expression* expr);
@@ -844,6 +845,7 @@ void compile_expression(Compiler* compiler, Expression* expr)
         case EXPR_PREFIX_INC: compile_prefix_inc_expr(compiler, expr); return;
         case EXPR_LOGICAL: compile_logical_expr(compiler, expr); return;
         case EXPR_CONDITIONAL: compile_conditional_expr(compiler, expr); return;
+        case EXPR_ELVIS: compile_elvis_expr(compiler, expr); return;
         case EXPR_BINARY: compile_binary_expr(compiler, expr); return;
         case EXPR_UNARY: compile_unary_expr(compiler, expr); return;
         case EXPR_LITERAL: compile_literal_expr(compiler, expr); return;
@@ -866,7 +868,8 @@ static void compile_invocation(Compiler* compiler, Expression* expr)
     compiler->token = property;
     uint8_t name = make_identifier_constant(compiler, property);
 
-    emit_bytes(compiler, OP_INVOKE, name);
+    bool safe = callee->as.propertyExpr.safe;
+    emit_bytes(compiler, safe ? OP_INVOKE_SAFE : OP_INVOKE , name);
     emit_byte(compiler, argumentCount);
 }
 
@@ -924,7 +927,8 @@ void compile_property_expr(Compiler* compiler, Expression* expr)
     uint8_t name = make_identifier_constant(compiler, property);
 
     ExprContext context = expr->as.propertyExpr.context;
-    uint8_t operation = context == LOAD ? OP_LOAD_PROPERTY : OP_STORE_PROPERTY;
+    bool safe = expr->as.propertyExpr.safe;
+    uint8_t operation = context == LOAD ? (safe ? OP_LOAD_PROPERTY_SAFE : OP_LOAD_PROPERTY) : (safe ? OP_STORE_PROPERTY_SAFE : OP_STORE_PROPERTY);
     emit_bytes(compiler, operation, name);
 }
 
@@ -996,10 +1000,12 @@ static void compile_compound_property_assignment(Compiler* compiler, Expression*
     compile_expression(compiler, target->as.propertyExpr.object);
     emit_byte(compiler, OP_DUP);
 
+    bool safe = target->as.propertyExpr.safe;
+
     Token property = target->as.propertyExpr.property;
     compiler->token = property;
     uint8_t name = make_identifier_constant(compiler, property);
-    emit_bytes(compiler, OP_LOAD_PROPERTY, name);
+    emit_bytes(compiler, safe ? OP_LOAD_PROPERTY_SAFE : OP_LOAD_PROPERTY, name);
 
     compile_expression(compiler, expr->as.compoundAssignmentExpr.value);
 
@@ -1008,7 +1014,7 @@ static void compile_compound_property_assignment(Compiler* compiler, Expression*
     emit_byte(compiler, compound_opcode(op));
 
     emit_byte(compiler, OP_SWAP);
-    emit_bytes(compiler, OP_STORE_PROPERTY, name);
+    emit_bytes(compiler, safe ? OP_STORE_PROPERTY_SAFE : OP_STORE_PROPERTY, name);
 }
 
 void compile_compound_assignment_expr(Compiler* compiler, Expression* expr)
@@ -1202,6 +1208,20 @@ void compile_conditional_expr(Compiler* compiler, Expression* expr)
     compile_expression(compiler, elseBranch);
 
     patch_jump(compiler, endJump);
+}
+
+void compile_elvis_expr(Compiler* compiler, Expression* expr)
+{
+    Expression* left = expr->as.elvisExpr.left;
+    compile_expression(compiler, left);
+
+    size_t elseJump = emit_jump(compiler, OP_JUMP_IF_NOT_NIL);
+    emit_byte(compiler, OP_POP);
+
+    Expression* right = expr->as.elvisExpr.right;
+    compile_expression(compiler, right);
+
+    patch_jump(compiler, elseJump);
 }
 
 void compile_binary_expr(Compiler* compiler, Expression* expr)
