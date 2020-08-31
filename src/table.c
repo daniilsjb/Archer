@@ -2,6 +2,7 @@
 
 #include "table.h"
 #include "vm.h"
+#include "gc.h"
 #include "memory.h"
 #include "object.h"
 
@@ -14,9 +15,9 @@ void table_init(Table* table)
     table->entries = NULL;
 }
 
-void table_free(VM* vm, Table* table)
+void table_free(GC* gc, Table* table)
 {
-    FREE_ARRAY(vm, Entry, table->entries, table->capacityMask + 1);
+    FREE_ARRAY(gc, Entry, table->entries, table->capacityMask + 1);
     table_init(table);
 }
 
@@ -44,7 +45,7 @@ static Entry* find_entry(Entry* entries, int capacityMask, ObjString* key)
 
 static void adjust_capacity(VM* vm, Table* table, int capacityMask)
 {
-    Entry* entries = ALLOCATE(vm, Entry, capacityMask + 1);
+    Entry* entries = ALLOCATE(&vm->gc, Entry, capacityMask + 1);
     for (int i = 0; i <= capacityMask; i++) {
         entries[i].key = NULL;
         entries[i].value = NIL_VAL();
@@ -64,7 +65,7 @@ static void adjust_capacity(VM* vm, Table* table, int capacityMask)
         table->count++;
     }
 
-    FREE_ARRAY(vm, Entry, table->entries, table->capacityMask + 1);
+    FREE_ARRAY(&vm->gc, Entry, table->entries, table->capacityMask + 1);
 
     table->entries = entries;
     table->capacityMask = capacityMask;

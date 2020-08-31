@@ -11,6 +11,9 @@
 #define STACK_MAX 512
 #define FRAMES_MAX 64
 
+typedef struct Compiler Compiler;
+typedef struct ClassCompiler ClassCompiler;
+
 typedef struct {
     ObjClosure* closure;
     uint8_t* ip;
@@ -20,8 +23,8 @@ typedef struct {
 typedef struct VM {
     GC gc;
 
-    struct Compiler* compiler;
-    struct ClassCompiler* classCompiler;
+    Compiler* compiler;
+    ClassCompiler* classCompiler;
 
     CallFrame frames[FRAMES_MAX];
     size_t frameCount;

@@ -9,7 +9,7 @@
 
 Obj* allocate_object(VM* vm, size_t size, ObjType type) 
 {
-    Obj* object = (Obj*)reallocate(vm, NULL, 0, size);
+    Obj* object = (Obj*)reallocate(&vm->gc, NULL, 0, size);
     object->type = type;
     object->marked = false;
 
@@ -36,7 +36,7 @@ ObjFunction* new_function(VM* vm)
 
 ObjClosure* new_closure(VM* vm, ObjFunction* function)
 {
-    ObjUpvalue** upvalues = ALLOCATE(vm, ObjUpvalue*, function->upvalueCount);
+    ObjUpvalue** upvalues = ALLOCATE(&vm->gc, ObjUpvalue*, function->upvalueCount);
     for (size_t i = 0; i < function->upvalueCount; i++) {
         upvalues[i] = NULL;
     }
@@ -147,7 +147,7 @@ ObjString* concatenate_strings(VM* vm, ObjString* a, ObjString* b)
     ObjString* interned = table_find_string(&vm->strings, string->chars, length, string->hash);
     if (interned != NULL) {
         vm->gc.allocatedObjects = vm->gc.allocatedObjects->next;
-        deallocate(vm, string, sizeof(ObjString) + string->length + 1);
+        deallocate(&vm->gc, string, sizeof(ObjString) + string->length + 1);
 
         return interned;
     } else {

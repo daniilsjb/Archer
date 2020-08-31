@@ -1,14 +1,11 @@
 #ifndef COMPILER_H
 #define COMPILER_H
 
-#include "object.h"
+typedef struct ObjFunction ObjFunction;
+typedef struct VM VM;
 
-struct VM;
-struct Compiler;
-struct ClassCompiler;
+ObjFunction* compile(VM* vm, const char* source);
 
-ObjFunction* compile(struct VM* vm, const char* source);
-
-void mark_compiler_roots(struct VM* vm);
+void mark_compiler_roots(VM* vm);
 
 #endif

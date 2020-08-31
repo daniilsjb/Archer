@@ -6,7 +6,7 @@
 #include "value.h"
 #include "table.h"
 
-struct VM;
+typedef struct VM VM;
 
 #define OBJ_TYPE(object)        (AS_OBJ(object)->type)
 
@@ -44,7 +44,7 @@ typedef struct Obj {
     bool marked;
 } Obj;
 
-typedef struct {
+typedef struct ObjFunction {
     Obj obj;
     Chunk chunk;
     int arity;
@@ -86,7 +86,7 @@ typedef struct {
     ObjClosure* method;
 } ObjBoundMethod;
 
-typedef bool (*NativeFn)(struct VM* vm, size_t argCount, Value* args);
+typedef bool (*NativeFn)(VM* vm, Value* args);
 
 typedef struct {
     Obj obj;
@@ -101,20 +101,19 @@ typedef struct ObjString {
     char chars[];
 } ObjString;
 
-Obj* allocate_object(struct VM* vm, size_t size, ObjType type);
+Obj* allocate_object(VM* vm, size_t size, ObjType type);
 
-ObjFunction* new_function(struct VM* vm);
-ObjClosure* new_closure(struct VM* vm, ObjFunction* function);
-ObjUpvalue* new_upvalue(struct VM* vm, Value* slot);
-ObjNative* new_native(struct VM* vm, NativeFn function, int arity);
-ObjInstance* new_instance(struct VM* vm, ObjClass* loxClass);
-ObjClass* new_class(struct VM* vm, ObjString* name);
-ObjBoundMethod* new_bound_method(struct VM* vm, Value receiver, ObjClosure* method);
+ObjFunction* new_function(VM* vm);
+ObjClosure* new_closure(VM* vm, ObjFunction* function);
+ObjUpvalue* new_upvalue(VM* vm, Value* slot);
+ObjNative* new_native(VM* vm, NativeFn function, int arity);
+ObjInstance* new_instance(VM* vm, ObjClass* loxClass);
+ObjClass* new_class(VM* vm, ObjString* name);
+ObjBoundMethod* new_bound_method(VM* vm, Value receiver, ObjClosure* method);
 
-ObjString* make_string(struct VM* vm, size_t length);
-ObjString* copy_string(struct VM* vm, const char* chars, size_t length);
-ObjString* concatenate_strings(struct VM* vm, ObjString* a, ObjString* b);
-
+ObjString* make_string(VM* vm, size_t length);
+ObjString* copy_string(VM* vm, const char* chars, size_t length);
+ObjString* concatenate_strings(VM* vm, ObjString* a, ObjString* b);
 uint32_t hash_string(const char* key, size_t length);
 
 void print_object(Value value);

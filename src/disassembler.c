@@ -1,7 +1,17 @@
 #include <stdio.h>
 
-#include "debug.h"
+#include "disassembler.h"
 #include "object.h"
+
+void disassemble_chunk(Chunk* chunk, const char* name)
+{
+    printf("Chunk: %s\n", name);
+
+    uint32_t offset = 0;
+    while (offset < (uint32_t)chunk->count) {
+        offset = disassemble_instruction(chunk, offset);
+    }
+}
 
 static uint32_t simple_instruction(const char* name, uint32_t offset)
 {
@@ -29,13 +39,13 @@ static uint32_t invoke_instruction(const char* name, Chunk* chunk, uint32_t offs
 {
     uint8_t constant = chunk->code[offset + 1];
     uint8_t argCount = chunk->code[offset + 2];
-    printf("%-18s (%d args) %4d '", name, argCount, constant);
+    printf("%-18s %4d (%d args) '", name, constant, argCount);
     print_value(chunk->constants.data[constant]);
     printf("'\n");
     return offset + 3;
 }
 
-static uint32_t jump_instruction(const char* name, int sign, Chunk* chunk, uint32_t offset)
+static uint32_t jump_instruction(const char* name, char sign, Chunk* chunk, uint32_t offset)
 {
     uint16_t jump = (uint16_t)(chunk->code[offset + 1] << 0) | (uint16_t)(chunk->code[offset + 2] << 8);
     printf("%-18s %4d -> %d\n", name, offset, offset + 3 + sign * jump);
@@ -66,16 +76,6 @@ static uint32_t unknown_instruction(uint8_t instruction, uint32_t offset)
 {
     printf("Unknown Code: %d\n", instruction);
     return offset + 1;
-}
-
-void disassemble_chunk(Chunk* chunk, const char* name)
-{
-    printf("Chunk: %s\n", name);
-
-    uint32_t offset = 0;
-    while (offset < (uint32_t)chunk->count) {
-        offset = disassemble_instruction(chunk, offset);
-    }
 }
 
 uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)

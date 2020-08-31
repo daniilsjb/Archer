@@ -14,8 +14,8 @@ add_executable (clox
     "src/common.h"
     "src/compiler.c"
     "src/compiler.h"
-    "src/debug.c"
-    "src/debug.h"
+    "src/disassembler.c"
+    "src/disassembler.h"
     "src/errcode.h"
     "src/memory.c"
     "src/memory.h"
@@ -43,4 +43,4 @@ add_executable (clox
     "src/ast.c"
     "src/astprinter.h"
     "src/astprinter.c"
-)
+  )

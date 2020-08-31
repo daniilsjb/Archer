@@ -4,11 +4,12 @@
 #include <time.h>
 
 #include "vm.h"
+#include "common.h"
 #include "object.h"
 #include "memory.h"
 
 #if DEBUG_TRACE_EXECUTION
-#include "debug.h"
+#include "disassembler.h"
 #endif
 
 static bool native_error(VM* vm, const char* message, Value* args)
@@ -17,13 +18,13 @@ static bool native_error(VM* vm, const char* message, Value* args)
     return false;
 }
 
-static bool clock_native(VM* vm, size_t argCount, Value* args)
+static bool clock_native(VM* vm, Value* args)
 {
     args[-1] = NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
     return true;
 }
 
-static bool abs_native(VM* vm, size_t argCount, Value* args)
+static bool abs_native(VM* vm, Value* args)
 {
     if (!IS_NUMBER(args[0])) {
         return native_error(vm, "Expected a numeric value.", args);
@@ -34,7 +35,7 @@ static bool abs_native(VM* vm, size_t argCount, Value* args)
     return true;
 }
 
-static bool pow_native(VM* vm, size_t argCount, Value* args)
+static bool pow_native(VM* vm, Value* args)
 {
     if (!IS_NUMBER(args[0]) || !IS_NUMBER(args[1])) {
         return native_error(vm, "Expected numeric values.", args);
@@ -70,11 +71,11 @@ void vm_init(VM* vm)
     reset_stack(vm);
 
     gc_init(&vm->gc);
+    vm->gc.vm = vm;
 
     table_init(&vm->globals);
     table_init(&vm->strings);
 
-    vm->initString = NULL;
     vm->initString = copy_string(vm, "init", 4);
 
     define_native(vm, "clock", clock_native, 0);
@@ -84,12 +85,12 @@ void vm_init(VM* vm)
 
 void vm_free(VM* vm)
 {
-    table_free(vm, &vm->globals);
-    table_free(vm, &vm->strings);
+    table_free(&vm->gc, &vm->globals);
+    table_free(&vm->gc, &vm->strings);
 
     vm->initString = NULL;
 
-    gc_free(&vm->gc, vm);
+    gc_free(&vm->gc);
 
     reset_stack(vm);
 }
@@ -185,7 +186,7 @@ static bool call_value(VM* vm, Value callee, uint8_t argCount)
                     return false;
                 }
 
-                if (native->function(vm, argCount, vm->stackTop - argCount)) {
+                if (native->function(vm, vm->stackTop - argCount)) {
                     vm->stackTop -= (uint64_t)argCount;
                     return true;
                 } else {
@@ -354,7 +355,8 @@ static InterpretStatus run(VM* vm)
         }
         printf("\n");
 
-        disassemble_instruction(&frame->closure->function->chunk, (uint32_t)(ip - frame->closure->function->chunk.code));
+        Chunk* chunk = &frame->closure->function->chunk;
+        disassemble_instruction(chunk, (uint32_t)(ip - chunk->code));
 #endif
         uint8_t instruction;
         switch (instruction = READ_BYTE()) {

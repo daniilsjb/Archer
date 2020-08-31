@@ -6,7 +6,7 @@
 #include "value.h"
 #include "vector.h"
 
-struct VM;
+typedef struct VM VM;
 
 typedef struct {
     int number;
@@ -25,10 +25,10 @@ typedef struct {
 } Chunk;
 
 void chunk_init(Chunk* chunk);
-void chunk_free(struct VM* vm, Chunk* chunk);
+void chunk_free(GC* gc, Chunk* chunk);
 
-void chunk_write(struct VM* vm, Chunk* chunk, uint8_t byte, int line);
-uint8_t chunk_add_constant(struct VM* vm, Chunk* chunk, Value constant);
+void chunk_write(VM* vm, Chunk* chunk, uint8_t byte, int line);
+uint8_t chunk_add_constant(VM* vm, Chunk* chunk, Value constant);
 
 int chunk_get_line(Chunk* chunk, size_t offset);
 

@@ -1,10 +1,13 @@
 #ifndef TABLE_H
 #define TABLE_H
 
-#include "common.h"
+#include <stdbool.h>
+#include <stdint.h>
+
 #include "value.h"
 
-struct VM;
+typedef struct VM VM;
+typedef struct GC GC;
 
 typedef struct {
     ObjString* key;
@@ -18,12 +21,12 @@ typedef struct {
 } Table;
 
 void table_init(Table* table);
-void table_free(struct VM* vm, Table* table);
+void table_free(GC* gc, Table* table);
 
 bool table_get(Table* table, ObjString* key, Value* value);
 
-bool table_put(struct VM* vm, Table* table, ObjString* key, Value value);
-void table_put_from(struct VM* vm, Table* source, Table* destination);
+bool table_put(VM* vm, Table* table, ObjString* key, Value value);
+void table_put_from(VM* vm, Table* source, Table* destination);
 
 bool table_remove(Table* table, ObjString* key);
 

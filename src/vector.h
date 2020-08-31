@@ -18,20 +18,20 @@
         vector->data = NULL;                                                               \
     } while (0)                                                                            \
 
-#define VECTOR_FREE(vm, vecType, vec, type)                                                \
+#define VECTOR_FREE(gc, vecType, vec, type)                                                \
     do {                                                                                   \
         vecType* vector = (vec);                                                           \
-        FREE_ARRAY(vm, type, vector->data, vector->capacity);                              \
+        FREE_ARRAY(gc, type, vector->data, vector->capacity);                              \
         VECTOR_INIT(vecType, vec);                                                         \
     } while (0)                                                                            \
 
-#define VECTOR_PUSH(vm, vecType, vec, type, value)                                         \
+#define VECTOR_PUSH(gc, vecType, vec, type, value)                                         \
     do {                                                                                   \
         vecType* vector = (vec);                                                           \
         if (vector->count >= vector->capacity) {                                           \
             size_t capacity = vector->capacity;                                            \
             vector->capacity = GROW_CAPACITY(capacity);                                    \
-            vector->data = GROW_ARRAY(vm, type, vector->data, capacity, vector->capacity); \
+            vector->data = GROW_ARRAY(gc, type, vector->data, capacity, vector->capacity); \
         }                                                                                  \
                                                                                            \
         vector->data[vector->count] = (value);                                             \

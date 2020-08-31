@@ -4,6 +4,7 @@
 
 #include "compiler.h"
 #include "vm.h"
+#include "object.h"
 #include "common.h"
 #include "chunk.h"
 #include "parser.h"
@@ -11,7 +12,7 @@
 #include "memlib.h"
 
 #if DEBUG_PRINT_CODE
-#include "debug.h"
+#include "disassembler.h"
 #endif
 
 #if DEBUG_PRINT_AST
@@ -1510,7 +1511,8 @@ ObjFunction* compile(VM* vm, const char* source)
 
 void mark_compiler_roots(VM* vm)
 {
+    GC* gc = &vm->gc;
     for (Compiler* compiler = vm->compiler; compiler != NULL; compiler = compiler->enclosing) {
-        gc_mark_object(vm, (Obj*)compiler->function);
+        gc_mark_object(gc, (Obj*)compiler->function);
     }
 }

@@ -14,11 +14,11 @@ void chunk_init(Chunk* chunk)
     VECTOR_INIT(ValueArray, &chunk->constants);
 }
 
-void chunk_free(VM* vm, Chunk* chunk)
+void chunk_free(GC* gc, Chunk* chunk)
 {
-    FREE_ARRAY(vm, uint8_t, chunk->code, chunk->capacity);
-    VECTOR_FREE(vm, LineArray, &chunk->lines, Line);
-    VECTOR_FREE(vm, ValueArray, &chunk->constants, Value);
+    FREE_ARRAY(gc, uint8_t, chunk->code, chunk->capacity);
+    VECTOR_FREE(gc, LineArray, &chunk->lines, Line);
+    VECTOR_FREE(gc, ValueArray, &chunk->constants, Value);
     chunk_init(chunk);
 }
 
@@ -32,7 +32,7 @@ static void append_line(VM* vm, LineArray* array, int line)
         }
     }
 
-    VECTOR_PUSH(vm, LineArray, array, Line, ((Line) { .number = line, .count = 1 }));
+    VECTOR_PUSH(&vm->gc, LineArray, array, Line, ((Line) { .number = line, .count = 1 }));
 }
 
 void chunk_write(VM* vm, Chunk* chunk, uint8_t byte, int line)
@@ -40,7 +40,7 @@ void chunk_write(VM* vm, Chunk* chunk, uint8_t byte, int line)
     if (chunk->count >= chunk->capacity) {
         size_t oldCapacity = chunk->capacity;
         chunk->capacity = GROW_CAPACITY(oldCapacity);
-        chunk->code = GROW_ARRAY(vm, uint8_t, chunk->code, oldCapacity, chunk->capacity);
+        chunk->code = GROW_ARRAY(&vm->gc, uint8_t, chunk->code, oldCapacity, chunk->capacity);
     }
 
     chunk->code[chunk->count] = byte;
@@ -52,7 +52,7 @@ void chunk_write(VM* vm, Chunk* chunk, uint8_t byte, int line)
 uint8_t chunk_add_constant(VM* vm, Chunk* chunk, Value constant)
 {
     vm_push(vm, constant);
-    VECTOR_PUSH(vm, ValueArray, &chunk->constants, Value, constant);
+    VECTOR_PUSH(&vm->gc, ValueArray, &chunk->constants, Value, constant);
     vm_pop(vm);
     return (uint8_t)(chunk->constants.count - 1);
 }

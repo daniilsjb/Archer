@@ -1,5 +1,5 @@
-#ifndef DEBUG_H
-#define DEBUG_H
+#ifndef DISASSEMBLER_H
+#define DISASSEMBLER_H
 
 #include "chunk.h"
 

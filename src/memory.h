@@ -3,25 +3,25 @@
 
 #include <stdint.h>
 
-struct VM;
+typedef struct GC GC;
 
-#define ALLOCATE(vm, type, length)                                                                  \
-    (type*)allocate(vm, sizeof(type) * (length))                                                    \
+#define ALLOCATE(gc, type, length)                                                                  \
+    (type*)allocate(gc, sizeof(type) * (length))                                                    \
 
-#define FREE(vm, type, pointer)                                                                     \
-    deallocate(vm, pointer, sizeof(type))                                                           \
+#define FREE(gc, type, pointer)                                                                     \
+    deallocate(gc, pointer, sizeof(type))                                                           \
 
 #define GROW_CAPACITY(capacity)                                                                     \
     ((capacity) < 8 ? 8 : (capacity) * 2)                                                           \
 
-#define GROW_ARRAY(vm, type, pointer, oldCapacity, newCapacity)                                     \
-    (type*)reallocate(vm, pointer, sizeof(type) * (oldCapacity), sizeof(type) * (newCapacity))      \
+#define GROW_ARRAY(gc, type, pointer, oldCapacity, newCapacity)                                     \
+    (type*)reallocate(gc, pointer, sizeof(type) * (oldCapacity), sizeof(type) * (newCapacity))      \
 
-#define FREE_ARRAY(vm, type, pointer, capacity)                                                     \
-    deallocate(vm, pointer, sizeof(type) * capacity)                                                \
+#define FREE_ARRAY(gc, type, pointer, capacity)                                                     \
+    deallocate(gc, pointer, sizeof(type) * capacity)                                                \
 
-void* allocate(struct VM* vm, size_t size);
-void deallocate(struct VM* vm, void* pointer, size_t size);
-void* reallocate(struct VM* vm, void* pointer, size_t oldSize, size_t newSize);
+void* allocate(GC* gc, size_t size);
+void deallocate(GC* gc, void* pointer, size_t size);
+void* reallocate(GC* gc, void* pointer, size_t oldSize, size_t newSize);
 
 #endif
