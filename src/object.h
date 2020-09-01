@@ -1,126 +1,48 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include "common.h"
-#include "chunk.h"
-#include "value.h"
-#include "table.h"
+#include <stdint.h>
+#include <stdbool.h>
 
+#include "value.h"
+
+#define OBJ_TYPE(object) ((object)->type)
+
+#define ALLOCATE_OBJ(vm, type, objectType) (type*)allocate_object(vm, sizeof(type), objectType)
+
+typedef struct GC GC;
 typedef struct VM VM;
 
-#define OBJ_TYPE(object)        (AS_OBJ(object)->type)
+typedef struct ObjectType ObjectType;
 
-#define IS_STRING(object)       isObjType(object, OBJ_STRING)
-#define IS_FUNCTION(object)     isObjType(object, OBJ_FUNCTION)
-#define IS_CLOSURE(object)      isObjType(object, OBJ_CLOSURE)
-#define IS_NATIVE(object)       isObjType(object, OBJ_NATIVE)
-#define IS_INSTANCE(object)     (isObjType(object, OBJ_INSTANCE) || isObjType(object, OBJ_CLASS))
-#define IS_CLASS(object)        isObjType(object, OBJ_CLASS)
-#define IS_BOUND_METHOD(object) isObjType(object, OBJ_BOUND_METHOD)
-
-#define AS_STRING(object)       ((ObjString*)AS_OBJ(object))
-#define AS_CSTRING(object)      (((ObjString*)AS_OBJ(object))->chars)
-#define AS_FUNCTION(object)     ((ObjFunction*)AS_OBJ(object))
-#define AS_CLOSURE(object)      ((ObjClosure*)AS_OBJ(object))
-#define AS_NATIVE(object)       ((ObjNative*)AS_OBJ(object))
-#define AS_INSTANCE(object)     ((ObjInstance*)AS_OBJ(object))
-#define AS_CLASS(object)        ((ObjClass*)AS_OBJ(object))
-#define AS_BOUND_METHOD(object) ((ObjBoundMethod*)AS_OBJ(object))
-
-typedef enum {
-    OBJ_STRING,
-    OBJ_FUNCTION,
-    OBJ_CLOSURE,
-    OBJ_UPVALUE,
-    OBJ_NATIVE,
-    OBJ_CLASS,
-    OBJ_INSTANCE,
-    OBJ_BOUND_METHOD
-} ObjType;
-
-typedef struct Obj {
-    struct Obj* next;
-    ObjType type;
+typedef struct Object {
+    ObjectType* type;
+    struct Object* next;
     bool marked;
-} Obj;
+} Object;
 
-typedef struct ObjFunction {
-    Obj obj;
-    Chunk chunk;
-    int arity;
-    size_t upvalueCount;
-    ObjString* name;
-} ObjFunction;
+typedef void (*PrintObj)(Object* object);
+typedef uint32_t (*HashObj)(Object* object);
+typedef bool (*CallObj)(Object* callee, uint8_t argCount, VM* vm);
+typedef void (*TraverseObj)(Object* object, GC* gc);
+typedef void (*FreeObj)(Object* object, GC* gc);
 
-typedef struct ObjUpvalue {
-    Obj obj;
-    Value* location;
-    Value closed;
-    struct ObjUpvalue* next;
-} ObjUpvalue;
+typedef struct ObjectType {
+    PrintObj print;
+    HashObj hash;
+    CallObj call;
+    TraverseObj traverse;
+    FreeObj free;
+} ObjectType;
 
-typedef struct {
-    Obj obj;
-    ObjFunction* function;
-    ObjUpvalue** upvalues;
-    size_t upvalueCount;
-} ObjClosure;
+void print_object(Object* object);
+uint32_t hash_object(Object* object);
+bool call_object(Object* callee, uint8_t argCount, VM* vm);
+void traverse_object(Object* object, GC* gc);
+void free_object(Object* object, GC* gc);
 
-typedef struct ObjClass ObjClass;
+Object* allocate_object(VM* vm, size_t size, ObjectType* type);
 
-typedef struct {
-    Obj obj;
-    ObjClass* loxClass;
-    Table fields;
-} ObjInstance;
-
-typedef struct ObjClass {
-    ObjInstance obj;
-    ObjString* name;
-    Table methods;
-} ObjClass;
-
-typedef struct {
-    Obj obj;
-    Value receiver;
-    ObjClosure* method;
-} ObjBoundMethod;
-
-typedef bool (*NativeFn)(VM* vm, Value* args);
-
-typedef struct {
-    Obj obj;
-    NativeFn function;
-    int arity;
-} ObjNative;
-
-typedef struct ObjString {
-    Obj obj;
-    uint32_t hash;
-    size_t length;
-    char chars[];
-} ObjString;
-
-Obj* allocate_object(VM* vm, size_t size, ObjType type);
-
-ObjFunction* new_function(VM* vm);
-ObjClosure* new_closure(VM* vm, ObjFunction* function);
-ObjUpvalue* new_upvalue(VM* vm, Value* slot);
-ObjNative* new_native(VM* vm, NativeFn function, int arity);
-ObjInstance* new_instance(VM* vm, ObjClass* loxClass);
-ObjClass* new_class(VM* vm, ObjString* name);
-ObjBoundMethod* new_bound_method(VM* vm, Value receiver, ObjClosure* method);
-
-ObjString* make_string(VM* vm, size_t length);
-ObjString* copy_string(VM* vm, const char* chars, size_t length);
-ObjString* concatenate_strings(VM* vm, ObjString* a, ObjString* b);
-uint32_t hash_string(const char* key, size_t length);
-
-void print_object(Value value);
-
-static inline bool isObjType(Value value, ObjType type)
-{
-    return IS_OBJ(value) && AS_OBJ(value)->type == type;
-}
+bool value_is_object_of_type(Value value, ObjectType* type);
 
 #endif

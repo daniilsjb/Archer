@@ -2,6 +2,7 @@
 
 #include "disassembler.h"
 #include "object.h"
+#include "objfunction.h"
 
 void disassemble_chunk(Chunk* chunk, const char* name)
 {

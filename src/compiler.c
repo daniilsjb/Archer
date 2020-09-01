@@ -4,7 +4,8 @@
 
 #include "compiler.h"
 #include "vm.h"
-#include "object.h"
+#include "objfunction.h"
+#include "objstring.h"
 #include "common.h"
 #include "chunk.h"
 #include "parser.h"
@@ -53,7 +54,7 @@ typedef enum {
     TYPE_INITIALIZER,
     TYPE_STATIC_INITIALIZER,
     TYPE_SCRIPT
-} FunctionType;
+} CompilerType;
 
 typedef struct Compiler {
     VM* vm;
@@ -61,7 +62,7 @@ typedef struct Compiler {
     struct Compiler* enclosing;
 
     ObjFunction* function;
-    FunctionType type;
+    CompilerType type;
 
     ControlBlock* controlBlock;
 
@@ -125,13 +126,13 @@ static size_t compile_when_entry_list(Compiler* compiler, WhenEntryList* list);
 static void compile_block(Compiler* compiler, Block* block);
 static size_t compile_parameter_list(Compiler* compiler, ParameterList* list);
 static void compile_function_body(Compiler* compiler, FunctionBody* body);
-static void compile_function(Compiler* compiler, Function* function, FunctionType type, Token identifier);
-static void compile_named_function(Compiler* compiler, NamedFunction* function, FunctionType type);
+static void compile_function(Compiler* compiler, Function* function, CompilerType type, Token identifier);
+static void compile_named_function(Compiler* compiler, NamedFunction* function, CompilerType type);
 static size_t compile_method_list(Compiler* compiler, MethodList* list);
 static size_t compile_argument_list(Compiler* compiler, ArgumentList* list);
 static size_t compile_declaration_list(Compiler* compiler, DeclarationList* list);
 
-static void compiler_init(Compiler* compiler, VM* vm, FunctionType type, Token identifier)
+static void compiler_init(Compiler* compiler, VM* vm, CompilerType type, Token identifier)
 {
     compiler->enclosing = vm->compiler;
     vm->compiler = compiler;
@@ -551,7 +552,7 @@ static void compile_method(Compiler* compiler, Method* method)
     compiler->token = identifier;
     uint8_t name = make_identifier_constant(compiler, identifier);
 
-    FunctionType type = method->isStatic ? TYPE_STATIC_METHOD : TYPE_METHOD;
+    CompilerType type = method->isStatic ? TYPE_STATIC_METHOD : TYPE_METHOD;
     if (identifier.length == 4 && memcmp(identifier.start, "init", 4) == 0) {
         type = method->isStatic ? TYPE_STATIC_INITIALIZER : TYPE_INITIALIZER;
     }
@@ -1433,7 +1434,7 @@ void compile_function_body(Compiler* compiler, FunctionBody* body)
     }
 }
 
-void compile_function(Compiler* compiler, Function* function, FunctionType type, Token identifier)
+void compile_function(Compiler* compiler, Function* function, CompilerType type, Token identifier)
 {
     Compiler newCompiler;
     compiler_init(&newCompiler, compiler->vm, type, identifier);
@@ -1455,7 +1456,7 @@ void compile_function(Compiler* compiler, Function* function, FunctionType type,
     }
 }
 
-void compile_named_function(Compiler* compiler, NamedFunction* namedFunction, FunctionType type)
+void compile_named_function(Compiler* compiler, NamedFunction* namedFunction, CompilerType type)
 {
     compile_function(compiler, namedFunction->function, type, namedFunction->identifier);
 }
@@ -1513,6 +1514,6 @@ void mark_compiler_roots(VM* vm)
 {
     GC* gc = &vm->gc;
     for (Compiler* compiler = vm->compiler; compiler != NULL; compiler = compiler->enclosing) {
-        gc_mark_object(gc, (Obj*)compiler->function);
+        gc_mark_object(gc, (Object*)compiler->function);
     }
 }

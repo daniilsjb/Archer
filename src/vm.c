@@ -4,9 +4,15 @@
 #include <time.h>
 
 #include "vm.h"
-#include "common.h"
 #include "object.h"
+#include "objstring.h"
+#include "objnative.h"
+#include "objfunction.h"
+#include "objclass.h"
+#include "common.h"
 #include "memory.h"
+#include "chunk.h"
+#include "compiler.h"
 
 #if DEBUG_TRACE_EXECUTION
 #include "disassembler.h"
@@ -51,7 +57,7 @@ static void define_native(VM* vm, const char* name, NativeFn function, int arity
 {
     vm_push(vm, OBJ_VAL(copy_string(vm, name, strlen(name))));
     vm_push(vm, OBJ_VAL(new_native(vm, function, arity)));
-    table_put(vm, &vm->globals, AS_STRING(vm->stack[0]), vm->stack[1]);
+    table_put(vm, &vm->globals, VAL_AS_STRING(vm->stack[0]), vm->stack[1]);
     vm_pop(vm);
     vm_pop(vm);
 }
@@ -133,7 +139,7 @@ static void print_stack_trace(VM* vm)
     }
 }
 
-static InterpretStatus runtime_error(VM* vm, const char* format, ...)
+InterpretStatus runtime_error(VM* vm, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -148,7 +154,7 @@ static InterpretStatus runtime_error(VM* vm, const char* format, ...)
     return INTERPRET_RUNTIME_ERROR;
 }
 
-static bool call(VM* vm, ObjClosure* closure, uint8_t argCount)
+bool call(VM* vm, ObjClosure* closure, uint8_t argCount)
 {
     if (argCount != closure->function->arity) {
         runtime_error(vm, "Expected %d arguments but got %d", closure->function->arity, argCount);
@@ -169,49 +175,12 @@ static bool call(VM* vm, ObjClosure* closure, uint8_t argCount)
 
 static bool call_value(VM* vm, Value callee, uint8_t argCount)
 {
-    if (IS_OBJ(callee)) {
-        switch (OBJ_TYPE(callee)) {
-            case OBJ_BOUND_METHOD: {
-                ObjBoundMethod* bound = AS_BOUND_METHOD(callee);
-                vm->stackTop[- argCount - 1] = bound->receiver;
-                return call(vm, bound->method, argCount);
-            }
-            case OBJ_CLOSURE: {
-                return call(vm, AS_CLOSURE(callee), argCount);
-            }
-            case OBJ_NATIVE: {
-                ObjNative* native = AS_NATIVE(callee);
-                if (native->arity != argCount) {
-                    runtime_error(vm, "Expected %d arguments but got %d", native->arity, argCount);
-                    return false;
-                }
-
-                if (native->function(vm, vm->stackTop - argCount)) {
-                    vm->stackTop -= (uint64_t)argCount;
-                    return true;
-                } else {
-                    runtime_error(vm, AS_CSTRING(vm->stackTop[- argCount - 1]));
-                    return false;
-                }
-            }
-            case OBJ_CLASS: {
-                ObjClass* loxClass = AS_CLASS(callee);
-                vm->stackTop[- argCount - 1] = OBJ_VAL(new_instance(vm, loxClass));
-
-                Value initializer;
-                if (table_get(&loxClass->methods, vm->initString, &initializer)) {
-                    return call(vm, AS_CLOSURE(initializer), argCount);
-                } else if (argCount != 0) {
-                    runtime_error(vm, "Expected 0 arguments but got %d.", argCount);
-                    return false;
-                }
-                return true;
-            }
-        }
+    if (!IS_OBJ(callee)) {
+        runtime_error(vm, "Can only call functions and classes.");
+        return false;
     }
 
-    runtime_error(vm, "Can only call functions and classes.");
-    return false;
+    return call_object(AS_OBJ(callee), argCount, vm);
 }
 
 static bool invoke_from_class(VM* vm, ObjClass* loxClass, ObjString* name, uint8_t argCount)
@@ -222,19 +191,19 @@ static bool invoke_from_class(VM* vm, ObjClass* loxClass, ObjString* name, uint8
         return false;
     }
 
-    return call(vm, AS_CLOSURE(method), argCount);
+    return call(vm, VAL_AS_CLOSURE(method), argCount);
 }
 
 static bool invoke(VM* vm, ObjString* name, uint8_t argCount)
 {
     Value receiver = peek(vm, argCount);
 
-    if (!IS_INSTANCE(receiver)) {
+    if (!VAL_IS_INSTANCE(receiver)) {
         runtime_error(vm, "Can only invoke methods on class instances.");
         return false;
     }
 
-    ObjInstance* instance = AS_INSTANCE(receiver);
+    ObjInstance* instance = VAL_AS_INSTANCE(receiver);
 
     Value value;
     if (table_get(&instance->fields, name, &value)) {
@@ -242,7 +211,7 @@ static bool invoke(VM* vm, ObjString* name, uint8_t argCount)
         return call_value(vm, value, argCount);
     }
 
-    return invoke_from_class(vm, instance->loxClass, name, argCount);
+    return invoke_from_class(vm, instance->clazz, name, argCount);
 }
 
 static ObjUpvalue* capture_upvalue(VM* vm, Value* local)
@@ -284,16 +253,16 @@ static void close_upvalues(VM* vm, Value* last)
 static void define_static_method(VM* vm, ObjString* name)
 {
     Value method = peek(vm, 0);
-    ObjInstance* metaInstance = AS_INSTANCE(peek(vm, 1));
-    table_put(vm, &metaInstance->loxClass->methods, name, method);
+    ObjInstance* metaInstance = VAL_AS_INSTANCE(peek(vm, 1));
+    table_put(vm, &metaInstance->clazz->methods, name, method);
     vm_pop(vm);
 }
 
 static void define_method(VM* vm, ObjString* name)
 {
     Value method = peek(vm, 0);
-    ObjClass* loxClass = AS_CLASS(peek(vm, 1));
-    table_put(vm, &loxClass->methods, name, method);
+    ObjClass* clazz = VAL_AS_CLASS(peek(vm, 1));
+    table_put(vm, &clazz->methods, name, method);
     vm_pop(vm);
 }
 
@@ -305,7 +274,7 @@ static bool bind_method(VM* vm, ObjClass* loxClass, ObjString* name)
         return false;
     }
 
-    ObjBoundMethod* bound = new_bound_method(vm, peek(vm, 0), AS_CLOSURE(method));
+    ObjBoundMethod* bound = new_bound_method(vm, peek(vm, 0), VAL_AS_CLOSURE(method));
     vm_pop(vm);
     vm_push(vm, OBJ_VAL(bound));
     return true;
@@ -316,8 +285,8 @@ static bool invoke_static_constructor(VM* vm, ObjClass* loxClass)
     ObjInstance* metaInstance = (ObjInstance*)loxClass;
 
     Value method;
-    if (table_get(&metaInstance->loxClass->methods, vm->initString, &method)) {
-        return call(vm, AS_CLOSURE(method), 0);
+    if (table_get(&metaInstance->clazz->methods, vm->initString, &method)) {
+        return call(vm, VAL_AS_CLOSURE(method), 0);
     }
 
     return false;
@@ -331,7 +300,7 @@ static InterpretStatus run(VM* vm)
 #define READ_BYTE() (*ip++)
 #define READ_SHORT() (ip += 2, (uint16_t)(ip[-2] << 0 | ip[-1] << 8))
 #define READ_CONSTANT() frame->closure->function->chunk.constants.data[READ_BYTE()]
-#define READ_STRING() AS_STRING(READ_CONSTANT())
+#define READ_STRING() VAL_AS_STRING(READ_CONSTANT())
 
 #define PEEK_BYTE() (*ip)
 #define PEEK_NEXT_BYTE() (*(ip + 1))
@@ -458,9 +427,9 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_ADD: {
-                if (IS_STRING(TOP) && IS_STRING(SND)) {
-                    ObjString* b = AS_STRING(TOP);
-                    ObjString* a = AS_STRING(SND);
+                if (VAL_IS_STRING(TOP) && VAL_IS_STRING(SND)) {
+                    ObjString* b = VAL_AS_STRING(TOP);
+                    ObjString* a = VAL_AS_STRING(SND);
                     ObjString* result = concatenate_strings(vm, a, b);
 
                     POP();
@@ -695,13 +664,13 @@ static InterpretStatus run(VM* vm)
                 }
             }
             case OP_LOAD_PROPERTY: {
-                if (!IS_INSTANCE(TOP)) {
+                if (!VAL_IS_INSTANCE(TOP)) {
                     frame->ip = ip;
                     runtime_error(vm, "Can only access properties of class instances.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                ObjInstance* instance = AS_INSTANCE(TOP);
+                ObjInstance* instance = VAL_AS_INSTANCE(TOP);
                 ObjString* name = READ_STRING();
 
                 Value value;
@@ -712,7 +681,7 @@ static InterpretStatus run(VM* vm)
                 }
 
                 frame->ip = ip;
-                if (!bind_method(vm, instance->loxClass, name)) {
+                if (!bind_method(vm, instance->clazz, name)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
@@ -727,13 +696,13 @@ static InterpretStatus run(VM* vm)
                 }
             }
             case OP_STORE_PROPERTY: {
-                if (!IS_INSTANCE(TOP)) {
+                if (!VAL_IS_INSTANCE(TOP)) {
                     frame->ip = ip;
                     runtime_error(vm, "Can only set properties of class instances.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                ObjInstance* instance = AS_INSTANCE(TOP);
+                ObjInstance* instance = VAL_AS_INSTANCE(TOP);
                 table_put(vm, &instance->fields, READ_STRING(), SND);
 
                 POP();
@@ -745,7 +714,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_CLOSURE: {
-                ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
+                ObjFunction* function = VAL_AS_FUNCTION(READ_CONSTANT());
                 ObjClosure* closure = new_closure(vm, function);
                 PUSH(OBJ_VAL(closure));
                 for (size_t i = 0; i < closure->upvalueCount; i++) {
@@ -830,19 +799,19 @@ static InterpretStatus run(VM* vm)
             }
             case OP_INHERIT: {
                 Value superclass = SND;
-                if (!IS_CLASS(superclass)) {
+                if (!VAL_IS_CLASS(superclass)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Superclass must be a class.");
                 }
 
-                ObjClass* subclass = AS_CLASS(TOP);
-                table_put_from(vm, &AS_CLASS(superclass)->methods, &subclass->methods);
+                ObjClass* subclass = VAL_AS_CLASS(TOP);
+                table_put_from(vm, &VAL_AS_CLASS(superclass)->methods, &subclass->methods);
                 POP();
                 break;
             }
             case OP_GET_SUPER: {
                 ObjString* name = READ_STRING();
-                ObjClass* superclass = AS_CLASS(POP());
+                ObjClass* superclass = VAL_AS_CLASS(POP());
 
                 frame->ip = ip;
                 if (!bind_method(vm, superclass, name)) {
@@ -853,7 +822,7 @@ static InterpretStatus run(VM* vm)
             case OP_SUPER_INVOKE: {
                 ObjString* method = READ_STRING();
                 uint8_t argCount = READ_BYTE();
-                ObjClass* superclass = AS_CLASS(POP());
+                ObjClass* superclass = VAL_AS_CLASS(POP());
 
                 frame->ip = ip;
                 if (!invoke_from_class(vm, superclass, method, argCount)) {
@@ -866,7 +835,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_END_CLASS: {
                 frame->ip = ip;
-                if (!invoke_static_constructor(vm, AS_CLASS(TOP))) {
+                if (!invoke_static_constructor(vm, VAL_AS_CLASS(TOP))) {
                     POP();
                 }
                 frame = &vm->frames[vm->frameCount - 1];

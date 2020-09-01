@@ -6,6 +6,7 @@
 
 #include "value.h"
 
+typedef struct ObjString ObjString;
 typedef struct VM VM;
 typedef struct GC GC;
 
@@ -14,7 +15,7 @@ typedef struct {
     Value value;
 } Entry;
 
-typedef struct {
+typedef struct Table {
     int count;
     int capacityMask;
     Entry* entries;

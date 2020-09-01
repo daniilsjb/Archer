@@ -6,8 +6,7 @@
 
 #define NAN_BOXING 1
 
-typedef struct Obj Obj;
-typedef struct ObjString ObjString;
+typedef struct Object Object;
 
 #if NAN_BOXING
 #include <string.h>
@@ -21,13 +20,13 @@ typedef struct ObjString ObjString;
 
 typedef uint64_t Value;
 
-#define NIL_VAL()        ((Value)(uint64_t)(QNAN | TAG_NIL))
-#define FALSE_VAL()      ((Value)(uint64_t)(QNAN | TAG_FALSE))
-#define TRUE_VAL()       ((Value)(uint64_t)(QNAN | TAG_TRUE))
+#define NIL_VAL()         ((Value)(uint64_t)(QNAN | TAG_NIL))
+#define FALSE_VAL()       ((Value)(uint64_t)(QNAN | TAG_FALSE))
+#define TRUE_VAL()        ((Value)(uint64_t)(QNAN | TAG_TRUE))
 
-#define BOOL_VAL(b)      ((b) ? TRUE_VAL() : FALSE_VAL())
-#define NUMBER_VAL(num)  (num_to_value(num))
-#define OBJ_VAL(obj)     ((Value)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(obj)))
+#define BOOL_VAL(value)   ((value) ? TRUE_VAL() : FALSE_VAL())
+#define NUMBER_VAL(value) (num_to_value(value))
+#define OBJ_VAL(value)    ((Value)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(value)))
 
 #define IS_NIL(value)    ((value) == NIL_VAL())
 #define IS_BOOL(value)   (((value) | 1) == TRUE_VAL())
@@ -36,7 +35,7 @@ typedef uint64_t Value;
 
 #define AS_BOOL(value)   ((value) == TRUE_VAL())
 #define AS_NUMBER(value) (value_to_num(value))
-#define AS_OBJ(value)    ((Obj*)(uintptr_t)((value) & ~(SIGN_BIT | QNAN)))
+#define AS_OBJ(value)    ((Object*)(uintptr_t)((value) & ~(SIGN_BIT | QNAN)))
 
 static inline double value_to_num(Value value)
 {
@@ -66,23 +65,23 @@ typedef struct {
     union {
         bool boolean;
         double number;
-        Obj* obj;
+        Object* object;
     } as;
 } Value;
 
 #define BOOL_VAL(value) ((Value){ VALUE_BOOL, { .boolean = value } })
 #define NUMBER_VAL(value) ((Value){ VALUE_NUMBER, { .number = value } })
 #define NIL_VAL() ((Value){ VALUE_NIL, { .number = 0 } })
-#define OBJ_VAL(object) ((Value){ VALUE_OBJ, { .obj = (Obj*)object } })
+#define OBJ_VAL(value) ((Value){ VALUE_OBJ, { .object = (Object*)value } })
 
 #define IS_BOOL(value) ((value).type == VALUE_BOOL)
 #define IS_NUMBER(value) ((value).type == VALUE_NUMBER)
 #define IS_NIL(value) ((value).type == VALUE_NIL)
-#define IS_OBJ(object) ((object).type == VALUE_OBJ)
+#define IS_OBJ(value) ((value).type == VALUE_OBJ)
 
 #define AS_BOOL(value) ((value).as.boolean)
 #define AS_NUMBER(value) ((value).as.number)
-#define AS_OBJ(object) ((object).as.obj)
+#define AS_OBJ(value) ((value).as.object)
 
 #endif
 

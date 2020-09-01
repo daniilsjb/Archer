@@ -2,15 +2,14 @@
 #define VM_H
 
 #include "gc.h"
-#include "compiler.h"
-#include "chunk.h"
 #include "value.h"
-#include "object.h"
 #include "table.h"
 
 #define STACK_MAX 512
 #define FRAMES_MAX 64
 
+typedef struct ObjClosure ObjClosure;
+typedef struct ObjUpvalue ObjUpvalue;
 typedef struct Compiler Compiler;
 typedef struct ClassCompiler ClassCompiler;
 
@@ -51,5 +50,9 @@ void vm_push(VM* vm, Value value);
 Value vm_pop(VM* vm);
 
 InterpretStatus vm_interpret(VM* vm, const char* source);
+
+bool call(VM* vm, ObjClosure* closure, uint8_t argCount);
+
+InterpretStatus runtime_error(VM* vm, const char* format, ...);
 
 #endif
