@@ -47,7 +47,7 @@ ObjectType StringType = {
 
 ObjString* new_string(VM* vm, size_t length)
 {
-    ObjString* string = (ObjString*)allocate_object(vm, sizeof(ObjString) + length + 1, &StringType);
+    ObjString* string = ALLOCATE_STRING(vm, length);
     string->length = length;
     return string;
 }

@@ -39,7 +39,7 @@ ObjectType FunctionType = {
 
 ObjFunction* new_function(VM* vm)
 {
-    ObjFunction* function = ALLOCATE_OBJ(vm, ObjFunction, &FunctionType);
+    ObjFunction* function = ALLOCATE_FUNCTION(vm);
     function->arity = 0;
     function->upvalueCount = 0;
     function->name = NULL;
@@ -70,7 +70,7 @@ ObjectType UpvalueType = {
 
 ObjUpvalue* new_upvalue(VM* vm, Value* slot)
 {
-    ObjUpvalue* upvalue = ALLOCATE_OBJ(vm, ObjUpvalue, &UpvalueType);
+    ObjUpvalue* upvalue = ALLOCATE_UPVALUE(vm);
     upvalue->location = slot;
     upvalue->closed = NIL_VAL();
     upvalue->next = NULL;
@@ -117,7 +117,7 @@ ObjClosure* new_closure(VM* vm, ObjFunction* function)
         upvalues[i] = NULL;
     }
 
-    ObjClosure* closure = ALLOCATE_OBJ(vm, ObjClosure, &ClosureType);
+    ObjClosure* closure = ALLOCATE_CLOSURE(vm);
     closure->function = function;
     closure->upvalues = upvalues;
     closure->upvalueCount = function->upvalueCount;

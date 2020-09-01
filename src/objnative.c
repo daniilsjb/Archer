@@ -46,7 +46,7 @@ ObjectType NativeType = {
 
 ObjNative* new_native(VM* vm, NativeFn function, int arity)
 {
-    ObjNative* native = ALLOCATE_OBJ(vm, ObjNative, &NativeType);
+    ObjNative* native = ALLOCATE_NATIVE(vm);
     native->function = function;
     native->arity = arity;
     return native;

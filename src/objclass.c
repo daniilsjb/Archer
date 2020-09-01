@@ -33,7 +33,7 @@ ObjectType InstanceType = {
 
 ObjInstance* new_instance(VM* vm, ObjClass* clazz)
 {
-    ObjInstance* instance = ALLOCATE_OBJ(vm, ObjInstance, &InstanceType);
+    ObjInstance* instance = ALLOCATE_INSTANCE(vm);
     instance->clazz = clazz;
     table_init(&instance->fields);
     return instance;
@@ -88,13 +88,13 @@ ObjectType ClassType = {
 
 ObjClass* new_class(VM* vm, ObjString* name)
 {
-    ObjClass* metaclass = ALLOCATE_OBJ(vm, ObjClass, &ClassType);
+    ObjClass* metaclass = ALLOCATE_CLASS(vm);
     metaclass->name = concatenate_strings(vm, name, copy_string(vm, " meta", 5));
     metaclass->base.clazz = NULL;
     table_init(&metaclass->methods);
     table_init(&metaclass->base.fields);
 
-    ObjClass* clazz = ALLOCATE_OBJ(vm, ObjClass, &ClassType);
+    ObjClass* clazz = ALLOCATE_CLASS(vm);
     clazz->name = name;
     clazz->base.clazz = metaclass;
     table_init(&clazz->methods);
@@ -136,7 +136,7 @@ ObjectType BoundMethodType = {
 
 ObjBoundMethod* new_bound_method(VM* vm, Value receiver, ObjClosure* method)
 {
-    ObjBoundMethod* boundMethod = ALLOCATE_OBJ(vm, ObjBoundMethod, &BoundMethodType);
+    ObjBoundMethod* boundMethod = ALLOCATE_BOUND_METHOD(vm);
     boundMethod->receiver = receiver;
     boundMethod->method = method;
     return boundMethod;

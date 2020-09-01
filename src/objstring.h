@@ -11,6 +11,8 @@
 #define VAL_AS_CSTRING(value) (VAL_AS_STRING(value)->chars)
 #define VAL_IS_STRING(value)  (value_is_object_of_type((value), &StringType))
 
+#define ALLOCATE_STRING(vm, length) (AS_STRING(allocate_object((vm), sizeof(ObjString) + (length) + 1, &StringType)))
+
 extern ObjectType StringType;
 
 typedef struct ObjString {

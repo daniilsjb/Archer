@@ -14,6 +14,8 @@ typedef struct ObjClass ObjClass;
 #define VAL_AS_INSTANCE(value) (AS_INSTANCE(AS_OBJ(value)))
 #define VAL_IS_INSTANCE(value) (value_is_object_of_type(value, &InstanceType) || value_is_object_of_type(value, &ClassType))
 
+#define ALLOCATE_INSTANCE(vm) (ALLOCATE_OBJ(vm, ObjInstance, &InstanceType))
+
 extern ObjectType InstanceType;
 
 typedef struct {
@@ -30,6 +32,8 @@ ObjInstance* new_instance(VM* vm, ObjClass* clazz);
 #define VAL_AS_CLASS(value) (AS_CLASS(AS_OBJ(value)))
 #define VAL_IS_CLASS(value) (value_is_object_of_type(value, &ClassType))
 
+#define ALLOCATE_CLASS(vm) (ALLOCATE_OBJ(vm, ObjClass, &ClassType))
+
 extern ObjectType ClassType;
 
 typedef struct ObjClass {
@@ -45,6 +49,8 @@ ObjClass* new_class(VM* vm, ObjString* name);
 
 #define VAL_AS_BOUND_METHOD(value) (AS_BOUND_METHOD(AS_OBJ(value)))
 #define VAL_IS_BOUND_METHOD(value) (value_is_object_of_type(value, &BoundMethodType))
+
+#define ALLOCATE_BOUND_METHOD(vm) (ALLOCATE_OBJ(vm, ObjBoundMethod, &BoundMethodType))
 
 extern ObjectType BoundMethodType;
 

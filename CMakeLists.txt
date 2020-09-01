@@ -19,8 +19,6 @@ add_executable (clox
     "src/errcode.h"
     "src/memory.c"
     "src/memory.h"
-    
-    
     "src/scanner.c"
     "src/scanner.h"
     "src/table.c"
@@ -43,4 +41,14 @@ add_executable (clox
     "src/ast.c"
     "src/astprinter.h"
     "src/astprinter.c"
-   "src/object.h" "src/object.c" "src/objstring.h" "src/objstring.c" "src/objnative.h" "src/objnative.c" "src/objfunction.h" "src/objfunction.c" "src/objclass.h" "src/objclass.c")
+    "src/object.h"
+    "src/object.c"
+    "src/objstring.h"
+    "src/objstring.c"
+    "src/objnative.h"
+    "src/objnative.c"
+    "src/objfunction.h"
+    "src/objfunction.c"
+    "src/objclass.h"
+    "src/objclass.c"
+)

@@ -9,6 +9,8 @@
 #define VAL_AS_NATIVE(value) (AS_NATIVE(AS_OBJ(value)))
 #define VAL_IS_NATIVE(value) (value_is_object_of_type(value, &NativeType))
 
+#define ALLOCATE_NATIVE(vm) (ALLOCATE_OBJ(vm, ObjNative, &NativeType))
+
 extern ObjectType NativeType;
 
 typedef bool (*NativeFn)(VM* vm, Value* args);

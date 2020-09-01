@@ -10,6 +10,8 @@
 #define VAL_AS_FUNCTION(value) (AS_FUNCTION(AS_OBJ(value)))
 #define VAL_IS_FUNCTION(value) (value_is_object_of_type(value, &FunctionType))
 
+#define ALLOCATE_FUNCTION(vm) (ALLOCATE_OBJ(vm, ObjFunction, &FunctionType))
+
 typedef struct ObjString ObjString;
 
 extern ObjectType FunctionType;
@@ -30,6 +32,8 @@ ObjFunction* new_function(VM* vm);
 #define VAL_AS_UPVALUE(value) (AS_UPVALUE(AS_OBJ(value)))
 #define VAL_IS_UPVALUE(value) (value_is_object_of_type(value, &UpvalueType))
 
+#define ALLOCATE_UPVALUE(vm) (ALLOCATE_OBJ(vm, ObjUpvalue, &UpvalueType))
+
 extern ObjectType UpvalueType;
 
 typedef struct ObjUpvalue {
@@ -46,6 +50,8 @@ ObjUpvalue* new_upvalue(VM* vm, Value* slot);
 
 #define VAL_AS_CLOSURE(value) (AS_CLOSURE(AS_OBJ(value)))
 #define VAL_IS_CLOSURE(value) (value_is_object_of_type(value, &ClosureType))
+
+#define ALLOCATE_CLOSURE(vm) (ALLOCATE_OBJ(vm, ObjClosure, &ClosureType))
 
 extern ObjectType ClosureType;
 
