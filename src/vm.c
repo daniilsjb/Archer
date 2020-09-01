@@ -436,8 +436,7 @@ static InterpretStatus run(VM* vm)
                     ObjString* result = concatenate_strings(vm, a, b);
 
                     POP();
-                    POP();
-                    PUSH(OBJ_VAL(result));
+                    TOP = OBJ_VAL(result);
                 } else if (IS_NUMBER(TOP) || IS_NUMBER(SND)) {
                     double rhs = AS_NUMBER(POP());
                     TOP = NUMBER_VAL(AS_NUMBER(TOP) + rhs);
