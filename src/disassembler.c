@@ -63,7 +63,7 @@ static uint32_t closure_instruction(Chunk* chunk, uint32_t offset)
     print_value(chunk->constants.data[constant]);
     printf("\n");
 
-    ObjFunction* function = AS_FUNCTION(chunk->constants.data[constant]);
+    ObjFunction* function = VAL_AS_FUNCTION(chunk->constants.data[constant]);
     for (size_t j = 0; j < function->upvalueCount; j++) {
         uint8_t isLocal = chunk->code[currentOffset++];
         uint8_t index = chunk->code[currentOffset++];
