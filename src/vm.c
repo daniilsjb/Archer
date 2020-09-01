@@ -305,6 +305,9 @@ static InterpretStatus run(VM* vm)
 #define PEEK_BYTE() (*ip)
 #define PEEK_NEXT_BYTE() (*(ip + 1))
 
+#define SKIP_BYTE() (ip++)
+#define SKIP_SHORT() (ip += 2)
+
 #define AS_COMPLEMENT(value) ((int64_t)AS_NUMBER(value))
 
 #define TOP vm->stackTop[-1]
@@ -659,7 +662,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_LOAD_PROPERTY_SAFE: {
                 if (IS_NIL(TOP)) {
-                    READ_STRING();
+                    SKIP_BYTE();
                     break;
                 }
             }
@@ -675,8 +678,7 @@ static InterpretStatus run(VM* vm)
 
                 Value value;
                 if (table_get(&instance->fields, name, &value)) {
-                    POP();
-                    PUSH(value);
+                    TOP = value;
                     break;
                 }
 
@@ -689,7 +691,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_STORE_PROPERTY_SAFE: {
                 if (IS_NIL(TOP)) {
-                    READ_STRING();
+                    SKIP_BYTE();
                     POP();
                     TOP = NIL_VAL();
                     break;
@@ -748,9 +750,8 @@ static InterpretStatus run(VM* vm)
             }
             case OP_INVOKE_SAFE: {
                 if (IS_NIL(peek(vm, PEEK_NEXT_BYTE()))) {
-                    ObjString* method = READ_STRING();
-                    uint8_t argCount = READ_BYTE();
-                    vm->stackTop -= argCount;
+                    SKIP_BYTE();
+                    vm->stackTop -= READ_BYTE();
                     break;
                 }
             }
@@ -852,6 +853,9 @@ static InterpretStatus run(VM* vm)
 
 #undef PEEK_BYTE
 #undef PEEK_NEXT_BYTE
+
+#undef SKIP_BYTE
+#undef SKIP_SHORT
 
 #undef AS_COMPLEMENT
 
