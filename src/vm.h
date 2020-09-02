@@ -13,6 +13,8 @@ typedef struct ObjUpvalue ObjUpvalue;
 typedef struct Compiler Compiler;
 typedef struct ClassCompiler ClassCompiler;
 
+typedef struct ObjectType ObjectType;
+
 typedef struct {
     ObjClosure* closure;
     uint8_t* ip;
@@ -24,6 +26,15 @@ typedef struct VM {
 
     Compiler* compiler;
     ClassCompiler* classCompiler;
+
+    ObjectType* stringType;
+    ObjectType* functionType;
+    ObjectType* upvalueType;
+    ObjectType* closureType;
+    ObjectType* nativeType;
+    ObjectType* instanceType;
+    ObjectType* classType;
+    ObjectType* boundMethodType;
 
     CallFrame frames[FRAMES_MAX];
     size_t frameCount;

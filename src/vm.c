@@ -76,6 +76,15 @@ void vm_init(VM* vm)
 
     reset_stack(vm);
 
+    vm->stringType = new_string_type(vm);
+    vm->functionType = new_function_type(vm);
+    vm->upvalueType = new_upvalue_type(vm);
+    vm->closureType = new_closure_type(vm);
+    vm->nativeType = new_native_type(vm);
+    vm->instanceType = new_instance_type(vm);
+    vm->classType = new_class_type(vm);
+    vm->boundMethodType = new_bound_method_type(vm);
+
     gc_init(&vm->gc);
     vm->gc.vm = vm;
 
@@ -97,6 +106,15 @@ void vm_free(VM* vm)
     vm->initString = NULL;
 
     gc_free(&vm->gc);
+
+    free_bound_method_type(vm->boundMethodType, vm);
+    free_class_type(vm->classType, vm);
+    free_instance_type(vm->instanceType, vm);
+    free_native_type(vm->nativeType, vm);
+    free_closure_type(vm->closureType, vm);
+    free_upvalue_type(vm->upvalueType, vm);
+    free_function_type(vm->functionType, vm);
+    free_string_type(vm->stringType, vm);
 
     reset_stack(vm);
 }
@@ -176,11 +194,17 @@ bool call(VM* vm, ObjClosure* closure, uint8_t argCount)
 static bool call_value(VM* vm, Value callee, uint8_t argCount)
 {
     if (!IS_OBJ(callee)) {
-        runtime_error(vm, "Can only call functions and classes.");
+        runtime_error(vm, "Can only call objects.");
         return false;
     }
 
-    return call_object(AS_OBJ(callee), argCount, vm);
+    Object* object = AS_OBJ(callee);
+    if (!OBJ_TYPE(object)->call) {
+        runtime_error(vm, "Objects of type '%s' are not callable.", OBJ_TYPE(object)->name);
+        return false;
+    }
+
+    return call_object(object, argCount, vm);
 }
 
 static bool invoke_from_class(VM* vm, ObjClass* loxClass, ObjString* name, uint8_t argCount)
@@ -198,7 +222,7 @@ static bool invoke(VM* vm, ObjString* name, uint8_t argCount)
 {
     Value receiver = peek(vm, argCount);
 
-    if (!VAL_IS_INSTANCE(receiver)) {
+    if (!VAL_IS_INSTANCE(receiver, vm)) {
         runtime_error(vm, "Can only invoke methods on class instances.");
         return false;
     }
@@ -266,10 +290,10 @@ static void define_method(VM* vm, ObjString* name)
     vm_pop(vm);
 }
 
-static bool bind_method(VM* vm, ObjClass* loxClass, ObjString* name)
+static bool bind_method(VM* vm, ObjClass* clazz, ObjString* name)
 {
     Value method;
-    if (!table_get(&loxClass->methods, name, &method)) {
+    if (!table_get(&clazz->methods, name, &method)) {
         runtime_error(vm, "Undefined property '%s'.", name->chars);
         return false;
     }
@@ -430,7 +454,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_ADD: {
-                if (VAL_IS_STRING(TOP) && VAL_IS_STRING(SND)) {
+                if (VAL_IS_STRING(TOP, vm) && VAL_IS_STRING(SND, vm)) {
                     ObjString* b = VAL_AS_STRING(TOP);
                     ObjString* a = VAL_AS_STRING(SND);
                     ObjString* result = concatenate_strings(vm, a, b);
@@ -666,7 +690,7 @@ static InterpretStatus run(VM* vm)
                 }
             }
             case OP_LOAD_PROPERTY: {
-                if (!VAL_IS_INSTANCE(TOP)) {
+                if (!VAL_IS_INSTANCE(TOP, vm)) {
                     frame->ip = ip;
                     runtime_error(vm, "Can only access properties of class instances.");
                     return INTERPRET_RUNTIME_ERROR;
@@ -697,10 +721,9 @@ static InterpretStatus run(VM* vm)
                 }
             }
             case OP_STORE_PROPERTY: {
-                if (!VAL_IS_INSTANCE(TOP)) {
+                if (!VAL_IS_INSTANCE(TOP, vm)) {
                     frame->ip = ip;
-                    runtime_error(vm, "Can only set properties of class instances.");
-                    return INTERPRET_RUNTIME_ERROR;
+                    return runtime_error(vm, "Can only set properties of class instances.");
                 }
 
                 ObjInstance* instance = VAL_AS_INSTANCE(TOP);
@@ -799,7 +822,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_INHERIT: {
                 Value superclass = SND;
-                if (!VAL_IS_CLASS(superclass)) {
+                if (!VAL_IS_CLASS(superclass, vm)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Superclass must be a class.");
                 }

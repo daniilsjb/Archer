@@ -25,11 +25,27 @@ static void free_instance(Object* object, GC* gc)
     FREE(gc, ObjInstance, object);
 }
 
-ObjectType InstanceType = {
-    .print = print_instance,
-    .traverse = traverse_instance,
-    .free = free_instance
-};
+ObjectType* new_instance_type(VM* vm)
+{
+    ObjectType* type = raw_allocate(sizeof(ObjectType));
+    if (!type) {
+        return NULL;
+    }
+
+    *type = (ObjectType) {
+        .name = "instance",
+        .print = print_instance,
+        .traverse = traverse_instance,
+        .free = free_instance
+    };
+
+    return type;
+}
+
+void free_instance_type(ObjectType* type, VM* vm)
+{
+    raw_deallocate(type);
+}
 
 ObjInstance* new_instance(VM* vm, ObjClass* clazz)
 {
@@ -79,12 +95,28 @@ static void free_class(Object* object, GC* gc)
     FREE(gc, ObjClass, object);
 }
 
-ObjectType ClassType = {
-    .print = print_class,
-    .call = call_class,
-    .traverse = traverse_class,
-    .free = free_class
-};
+ObjectType* new_class_type(VM* vm)
+{
+    ObjectType* type = raw_allocate(sizeof(ObjectType));
+    if (!type) {
+        return NULL;
+    }
+
+    *type = (ObjectType) {
+        .name = "class",
+        .print = print_class,
+        .call = call_class,
+        .traverse = traverse_class,
+        .free = free_class
+    };
+
+    return type;
+}
+
+void free_class_type(ObjectType* type, VM* vm)
+{
+    raw_deallocate(type);
+}
 
 ObjClass* new_class(VM* vm, ObjString* name)
 {
@@ -127,12 +159,28 @@ static void free_bound_method(Object* object, GC* gc)
     FREE(gc, ObjBoundMethod, object);
 }
 
-ObjectType BoundMethodType = {
-    .print = print_bound_method,
-    .call = call_bound_method,
-    .traverse = traverse_bound_method,
-    .free = free_bound_method
-};
+ObjectType* new_bound_method_type(VM* vm)
+{
+    ObjectType* type = raw_allocate(sizeof(ObjectType));
+    if (!type) {
+        return NULL;
+    }
+
+    *type = (ObjectType) {
+        .name = "bound method",
+        .print = print_bound_method,
+        .call = call_bound_method,
+        .traverse = traverse_bound_method,
+        .free = free_bound_method
+    };
+
+    return type;
+}
+
+void free_bound_method_type(ObjectType* type, VM* vm)
+{
+    raw_deallocate(type);
+}
 
 ObjBoundMethod* new_bound_method(VM* vm, Value receiver, ObjClosure* method)
 {

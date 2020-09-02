@@ -37,12 +37,28 @@ static void free_native(Object* object, GC* gc)
     FREE(gc, ObjNative, object);
 }
 
-ObjectType NativeType = {
-    .print = print_native,
-    .call = call_native,
-    .traverse = traverse_native,
-    .free = free_native
-};
+ObjectType* new_native_type(VM* vm)
+{
+    ObjectType* type = raw_allocate(sizeof(ObjectType));
+    if (!type) {
+        return NULL;
+    }
+
+    *type = (ObjectType) {
+        .name = "native",
+        .print = print_native,
+        .call = call_native,
+        .traverse = traverse_native,
+        .free = free_native
+    };
+
+    return type;
+}
+
+void free_native_type(ObjectType* type, VM* vm)
+{
+    raw_deallocate(type);
+}
 
 ObjNative* new_native(VM* vm, NativeFn function, int arity)
 {

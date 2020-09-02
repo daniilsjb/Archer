@@ -6,6 +6,8 @@
 
 #include "value.h"
 
+#define MAX_TYPE_METHODS 16
+
 #define OBJ_TYPE(object) ((object)->type)
 
 #define ALLOCATE_OBJ(vm, type, objectType) (type*)allocate_object(vm, sizeof(type), objectType)
@@ -27,12 +29,27 @@ typedef bool (*CallObj)(Object* callee, uint8_t argCount, VM* vm);
 typedef void (*TraverseObj)(Object* object, GC* gc);
 typedef void (*FreeObj)(Object* object, GC* gc);
 
+typedef bool (*TypeMethod)(Object* object, uint8_t argCount, VM* vm);
+
+typedef struct {
+    const char* name;
+    uint32_t hash;
+    size_t length;
+
+    uint8_t arity;
+    TypeMethod method;
+} TypeMethodDef;
+
 typedef struct ObjectType {
+    const char* name;
+
     PrintObj print;
     HashObj hash;
     CallObj call;
     TraverseObj traverse;
     FreeObj free;
+
+    TypeMethodDef methods[MAX_TYPE_METHODS];
 } ObjectType;
 
 void print_object(Object* object);

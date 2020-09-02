@@ -31,11 +31,27 @@ static void free_function(Object* object, GC* gc)
     FREE(gc, ObjFunction, function);
 }
 
-ObjectType FunctionType = {
-    .print = print_function,
-    .traverse = traverse_function,
-    .free = free_function
-};
+ObjectType* new_function_type(VM* vm)
+{
+    ObjectType* type = raw_allocate(sizeof(ObjectType));
+    if (!type) {
+        return NULL;
+    }
+
+    *type = (ObjectType) {
+        .name = "function",
+        .print = print_function,
+        .traverse = traverse_function,
+        .free = free_function
+    };
+
+    return type;
+}
+
+void free_function_type(ObjectType* type, VM* vm)
+{
+    raw_deallocate(type);
+}
 
 ObjFunction* new_function(VM* vm)
 {
@@ -62,11 +78,27 @@ static void free_upvalue(Object* object, GC* gc)
     FREE(gc, ObjUpvalue, object);
 }
 
-ObjectType UpvalueType = {
-    .print = print_upvalue,
-    .traverse = traverse_upvalue,
-    .free = free_upvalue
-};
+ObjectType* new_upvalue_type(VM* vm)
+{
+    ObjectType* type = raw_allocate(sizeof(ObjectType));
+    if (!type) {
+        return NULL;
+    }
+
+    *type = (ObjectType) {
+        .name = "upvalue",
+        .print = print_upvalue,
+        .traverse = traverse_upvalue,
+        .free = free_upvalue
+    };
+
+    return type;
+}
+
+void free_upvalue_type(ObjectType* type, VM* vm)
+{
+    raw_deallocate(type);
+}
 
 ObjUpvalue* new_upvalue(VM* vm, Value* slot)
 {
@@ -103,12 +135,28 @@ static void free_closure(Object* object, GC* gc)
     FREE(gc, ObjClosure, closure);
 }
 
-ObjectType ClosureType = {
-    .print = print_closure,
-    .call = call_closure,
-    .traverse = traverse_closure,
-    .free = free_closure
-};
+ObjectType* new_closure_type(VM* vm)
+{
+    ObjectType* type = raw_allocate(sizeof(ObjectType));
+    if (!type) {
+        return NULL;
+    }
+
+    *type = (ObjectType) {
+        .name = "closure",
+        .print = print_closure,
+        .call = call_closure,
+        .traverse = traverse_closure,
+        .free = free_closure
+    };
+
+    return type;
+}
+
+void free_closure_type(ObjectType* type, VM* vm)
+{
+    raw_deallocate(type);
+}
 
 ObjClosure* new_closure(VM* vm, ObjFunction* function)
 {

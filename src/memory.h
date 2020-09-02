@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "memlib.h"
+
 typedef struct GC GC;
 
 #define ALLOCATE(gc, type, length)                                                                  \

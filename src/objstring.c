@@ -38,12 +38,28 @@ static void free_string(Object* object, GC* gc)
     deallocate(gc, string, string->length + 1);
 }
 
-ObjectType StringType = {
-    .print = print_string,
-    .hash = hash_string,
-    .traverse = traverse_string,
-    .free = free_string
-};
+ObjectType* new_string_type(VM* vm)
+{
+    ObjectType* type = raw_allocate(sizeof(ObjectType));
+    if (!type) {
+        return NULL;
+    }
+
+    *type = (ObjectType) {
+        .name = "string",
+        .print = print_string,
+        .hash = hash_string,
+        .traverse = traverse_string,
+        .free = free_string
+    };
+
+    return type;
+}
+
+void free_string_type(ObjectType* type, VM* vm)
+{
+    raw_deallocate(type);
+}
 
 ObjString* new_string(VM* vm, size_t length)
 {
