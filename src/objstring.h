@@ -21,6 +21,7 @@ typedef struct ObjString {
 } ObjString;
 
 ObjectType* new_string_type(VM* vm);
+void prepare_string_type(ObjectType* type, VM* vm);
 void free_string_type(ObjectType* type, VM* vm);
 
 ObjString* new_string(VM* vm, size_t length);

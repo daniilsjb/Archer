@@ -55,6 +55,10 @@ ObjectType* new_native_type(VM* vm)
     return type;
 }
 
+void prepare_native_type(ObjectType* type, VM* vm)
+{
+}
+
 void free_native_type(ObjectType* type, VM* vm)
 {
     raw_deallocate(type);

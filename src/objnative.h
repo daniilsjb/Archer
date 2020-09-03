@@ -20,6 +20,7 @@ typedef struct ObjNative {
 } ObjNative;
 
 ObjectType* new_native_type(VM* vm);
+void prepare_native_type(ObjectType* type, VM* vm);
 void free_native_type(ObjectType* type, VM* vm);
 
 ObjNative* new_native(VM* vm, NativeFn function, int arity);

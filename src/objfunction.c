@@ -48,6 +48,10 @@ ObjectType* new_function_type(VM* vm)
     return type;
 }
 
+void prepare_function_type(ObjectType* type, VM* vm)
+{
+}
+
 void free_function_type(ObjectType* type, VM* vm)
 {
     raw_deallocate(type);
@@ -93,6 +97,10 @@ ObjectType* new_upvalue_type(VM* vm)
     };
 
     return type;
+}
+
+void prepare_upvalue_type(ObjectType* type, VM* vm)
+{
 }
 
 void free_upvalue_type(ObjectType* type, VM* vm)
@@ -151,6 +159,10 @@ ObjectType* new_closure_type(VM* vm)
     };
 
     return type;
+}
+
+void prepare_closure_type(ObjectType* type, VM* vm)
+{
 }
 
 void free_closure_type(ObjectType* type, VM* vm)

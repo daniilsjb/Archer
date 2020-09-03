@@ -23,6 +23,7 @@ typedef struct {
 } ObjInstance;
 
 ObjectType* new_instance_type(VM* vm);
+void prepare_instance_type(ObjectType* type, VM* vm);
 void free_instance_type(ObjectType* type, VM* vm);
 
 ObjInstance* new_instance(VM* vm, ObjClass* clazz);
@@ -42,6 +43,7 @@ typedef struct ObjClass {
 } ObjClass;
 
 ObjectType* new_class_type(VM* vm);
+void prepare_class_type(ObjectType* type, VM* vm);
 void free_class_type(ObjectType* type, VM* vm);
 
 ObjClass* new_class(VM* vm, ObjString* name);
@@ -57,12 +59,13 @@ ObjClass* new_class(VM* vm, ObjString* name);
 typedef struct ObjBoundMethod {
     Object base;
     Value receiver;
-    ObjClosure* method;
+    Object* method;
 } ObjBoundMethod;
 
 ObjectType* new_bound_method_type(VM* vm);
+void prepare_bound_method_type(ObjectType* type, VM* vm);
 void free_bound_method_type(ObjectType* type, VM* vm);
 
-ObjBoundMethod* new_bound_method(VM* vm, Value receiver, ObjClosure* method);
+ObjBoundMethod* new_bound_method(VM* vm, Value receiver, Object* method);
 
 #endif

@@ -23,6 +23,7 @@ typedef struct ObjFunction {
 } ObjFunction;
 
 ObjectType* new_function_type(VM* vm);
+void prepare_function_type(ObjectType* type, VM* vm);
 void free_function_type(ObjectType* type, VM* vm);
 
 ObjFunction* new_function(VM* vm);
@@ -43,6 +44,7 @@ typedef struct ObjUpvalue {
 } ObjUpvalue;
 
 ObjectType* new_upvalue_type(VM* vm);
+void prepare_upvalue_type(ObjectType* type, VM* vm);
 void free_upvalue_type(ObjectType* type, VM* vm);
 
 ObjUpvalue* new_upvalue(VM* vm, Value* slot);
@@ -63,6 +65,7 @@ typedef struct ObjClosure {
 } ObjClosure;
 
 ObjectType* new_closure_type(VM* vm);
+void prepare_closure_type(ObjectType* type, VM* vm);
 void free_closure_type(ObjectType* type, VM* vm);
 
 ObjClosure* new_closure(VM* vm, ObjFunction* function);

@@ -1,9 +1,50 @@
 #include <stdio.h>
 
 #include "objstring.h"
+#include "objnative.h"
 #include "vm.h"
 #include "memory.h"
 #include "gc.h"
+
+static bool length_method(VM* vm, Value* args)
+{
+    args[-1] = NUMBER_VAL((double)VAL_AS_STRING(args[-1])->length);
+    return true;
+}
+
+static bool starts_with_method(VM* vm, Value* args)
+{
+    if (!VAL_IS_STRING(args[0], vm)) {
+        return false;
+    }
+
+    ObjString* original = VAL_AS_STRING(args[-1]);
+    ObjString* compared = VAL_AS_STRING(args[0]);
+    if (compared->length > original->length) {
+        args[-1] = BOOL_VAL(false);
+        return true;
+    }
+
+    args[-1] = BOOL_VAL(memcmp(original->chars, compared->chars, compared->length) == 0);
+    return true;
+}
+
+static bool ends_with_method(VM* vm, Value* args)
+{
+    if (!VAL_IS_STRING(args[0], vm)) {
+        return false;
+    }
+
+    ObjString* original = VAL_AS_STRING(args[-1]);
+    ObjString* compared = VAL_AS_STRING(args[0]);
+    if (compared->length > original->length) {
+        args[-1] = BOOL_VAL(false);
+        return true;
+    }
+
+    args[-1] = BOOL_VAL(memcmp(original->chars + original->length - compared->length, compared->chars, compared->length) == 0);
+    return true;
+}
 
 static void print_string(Object* object)
 {
@@ -30,6 +71,7 @@ static uint32_t hash_string(Object* object)
 
 static void traverse_string(Object* object, GC* gc)
 {
+    gc_mark_table(gc, &object->type->methods);
 }
 
 static void free_string(Object* object, GC* gc)
@@ -49,15 +91,26 @@ ObjectType* new_string_type(VM* vm)
         .name = "string",
         .print = print_string,
         .hash = hash_string,
+        .getMethod = generic_get_method,
         .traverse = traverse_string,
         .free = free_string
     };
 
+    table_init(&type->methods);
+
     return type;
+}
+
+void prepare_string_type(ObjectType* type, VM* vm)
+{
+    table_put(vm, &type->methods, copy_string(vm, "length", 6), OBJ_VAL(new_native(vm, length_method, 0)));
+    table_put(vm, &type->methods, copy_string(vm, "startsWith", 10), OBJ_VAL(new_native(vm, starts_with_method, 1)));
+    table_put(vm, &type->methods, copy_string(vm, "endsWith", 8), OBJ_VAL(new_native(vm, ends_with_method, 1)));
 }
 
 void free_string_type(ObjectType* type, VM* vm)
 {
+    table_free(&vm->gc, &type->methods);
     raw_deallocate(type);
 }
 

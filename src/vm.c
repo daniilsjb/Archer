@@ -76,20 +76,29 @@ void vm_init(VM* vm)
 
     reset_stack(vm);
 
-    vm->stringType = new_string_type(vm);
-    vm->functionType = new_function_type(vm);
-    vm->upvalueType = new_upvalue_type(vm);
-    vm->closureType = new_closure_type(vm);
-    vm->nativeType = new_native_type(vm);
-    vm->instanceType = new_instance_type(vm);
-    vm->classType = new_class_type(vm);
-    vm->boundMethodType = new_bound_method_type(vm);
-
     gc_init(&vm->gc);
     vm->gc.vm = vm;
 
     table_init(&vm->globals);
     table_init(&vm->strings);
+
+    vm->stringType = new_string_type(vm);
+    vm->nativeType = new_native_type(vm);
+    vm->functionType = new_function_type(vm);
+    vm->upvalueType = new_upvalue_type(vm);
+    vm->closureType = new_closure_type(vm);
+    vm->instanceType = new_instance_type(vm);
+    vm->classType = new_class_type(vm);
+    vm->boundMethodType = new_bound_method_type(vm);
+
+    prepare_string_type(vm->stringType, vm);
+    prepare_native_type(vm->nativeType, vm);
+    prepare_function_type(vm->functionType, vm);
+    prepare_upvalue_type(vm->upvalueType, vm);
+    prepare_closure_type(vm->closureType, vm);
+    prepare_instance_type(vm->instanceType, vm);
+    prepare_class_type(vm->classType, vm);
+    prepare_bound_method_type(vm->boundMethodType, vm);
 
     vm->initString = copy_string(vm, "init", 4);
 
@@ -100,12 +109,7 @@ void vm_init(VM* vm)
 
 void vm_free(VM* vm)
 {
-    table_free(&vm->gc, &vm->globals);
-    table_free(&vm->gc, &vm->strings);
-
     vm->initString = NULL;
-
-    gc_free(&vm->gc);
 
     free_bound_method_type(vm->boundMethodType, vm);
     free_class_type(vm->classType, vm);
@@ -115,6 +119,11 @@ void vm_free(VM* vm)
     free_upvalue_type(vm->upvalueType, vm);
     free_function_type(vm->functionType, vm);
     free_string_type(vm->stringType, vm);
+
+    table_free(&vm->gc, &vm->globals);
+    table_free(&vm->gc, &vm->strings);
+
+    gc_free(&vm->gc);
 
     reset_stack(vm);
 }
@@ -207,10 +216,10 @@ static bool call_value(VM* vm, Value callee, uint8_t argCount)
     return call_object(object, argCount, vm);
 }
 
-static bool invoke_from_class(VM* vm, ObjClass* loxClass, ObjString* name, uint8_t argCount)
+static bool invoke_from_class(VM* vm, ObjClass* clazz, ObjString* name, uint8_t argCount)
 {
     Value method;
-    if (!table_get(&loxClass->methods, name, &method)) {
+    if (!table_get(&clazz->methods, name, &method)) {
         runtime_error(vm, "Undefined property '%s'", name->chars);
         return false;
     }
@@ -220,22 +229,33 @@ static bool invoke_from_class(VM* vm, ObjClass* loxClass, ObjString* name, uint8
 
 static bool invoke(VM* vm, ObjString* name, uint8_t argCount)
 {
-    Value receiver = peek(vm, argCount);
-
-    if (!VAL_IS_INSTANCE(receiver, vm)) {
-        runtime_error(vm, "Can only invoke methods on class instances.");
+    Value value = peek(vm, argCount);
+    if (!IS_OBJ(value)) {
+        runtime_error(vm, "Can only invoke methods on objects.");
         return false;
     }
 
-    ObjInstance* instance = VAL_AS_INSTANCE(receiver);
+    Object* receiver = AS_OBJ(peek(vm, argCount));
 
-    Value value;
-    if (table_get(&instance->fields, name, &value)) {
-        vm->stackTop[- argCount - 1] = value;
-        return call_value(vm, value, argCount);
+    if (IS_INSTANCE(receiver, vm)) {
+        if (table_get(&AS_INSTANCE(receiver)->fields, name, &value)) {
+            vm->stackTop[-argCount - 1] = value;
+            return call_value(vm, value, argCount);
+        }
     }
 
-    return invoke_from_class(vm, instance->clazz, name, argCount);
+    if (!OBJ_TYPE(receiver)->getMethod) {
+        runtime_error(vm, "Objects of type '%s' cannot be invoked.", OBJ_TYPE(receiver)->name);
+        return false;
+    }
+
+    Value method = OBJ_TYPE(receiver)->getMethod(receiver, (Object*)name, vm);
+    if (IS_NIL(method)) {
+        runtime_error(vm, "Undefined property '%s'.", name->chars);
+        return false;
+    }
+
+    return call_object(AS_OBJ(method), argCount, vm);
 }
 
 static ObjUpvalue* capture_upvalue(VM* vm, Value* local)
@@ -298,7 +318,7 @@ static bool bind_method(VM* vm, ObjClass* clazz, ObjString* name)
         return false;
     }
 
-    ObjBoundMethod* bound = new_bound_method(vm, peek(vm, 0), VAL_AS_CLOSURE(method));
+    ObjBoundMethod* bound = new_bound_method(vm, peek(vm, 0), AS_OBJ(method));
     vm_pop(vm);
     vm_push(vm, OBJ_VAL(bound));
     return true;
@@ -690,26 +710,28 @@ static InterpretStatus run(VM* vm)
                 }
             }
             case OP_LOAD_PROPERTY: {
-                if (!VAL_IS_INSTANCE(TOP, vm)) {
-                    frame->ip = ip;
-                    runtime_error(vm, "Can only access properties of class instances.");
-                    return INTERPRET_RUNTIME_ERROR;
-                }
-
-                ObjInstance* instance = VAL_AS_INSTANCE(TOP);
+                Object* object = AS_OBJ(TOP);
                 ObjString* name = READ_STRING();
 
-                Value value;
-                if (table_get(&instance->fields, name, &value)) {
-                    TOP = value;
-                    break;
+                if (IS_INSTANCE(object, vm)) {
+                    Value value;
+                    if (table_get(&AS_INSTANCE(object)->fields, name, &value)) {
+                        TOP = value;
+                        break;
+                    }
                 }
 
                 frame->ip = ip;
-                if (!bind_method(vm, instance->clazz, name)) {
-                    return INTERPRET_RUNTIME_ERROR;
+                if (!OBJ_TYPE(object)->getMethod) {
+                    return runtime_error(vm, "Objects of type '%s' do not contain methods.", OBJ_TYPE(object)->name);
                 }
 
+                Value method = OBJ_TYPE(object)->getMethod(object, (Object*)name, vm);
+                if (IS_NIL(method)) {
+                    return runtime_error(vm, "Undefined property '%s'.", name->chars);
+                }
+
+                TOP = method;
                 break;
             }
             case OP_STORE_PROPERTY_SAFE: {

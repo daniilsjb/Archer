@@ -12,6 +12,16 @@ static void print_instance(Object* object)
     printf("%s instance", AS_INSTANCE(object)->clazz->name->chars);
 }
 
+static Value get_method_instance(Object* object, Object* key, VM* vm)
+{
+    Value method;
+    if (!table_get(&AS_INSTANCE(object)->clazz->methods, (ObjString*)key, &method)) {
+        return NIL_VAL();
+    }
+
+    return OBJ_VAL(new_bound_method(vm, OBJ_VAL(object), AS_OBJ(method)));
+}
+
 static void traverse_instance(Object* object, GC* gc)
 {
     ObjInstance* instance = AS_INSTANCE(object);
@@ -35,11 +45,16 @@ ObjectType* new_instance_type(VM* vm)
     *type = (ObjectType) {
         .name = "instance",
         .print = print_instance,
+        .getMethod = get_method_instance,
         .traverse = traverse_instance,
         .free = free_instance
     };
 
     return type;
+}
+
+void prepare_instance_type(ObjectType* type, VM* vm)
+{
 }
 
 void free_instance_type(ObjectType* type, VM* vm)
@@ -106,11 +121,16 @@ ObjectType* new_class_type(VM* vm)
         .name = "class",
         .print = print_class,
         .call = call_class,
+        .getMethod = get_method_instance,
         .traverse = traverse_class,
         .free = free_class
     };
 
     return type;
+}
+
+void prepare_class_type(ObjectType* type, VM* vm)
+{
 }
 
 void free_class_type(ObjectType* type, VM* vm)
@@ -137,14 +157,14 @@ ObjClass* new_class(VM* vm, ObjString* name)
 
 static void print_bound_method(Object* object)
 {
-    print_object((Object*)AS_BOUND_METHOD(object)->method->function);
+    print_object(AS_BOUND_METHOD(object)->method);
 }
 
 static bool call_bound_method(Object* callee, uint8_t argCount, VM* vm)
 {
     ObjBoundMethod* bound = AS_BOUND_METHOD(callee);
     vm->stackTop[-argCount - 1] = bound->receiver;
-    return call(vm, bound->method, argCount);
+    return call_object(bound->method, argCount, vm);
 }
 
 static void traverse_bound_method(Object* object, GC* gc)
@@ -177,12 +197,16 @@ ObjectType* new_bound_method_type(VM* vm)
     return type;
 }
 
+void prepare_bound_method_type(ObjectType* type, VM* vm)
+{
+}
+
 void free_bound_method_type(ObjectType* type, VM* vm)
 {
     raw_deallocate(type);
 }
 
-ObjBoundMethod* new_bound_method(VM* vm, Value receiver, ObjClosure* method)
+ObjBoundMethod* new_bound_method(VM* vm, Value receiver, Object* method)
 {
     ObjBoundMethod* boundMethod = ALLOCATE_BOUND_METHOD(vm);
     boundMethod->receiver = receiver;
