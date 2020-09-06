@@ -6,6 +6,12 @@
 #include "memory.h"
 #include "gc.h"
 
+static bool init_method(VM* vm, Value* args)
+{
+    args[-1] = OBJ_VAL(String_FromValue(vm, args[0]));
+    return true;
+}
+
 static bool length_method(VM* vm, Value* args)
 {
     args[-1] = NUMBER_VAL((double)VAL_AS_STRING(args[-1])->length);
@@ -18,8 +24,8 @@ static bool starts_with_method(VM* vm, Value* args)
         return false;
     }
 
-    ObjString* original = VAL_AS_STRING(args[-1]);
-    ObjString* compared = VAL_AS_STRING(args[0]);
+    ObjectString* original = VAL_AS_STRING(args[-1]);
+    ObjectString* compared = VAL_AS_STRING(args[0]);
     if (compared->length > original->length) {
         args[-1] = BOOL_VAL(false);
         return true;
@@ -35,8 +41,8 @@ static bool ends_with_method(VM* vm, Value* args)
         return false;
     }
 
-    ObjString* original = VAL_AS_STRING(args[-1]);
-    ObjString* compared = VAL_AS_STRING(args[0]);
+    ObjectString* original = VAL_AS_STRING(args[-1]);
+    ObjectString* compared = VAL_AS_STRING(args[0]);
     if (compared->length > original->length) {
         args[-1] = BOOL_VAL(false);
         return true;
@@ -46,7 +52,20 @@ static bool ends_with_method(VM* vm, Value* args)
     return true;
 }
 
-static void print_string(Object* object)
+static bool from_number_method(VM* vm, Value* args)
+{
+    if (!IS_NUMBER(args[0])) {
+        return false;
+    }
+
+    char result[50];
+    sprintf(result, "%g", AS_NUMBER(args[0]));
+
+    args[-1] = OBJ_VAL(String_FromCString(vm, result));
+    return true;
+}
+
+static void string_print(Object* object)
 {
     printf("%s", AS_CSTRING(object));
 }
@@ -63,73 +82,69 @@ static uint32_t hash_cstring(const char* chars, size_t length)
     return hash;
 }
 
-static uint32_t hash_string(Object* object)
+static uint32_t string_hash(Object* object)
 {
-    ObjString* string = AS_STRING(object);
+    ObjectString* string = AS_STRING(object);
     return hash_cstring(string->chars, string->length);
 }
 
-static void traverse_string(Object* object, GC* gc)
+static void string_free(Object* object, GC* gc)
 {
-    gc_mark_table(gc, &object->type->methods);
+    ObjectString* string = AS_STRING(object);
+    table_free(gc, &string->base.fields);
+    Mem_Deallocate(gc, string, sizeof(ObjectString) + string->length + 1);
 }
 
-static void free_string(Object* object, GC* gc)
+ObjectType* String_NewType(VM* vm)
 {
-    ObjString* string = AS_STRING(object);
-    deallocate(gc, string, string->length + 1);
-}
-
-ObjectType* new_string_type(VM* vm)
-{
-    ObjectType* type = raw_allocate(sizeof(ObjectType));
-    if (!type) {
-        return NULL;
-    }
-
-    *type = (ObjectType) {
-        .name = "string",
-        .print = print_string,
-        .hash = hash_string,
-        .getMethod = generic_get_method,
-        .traverse = traverse_string,
-        .free = free_string
-    };
-
-    table_init(&type->methods);
-
+    ObjectType* type = Type_New(vm);
+    type->name = "String";
+    type->size = sizeof(ObjectString);
+    type->Print = string_print;
+    type->Hash = string_hash;
+    type->GetMethod = Object_GenericGetMethod;
+    type->Call = NULL;
+    type->Traverse = Object_GenericTraverse;
+    type->Free = string_free;
     return type;
 }
 
-void prepare_string_type(ObjectType* type, VM* vm)
+static void define_string_method(ObjectType* type, VM* vm, const char* name, NativeFn function, int arity)
 {
-    table_put(vm, &type->methods, copy_string(vm, "length", 6), OBJ_VAL(new_native(vm, length_method, 0)));
-    table_put(vm, &type->methods, copy_string(vm, "startsWith", 10), OBJ_VAL(new_native(vm, starts_with_method, 1)));
-    table_put(vm, &type->methods, copy_string(vm, "endsWith", 8), OBJ_VAL(new_native(vm, ends_with_method, 1)));
+    vm_push(vm, OBJ_VAL(String_FromCString(vm, name)));
+    vm_push(vm, OBJ_VAL(Native_New(vm, function, arity)));
+    table_put(vm, &type->methods, VAL_AS_STRING(vm->stack[0]), vm->stack[1]);
+    vm_pop(vm);
+    vm_pop(vm);
 }
 
-void free_string_type(ObjectType* type, VM* vm)
+void String_PrepareType(ObjectType* type, VM* vm)
 {
-    table_free(&vm->gc, &type->methods);
-    raw_deallocate(type);
+    define_string_method(type, vm, "init", init_method, 1);
+    define_string_method(type, vm, "length", length_method, 0);
+    define_string_method(type, vm, "startsWith", starts_with_method, 1);
+    define_string_method(type, vm, "endsWith", ends_with_method, 1);
+
+    define_string_method(type->base.type, vm, "fromNumber", from_number_method, 1);
 }
 
-ObjString* new_string(VM* vm, size_t length)
+ObjectString* String_New(VM* vm, size_t length)
 {
-    ObjString* string = ALLOCATE_STRING(vm, length);
+    ObjectString* string = ALLOCATE_STRING(vm, length);
     string->length = length;
+    string->base.type = vm->stringType;
     return string;
 }
 
-ObjString* copy_string(VM* vm, const char* chars, size_t length)
+ObjectString* String_Copy(VM* vm, const char* chars, size_t length)
 {
     uint32_t hash = hash_cstring(chars, length);
-    ObjString* interned = table_find_string(&vm->strings, chars, length, hash);
+    ObjectString* interned = table_find_string(&vm->strings, chars, length, hash);
     if (interned != NULL) {
         return interned;
     }
 
-    ObjString* string = new_string(vm, length);
+    ObjectString* string = String_New(vm, length);
 
     memcpy(string->chars, chars, length);
     string->chars[length] = '\0';
@@ -142,20 +157,25 @@ ObjString* copy_string(VM* vm, const char* chars, size_t length)
     return string;
 }
 
-ObjString* concatenate_strings(VM* vm, ObjString* a, ObjString* b)
+ObjectString* String_FromCString(VM* vm, const char* chars)
+{
+    return String_Copy(vm, chars, strlen(chars));
+}
+
+ObjectString* String_Concatenate(VM* vm, ObjectString* a, ObjectString* b)
 {
     size_t length = a->length + b->length;
-    ObjString* string = new_string(vm, length);
+    ObjectString* string = String_New(vm, length);
 
     memcpy(string->chars, a->chars, a->length);
     memcpy(string->chars + a->length, b->chars, b->length);
     string->chars[length] = '\0';
-    string->hash = hash_string((Object*)string);
+    string->hash = string_hash((Object*)string);
 
-    ObjString* interned = table_find_string(&vm->strings, string->chars, length, string->hash);
+    ObjectString* interned = table_find_string(&vm->strings, string->chars, length, string->hash);
     if (interned != NULL) {
         vm->gc.allocatedObjects = vm->gc.allocatedObjects->next;
-        deallocate(&vm->gc, string, sizeof(ObjString) + string->length + 1);
+        Mem_Deallocate(&vm->gc, string, sizeof(ObjectString) + string->length + 1);
 
         return interned;
     } else {
@@ -164,5 +184,20 @@ ObjString* concatenate_strings(VM* vm, ObjString* a, ObjString* b)
         vm_pop(vm);
 
         return string;
+    }
+}
+
+ObjectString* String_FromValue(VM* vm, Value value)
+{
+    if (IS_BOOL(value)) {
+        return AS_BOOL(value) ? String_FromCString(vm, "true") : String_FromCString(vm, "false");
+    } else if IS_NIL(value) {
+        return String_FromCString(vm, "nil");
+    } else if IS_NUMBER(value) {
+        char cstring[50];
+        sprintf(cstring, "%g", AS_NUMBER(value));
+        return String_FromCString(vm, cstring);
+    } else {
+        return String_FromCString(vm, "<instance>");    //Temporary code, delegate this to the object's type
     }
 }

@@ -13,7 +13,7 @@ static void print_native(Object* object)
 
 static bool call_native(Object* callee, uint8_t argCount, VM* vm)
 {
-    ObjNative* native = AS_NATIVE(callee);
+    ObjectNative* native = AS_NATIVE(callee);
     if (native->arity != argCount) {
         runtime_error(vm, "Expected %d arguments but got %d.", native->arity, argCount);
         return false;
@@ -28,45 +28,27 @@ static bool call_native(Object* callee, uint8_t argCount, VM* vm)
     }
 }
 
-static void traverse_native(Object* object, GC* gc)
+ObjectType* Native_NewType(VM* vm)
 {
-}
-
-static void free_native(Object* object, GC* gc)
-{
-    FREE(gc, ObjNative, object);
-}
-
-ObjectType* new_native_type(VM* vm)
-{
-    ObjectType* type = raw_allocate(sizeof(ObjectType));
-    if (!type) {
-        return NULL;
-    }
-
-    *type = (ObjectType) {
-        .name = "native",
-        .print = print_native,
-        .call = call_native,
-        .traverse = traverse_native,
-        .free = free_native
-    };
-
+    ObjectType* type = Type_New(vm);
+    type->name = "Native";
+    type->size = sizeof(ObjectNative);
+    type->Print = print_native;
+    type->Hash = NULL;
+    type->Call = call_native;
+    type->GetMethod = NULL;
+    type->Traverse = Object_GenericTraverse;
+    type->Free = Object_GenericFree;
     return type;
 }
 
-void prepare_native_type(ObjectType* type, VM* vm)
+void Native_PrepareType(ObjectType* type, VM* vm)
 {
 }
 
-void free_native_type(ObjectType* type, VM* vm)
+ObjectNative* Native_New(VM* vm, NativeFn function, int arity)
 {
-    raw_deallocate(type);
-}
-
-ObjNative* new_native(VM* vm, NativeFn function, int arity)
-{
-    ObjNative* native = ALLOCATE_NATIVE(vm);
+    ObjectNative* native = ALLOCATE_NATIVE(vm);
     native->function = function;
     native->arity = arity;
     return native;

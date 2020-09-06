@@ -8,58 +8,50 @@
 
 static void print_function(Object* object)
 {
-    ObjFunction* function = AS_FUNCTION(object);
+    ObjectFunction* function = AS_FUNCTION(object);
 
     if (!function->name) {
         printf("<script>");
     } else {
-        printf("<fn %s>", function->name->chars);
+        printf("<fn '%s'>", function->name->chars);
     }
 }
 
 static void traverse_function(Object* object, GC* gc)
 {
-    ObjFunction* function = AS_FUNCTION(object);
-    gc_mark_object(gc, (Object*)function->name);
-    gc_mark_array(gc, &function->chunk.constants);
+    ObjectFunction* function = AS_FUNCTION(object);
+    GC_MarkObject(gc, (Object*)function->name);
+    GC_MarkArray(gc, &function->chunk.constants);
+    Object_GenericTraverse(object, gc);
 }
 
 static void free_function(Object* object, GC* gc)
 {
-    ObjFunction* function = AS_FUNCTION(object);
-    chunk_free(gc, &function->chunk);
-    FREE(gc, ObjFunction, function);
+    chunk_free(gc, &AS_FUNCTION(object)->chunk);
+    Object_Deallocate(gc, object);
 }
 
-ObjectType* new_function_type(VM* vm)
+ObjectType* Function_NewType(VM* vm)
 {
-    ObjectType* type = raw_allocate(sizeof(ObjectType));
-    if (!type) {
-        return NULL;
-    }
-
-    *type = (ObjectType) {
-        .name = "function",
-        .print = print_function,
-        .traverse = traverse_function,
-        .free = free_function
-    };
-
+    ObjectType* type = Type_New(vm);
+    type->name = "Function";
+    type->size = sizeof(ObjectFunction);
+    type->Print = print_function;
+    type->Hash = NULL;
+    type->Call = NULL;
+    type->GetMethod = NULL;
+    type->Traverse = traverse_function;
+    type->Free = free_function;
     return type;
 }
 
-void prepare_function_type(ObjectType* type, VM* vm)
+void Function_PrepareType(ObjectType* type, VM* vm)
 {
 }
 
-void free_function_type(ObjectType* type, VM* vm)
+ObjectFunction* Function_New(VM* vm)
 {
-    raw_deallocate(type);
-}
-
-ObjFunction* new_function(VM* vm)
-{
-    ObjFunction* function = ALLOCATE_FUNCTION(vm);
+    ObjectFunction* function = ALLOCATE_FUNCTION(vm);
     function->arity = 0;
     function->upvalueCount = 0;
     function->name = NULL;
@@ -74,43 +66,31 @@ static void print_upvalue(Object* object)
 
 static void traverse_upvalue(Object* object, GC* gc)
 {
-    gc_mark_value(gc, AS_UPVALUE(object)->closed);
+    GC_MarkValue(gc, AS_UPVALUE(object)->closed);
+    Object_GenericTraverse(object, gc);
 }
 
-static void free_upvalue(Object* object, GC* gc)
+ObjectType* Upvalue_NewType(VM* vm)
 {
-    FREE(gc, ObjUpvalue, object);
-}
-
-ObjectType* new_upvalue_type(VM* vm)
-{
-    ObjectType* type = raw_allocate(sizeof(ObjectType));
-    if (!type) {
-        return NULL;
-    }
-
-    *type = (ObjectType) {
-        .name = "upvalue",
-        .print = print_upvalue,
-        .traverse = traverse_upvalue,
-        .free = free_upvalue
-    };
-
+    ObjectType* type = Type_New(vm);
+    type->name = "Upvalue";
+    type->size = sizeof(ObjectUpvalue);
+    type->Print = print_upvalue;
+    type->Hash = NULL;
+    type->Call = NULL;
+    type->GetMethod = NULL;
+    type->Traverse = traverse_upvalue;
+    type->Free = Object_GenericFree;
     return type;
 }
 
-void prepare_upvalue_type(ObjectType* type, VM* vm)
+void Upvalue_PrepareType(ObjectType* type, VM* vm)
 {
 }
 
-void free_upvalue_type(ObjectType* type, VM* vm)
+ObjectUpvalue* Upvalue_New(VM* vm, Value* slot)
 {
-    raw_deallocate(type);
-}
-
-ObjUpvalue* new_upvalue(VM* vm, Value* slot)
-{
-    ObjUpvalue* upvalue = ALLOCATE_UPVALUE(vm);
+    ObjectUpvalue* upvalue = ALLOCATE_UPVALUE(vm);
     upvalue->location = slot;
     upvalue->closed = NIL_VAL();
     upvalue->next = NULL;
@@ -124,11 +104,13 @@ static void print_closure(Object* object)
 
 static void traverse_closure(Object* object, GC* gc)
 {
-    ObjClosure* closure = AS_CLOSURE(object);
-    gc_mark_object(gc, (Object*)closure->function);
+    ObjectClosure* closure = AS_CLOSURE(object);
+    GC_MarkObject(gc, (Object*)closure->function);
     for (size_t i = 0; i < closure->upvalueCount; i++) {
-        gc_mark_object(gc, (Object*)closure->upvalues[i]);
+        GC_MarkObject(gc, (Object*)closure->upvalues[i]);
     }
+
+    Object_GenericTraverse(object, gc);
 }
 
 static bool call_closure(Object* callee, uint8_t argCount, VM* vm)
@@ -138,48 +120,85 @@ static bool call_closure(Object* callee, uint8_t argCount, VM* vm)
 
 static void free_closure(Object* object, GC* gc)
 {
-    ObjClosure* closure = AS_CLOSURE(object);
-    FREE_ARRAY(gc, ObjUpvalue*, closure->upvalues, closure->upvalueCount);
-    FREE(gc, ObjClosure, closure);
+    ObjectClosure* closure = AS_CLOSURE(object);
+    FREE_ARRAY(gc, ObjectUpvalue*, closure->upvalues, closure->upvalueCount);
+    Object_Deallocate(gc, object);
 }
 
-ObjectType* new_closure_type(VM* vm)
+ObjectType* Closure_NewType(VM* vm)
 {
-    ObjectType* type = raw_allocate(sizeof(ObjectType));
-    if (!type) {
-        return NULL;
-    }
-
-    *type = (ObjectType) {
-        .name = "closure",
-        .print = print_closure,
-        .call = call_closure,
-        .traverse = traverse_closure,
-        .free = free_closure
-    };
-
+    ObjectType* type = Type_New(vm);
+    type->name = "Closure";
+    type->size = sizeof(ObjectClosure);
+    type->Print = print_closure;
+    type->Hash = NULL;
+    type->Call = call_closure;
+    type->GetMethod = NULL;
+    type->Traverse = traverse_closure;
+    type->Free = free_closure;
     return type;
 }
 
-void prepare_closure_type(ObjectType* type, VM* vm)
+void Closure_PrepareType(ObjectType* type, VM* vm)
 {
 }
 
-void free_closure_type(ObjectType* type, VM* vm)
+ObjectClosure* Closure_New(VM* vm, ObjectFunction* function)
 {
-    raw_deallocate(type);
-}
-
-ObjClosure* new_closure(VM* vm, ObjFunction* function)
-{
-    ObjUpvalue** upvalues = ALLOCATE(&vm->gc, ObjUpvalue*, function->upvalueCount);
+    ObjectUpvalue** upvalues = ALLOCATE(&vm->gc, ObjectUpvalue*, function->upvalueCount);
     for (size_t i = 0; i < function->upvalueCount; i++) {
         upvalues[i] = NULL;
     }
 
-    ObjClosure* closure = ALLOCATE_CLOSURE(vm);
+    ObjectClosure* closure = ALLOCATE_CLOSURE(vm);
     closure->function = function;
     closure->upvalues = upvalues;
     closure->upvalueCount = function->upvalueCount;
     return closure;
+}
+
+static void print_bound_method(Object* object)
+{
+    Object_Print(AS_BOUND_METHOD(object)->method);
+}
+
+static bool call_bound_method(Object* callee, uint8_t argCount, VM* vm)
+{
+    ObjectBoundMethod* bound = AS_BOUND_METHOD(callee);
+    vm->stackTop[-argCount - 1] = bound->receiver;
+    return Object_Call(bound->method, argCount, vm);
+}
+
+static void traverse_bound_method(Object* object, GC* gc)
+{
+    ObjectBoundMethod* boundMethod = AS_BOUND_METHOD(object);
+    GC_MarkValue(gc, boundMethod->receiver);
+    GC_MarkObject(gc, boundMethod->method);
+    Object_GenericTraverse(object, gc);
+}
+
+ObjectType* BoundMethod_NewType(VM* vm)
+{
+    ObjectType* type = Type_New(vm);
+    type->name = "BoundMethod";
+    type->size = sizeof(ObjectBoundMethod);
+    type->Print = print_bound_method;
+    type->Hash = NULL;
+    type->Call = call_bound_method;
+    type->GetMethod = NULL;
+    type->Traverse = traverse_bound_method;
+    type->Free = Object_GenericFree;
+    return type;
+}
+
+void BoundMethod_PrepareType(ObjectType* type, VM* vm)
+{
+}
+
+ObjectBoundMethod* BoundMethod_New(VM* vm, Value receiver, Object* method)
+{
+    ObjectBoundMethod* boundMethod = ALLOCATE_BOUND_METHOD(vm);
+    boundMethod->receiver = receiver;
+    boundMethod->method = method;
+    return boundMethod;
 }

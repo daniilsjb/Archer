@@ -1,8 +1,8 @@
 class Foo {}
 
-print Foo; //Expected: Foo
+print Foo; //Expected: <class 'Foo'>
 var foo = Foo();
-print foo; //Expected: Foo instance
+print foo; //Expected: <'Foo' instance>
 
 foo.bar = "Bar";
 print foo.bar; //Expected: Bar

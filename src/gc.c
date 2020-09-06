@@ -5,7 +5,6 @@
 #include "vm.h"
 #include "common.h"
 #include "memory.h"
-#include "memlib.h"
 #include "value.h"
 #include "table.h"
 #include "compiler.h"
@@ -16,7 +15,7 @@
 
 #define GC_THRESHOLD_GROW_FACTOR 2
 
-void gc_init(GC* gc)
+void GC_Init(GC* gc)
 {
     gc->vm = NULL;
     gc->allocatedObjects = NULL;
@@ -29,43 +28,35 @@ void gc_init(GC* gc)
     gc->grayStack = NULL;
 }
 
-void gc_free(GC* gc)
+static void free_objects(GC* gc)
 {
     Object* current = gc->allocatedObjects;
 
     while (current) {
         Object* next = current->next;
-        free_object(current, gc);
+        Object_Free(current, gc);
         current = next;
     }
+}
 
+void GC_Free(GC* gc)
+{
+    free_objects(gc);
     raw_deallocate(gc->grayStack);
 }
 
-void gc_allocate_bytes(GC* gc, size_t size)
+void GC_AllocateBytes(GC* gc, size_t size)
 {
     gc->bytesAllocated += size;
 }
 
-void gc_deallocate_bytes(GC* gc, size_t size)
+void GC_DeallocateBytes(GC* gc, size_t size)
 {
     gc->bytesAllocated -= size;
 }
 
-void gc_mark_object(GC* gc, Object* object)
+static void ensure_graylist_capacity(GC* gc)
 {
-    if (!object || object->marked) {
-        return;
-    }
-
-#if DEBUG_LOG_GC
-    printf("%p mark", (void*)object);
-    print_value(OBJ_VAL(object));
-    printf("\n");
-#endif
-
-    object->marked = true;
-
     if (gc->grayCapacity < gc->grayCount + 1) {
         gc->grayCapacity = GROW_CAPACITY(gc->grayCapacity);
 
@@ -74,30 +65,46 @@ void gc_mark_object(GC* gc, Object* object)
             gc->grayStack = reallocated;
         }
     }
+}
 
+void GC_MarkObject(GC* gc, Object* object)
+{
+    if (!object || object->marked) {
+        return;
+    }
+
+    object->marked = true;
+
+#if DEBUG_LOG_GC
+    printf("%p mark ", (void*)object);
+    print_value(OBJ_VAL(object));
+    printf("\n");
+#endif
+
+    ensure_graylist_capacity(gc);
     gc->grayStack[gc->grayCount++] = object;
 }
 
-void gc_mark_value(GC* gc, Value value)
+void GC_MarkValue(GC* gc, Value value)
 {
     if (IS_OBJ(value)) {
-        gc_mark_object(gc, AS_OBJ(value));
+        GC_MarkObject(gc, AS_OBJ(value));
     }
 }
 
-void gc_mark_array(GC* gc, ValueArray* array)
+void GC_MarkArray(GC* gc, ValueArray* array)
 {
     for (size_t i = 0; i < array->count; i++) {
-        gc_mark_value(gc, array->data[i]);
+        GC_MarkValue(gc, array->data[i]);
     }
 }
 
-void gc_mark_table(GC* gc, Table* table)
+void GC_MarkTable(GC* gc, Table* table)
 {
     for (int i = 0; i <= table->capacityMask; i++) {
         Entry* entry = &table->entries[i];
-        gc_mark_object(gc, (Object*)entry->key);
-        gc_mark_value(gc, entry->value);
+        GC_MarkObject(gc, (Object*)entry->key);
+        GC_MarkValue(gc, entry->value);
     }
 }
 
@@ -105,20 +112,27 @@ static void mark_roots(GC* gc)
 {
     VM* vm = gc->vm;
     for (Value* slot = vm->stack; slot < vm->stackTop; slot++) {
-        gc_mark_value(gc, *slot);
+        GC_MarkValue(gc, *slot);
     }
 
     for (size_t i = 0; i < vm->frameCount; i++) {
-        gc_mark_object(gc, (Object*)vm->frames[i].closure);
+        GC_MarkObject(gc, (Object*)vm->frames[i].closure);
     }
 
-    for (ObjUpvalue* upvalue = vm->openUpvalues; upvalue != NULL; upvalue = upvalue->next) {
-        gc_mark_object(gc, (Object*)upvalue);
+    for (ObjectUpvalue* upvalue = vm->openUpvalues; upvalue != NULL; upvalue = upvalue->next) {
+        GC_MarkObject(gc, (Object*)upvalue);
     }
 
-    gc_mark_table(gc, &vm->globals);
+    GC_MarkObject(gc, (Object*)vm->stringType);
+    GC_MarkObject(gc, (Object*)vm->nativeType);
+    GC_MarkObject(gc, (Object*)vm->functionType);
+    GC_MarkObject(gc, (Object*)vm->upvalueType);
+    GC_MarkObject(gc, (Object*)vm->closureType);
+    GC_MarkObject(gc, (Object*)vm->boundMethodType);
+
+    GC_MarkTable(gc, &vm->globals);
+    GC_MarkObject(gc, (Object*)vm->initString);
     mark_compiler_roots(gc->vm);
-    gc_mark_object(gc, (Object*)vm->initString);
 }
 
 static void trace_references(GC* gc)
@@ -126,7 +140,7 @@ static void trace_references(GC* gc)
     VM* vm = gc->vm;
     while (gc->grayCount > 0) {
         Object* object = gc->grayStack[--gc->grayCount];
-        traverse_object(object, gc);
+        Object_Traverse(object, gc);
     }
 }
 
@@ -136,31 +150,31 @@ void table_remove_white(Table* table)
         Entry* entry = &table->entries[i];
         if (entry->key != NULL && !entry->key->base.marked) {
             table_remove(table, entry->key);
-}
+        }
     }
 }
 
 static void sweep(GC* gc)
 {
     Object* previous = NULL;
-    Object* object = gc->allocatedObjects;
+    Object* current = gc->allocatedObjects;
 
-    while (object != NULL) {
-        if (object->marked) {
-            object->marked = false;
-            previous = object;
-            object = object->next;
+    while (current) {
+        if (current->marked) {
+            current->marked = false;
+            previous = current;
+            current = current->next;
         } else {
-            Object* unreached = object;
+            Object* unreached = current;
 
-            object = object->next;
-            if (previous != NULL) {
-                previous->next = object;
+            current = current->next;
+            if (previous) {
+                previous->next = current;
             } else {
-                gc->allocatedObjects = object;
+                gc->allocatedObjects = current;
             }
 
-            free_object(unreached, gc);
+            Object_Free(unreached, gc);
         }
     }
 }
@@ -185,14 +199,18 @@ static void perform_collection(GC* gc)
 #endif
 }
 
-void gc_attempt_collection(GC* gc)
+void GC_AttemptCollection(GC* gc)
 {
+#if DEBUG_STRESS_GC
+    perform_collection(gc);
+#else
     if (gc->bytesAllocated > gc->threshold) {
         perform_collection(gc);
     }
+#endif
 }
 
-void gc_append_object(GC* gc, Object* object)
+void GC_AppendObject(GC* gc, Object* object)
 {
     object->next = gc->allocatedObjects;
     gc->allocatedObjects = object;

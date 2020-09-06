@@ -8,15 +8,15 @@
 #define STACK_MAX 512
 #define FRAMES_MAX 64
 
-typedef struct ObjClosure ObjClosure;
-typedef struct ObjUpvalue ObjUpvalue;
+typedef struct ObjectClosure ObjectClosure;
+typedef struct ObjectUpvalue ObjectUpvalue;
 typedef struct Compiler Compiler;
 typedef struct ClassCompiler ClassCompiler;
 
 typedef struct ObjectType ObjectType;
 
 typedef struct {
-    ObjClosure* closure;
+    ObjectClosure* closure;
     uint8_t* ip;
     Value* slots;
 } CallFrame;
@@ -32,20 +32,18 @@ typedef struct VM {
     ObjectType* upvalueType;
     ObjectType* closureType;
     ObjectType* nativeType;
-    ObjectType* instanceType;
-    ObjectType* classType;
     ObjectType* boundMethodType;
 
     CallFrame frames[FRAMES_MAX];
     size_t frameCount;
-    ObjUpvalue* openUpvalues;
+    ObjectUpvalue* openUpvalues;
 
     Value stack[STACK_MAX];
     Value* stackTop;
 
     Table globals;
     Table strings;
-    ObjString* initString;
+    ObjectString* initString;
 } VM;
 
 typedef enum {
@@ -62,7 +60,7 @@ Value vm_pop(VM* vm);
 
 InterpretStatus vm_interpret(VM* vm, const char* source);
 
-bool call(VM* vm, ObjClosure* closure, uint8_t argCount);
+bool call(VM* vm, ObjectClosure* closure, uint8_t argCount);
 
 InterpretStatus runtime_error(VM* vm, const char* format, ...);
 

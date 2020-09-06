@@ -3,29 +3,31 @@
 
 #include "object.h"
 
-#define AS_STRING(object)  ((ObjString*)object)
+#define AS_STRING(object)  ((ObjectString*)object)
 #define AS_CSTRING(object) (AS_STRING(object)->chars)
-#define IS_STRING(object, vm)  (OBJ_TYPE(object) == vm->stringType)
+#define IS_STRING(object, vm) (OBJ_TYPE(object) == vm->stringType)
 
 #define VAL_AS_STRING(value)  (AS_STRING(AS_OBJ(value)))
 #define VAL_AS_CSTRING(value) (VAL_AS_STRING(value)->chars)
-#define VAL_IS_STRING(value, vm)  (value_is_object_of_type((value), vm->stringType))
+#define VAL_IS_STRING(value, vm) (Object_ValueHasType((value), vm->stringType))
 
-#define ALLOCATE_STRING(vm, length) (AS_STRING(allocate_object((vm), sizeof(ObjString) + (length) + 1, vm->stringType)))
+#define ALLOCATE_STRING(vm, length)                                         \
+    (AS_STRING(Object_Allocate((vm), sizeof(ObjectString) + (length) + 1))) \
 
-typedef struct ObjString {
+typedef struct ObjectString {
     Object base;
     uint32_t hash;
     size_t length;
     char chars[];
-} ObjString;
+} ObjectString;
 
-ObjectType* new_string_type(VM* vm);
-void prepare_string_type(ObjectType* type, VM* vm);
-void free_string_type(ObjectType* type, VM* vm);
+ObjectType* String_NewType(VM* vm);
+void String_PrepareType(ObjectType* type, VM* vm);
 
-ObjString* new_string(VM* vm, size_t length);
-ObjString* copy_string(VM* vm, const char* chars, size_t length);
-ObjString* concatenate_strings(VM* vm, ObjString* a, ObjString* b);
+ObjectString* String_New(VM* vm, size_t length);
+ObjectString* String_Copy(VM* vm, const char* chars, size_t length);
+ObjectString* String_FromCString(VM* vm, const char* chars);
+ObjectString* String_Concatenate(VM* vm, ObjectString* a, ObjectString* b);
+ObjectString* String_FromValue(VM* vm, Value value);
 
 #endif

@@ -61,7 +61,7 @@ typedef struct Compiler {
 
     struct Compiler* enclosing;
 
-    ObjFunction* function;
+    ObjectFunction* function;
     CompilerType type;
 
     ControlBlock* controlBlock;
@@ -141,7 +141,9 @@ static void compiler_init(Compiler* compiler, VM* vm, CompilerType type, Token i
 
     compiler->controlBlock = NULL;
 
-    compiler->function = new_function(vm);
+    compiler->function = NULL;
+
+    compiler->function = Function_New(vm);
     compiler->type = type;
 
     compiler->localCount = 0;
@@ -150,11 +152,11 @@ static void compiler_init(Compiler* compiler, VM* vm, CompilerType type, Token i
     compiler->token = identifier;
 
     if (type == TYPE_LAMBDA) {
-        compiler->function->name = copy_string(vm, "lambda", 8);
+        compiler->function->name = String_FromCString(vm, "lambda");
     } else if (type == TYPE_SCRIPT) {
-        compiler->function->name = copy_string(vm, "script", 8);
+        compiler->function->name = String_FromCString(vm, "script");
     } else {
-        compiler->function->name = copy_string(vm, identifier.start, identifier.length);
+        compiler->function->name = String_Copy(vm, identifier.start, identifier.length);
     }
 
     Local* local = &compiler->locals[compiler->localCount++];
@@ -291,10 +293,10 @@ static void patch_breaks(Compiler* compiler, ControlBreak* breaks)
     }
 }
 
-static ObjFunction* finish_compilation(VM* vm)
+static ObjectFunction* finish_compilation(VM* vm)
 {
     emit_return(vm->compiler);
-    ObjFunction* function = vm->compiler->function;
+    ObjectFunction* function = vm->compiler->function;
 
 #if DEBUG_PRINT_CODE
     if (!vm->compiler->error) {
@@ -497,7 +499,7 @@ static void declare_local_variable(Compiler* compiler, Token identifier)
 
 static uint8_t make_identifier_constant(Compiler* compiler, Token identifier)
 {
-    return make_constant(compiler, OBJ_VAL(copy_string(compiler->vm, identifier.start, identifier.length)));
+    return make_constant(compiler, OBJ_VAL(String_Copy(compiler->vm, identifier.start, identifier.length)));
 }
 
 static uint8_t declare_variable(Compiler* compiler, Token identifier)
@@ -1279,7 +1281,7 @@ static void compile_number_literal(Compiler* compiler, Token literal)
 
 static void compile_string_literal(Compiler* compiler, Token literal)
 {
-    Value value = OBJ_VAL(copy_string(compiler->vm, literal.start + 1, literal.length - 2));
+    Value value = OBJ_VAL(String_Copy(compiler->vm, literal.start + 1, literal.length - 2));
     emit_constant(compiler, value);
 }
 
@@ -1447,7 +1449,7 @@ void compile_function(Compiler* compiler, Function* function, CompilerType type,
 
     compile_function_body(&newCompiler, function->body);
 
-    ObjFunction* compiled = finish_compilation(newCompiler.vm);
+    ObjectFunction* compiled = finish_compilation(newCompiler.vm);
 
     emit_bytes(compiler, OP_CLOSURE, make_constant(compiler, OBJ_VAL(compiled)));
     for (size_t i = 0; i < compiled->upvalueCount; i++) {
@@ -1484,7 +1486,7 @@ size_t compile_declaration_list(Compiler* compiler, DeclarationList* list)
     return count;
 }
 
-ObjFunction* compile(VM* vm, const char* source)
+ObjectFunction* compile(VM* vm, const char* source)
 {
     vm->compiler = NULL;
     vm->classCompiler = NULL;
@@ -1503,7 +1505,7 @@ ObjFunction* compile(VM* vm, const char* source)
     compiler_init(&compiler, vm, TYPE_SCRIPT, empty_token());
 
     compile_tree(&compiler, ast);
-    ObjFunction* function = finish_compilation(vm);
+    ObjectFunction* function = finish_compilation(vm);
 
     ast_delete_tree(ast);
 
@@ -1514,6 +1516,6 @@ void mark_compiler_roots(VM* vm)
 {
     GC* gc = &vm->gc;
     for (Compiler* compiler = vm->compiler; compiler != NULL; compiler = compiler->enclosing) {
-        gc_mark_object(gc, (Object*)compiler->function);
+        GC_MarkObject(gc, (Object*)compiler->function);
     }
 }

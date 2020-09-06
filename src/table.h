@@ -6,12 +6,12 @@
 
 #include "value.h"
 
-typedef struct ObjString ObjString;
+typedef struct ObjectString ObjectString;
 typedef struct VM VM;
 typedef struct GC GC;
 
 typedef struct {
-    ObjString* key;
+    ObjectString* key;
     Value value;
 } Entry;
 
@@ -24,13 +24,13 @@ typedef struct Table {
 void table_init(Table* table);
 void table_free(GC* gc, Table* table);
 
-bool table_get(Table* table, ObjString* key, Value* value);
+bool table_get(Table* table, ObjectString* key, Value* value);
 
-bool table_put(VM* vm, Table* table, ObjString* key, Value value);
+bool table_put(VM* vm, Table* table, ObjectString* key, Value value);
 void table_put_from(VM* vm, Table* source, Table* destination);
 
-bool table_remove(Table* table, ObjString* key);
+bool table_remove(Table* table, ObjectString* key);
 
-ObjString* table_find_string(Table* table, const char* chars, size_t length, uint32_t hash);
+ObjectString* table_find_string(Table* table, const char* chars, size_t length, uint32_t hash);
 
 #endif

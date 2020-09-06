@@ -21,7 +21,7 @@ void table_free(GC* gc, Table* table)
     table_init(table);
 }
 
-static Entry* find_entry(Entry* entries, int capacityMask, ObjString* key)
+static Entry* find_entry(Entry* entries, int capacityMask, ObjectString* key)
 {
     uint32_t index = key->hash & capacityMask;
     Entry* tombstone = NULL;
@@ -71,7 +71,7 @@ static void adjust_capacity(VM* vm, Table* table, int capacityMask)
     table->capacityMask = capacityMask;
 }
 
-bool table_get(Table* table, ObjString* key, Value* value)
+bool table_get(Table* table, ObjectString* key, Value* value)
 {
     if (table->count == 0) {
         return false;
@@ -86,7 +86,7 @@ bool table_get(Table* table, ObjString* key, Value* value)
     return true;
 }
 
-bool table_put(VM* vm, Table* table, ObjString* key, Value value)
+bool table_put(VM* vm, Table* table, ObjectString* key, Value value)
 {
     if ((double)table->count + 1 > ((double)table->capacityMask + 1) * TABLE_MAX_LOAD) {
         int capacity = GROW_CAPACITY(table->capacityMask + 1) - 1;
@@ -115,7 +115,7 @@ void table_put_from(VM* vm, Table* source, Table* destination)
     }
 }
 
-bool table_remove(Table* table, ObjString* key)
+bool table_remove(Table* table, ObjectString* key)
 {
     if (table->count == 0) {
         return false;
@@ -132,7 +132,7 @@ bool table_remove(Table* table, ObjString* key)
     return true;
 }
 
-ObjString* table_find_string(Table* table, const char* chars, size_t length, uint32_t hash)
+ObjectString* table_find_string(Table* table, const char* chars, size_t length, uint32_t hash)
 {
     if (table->count == 0) {
         return NULL;

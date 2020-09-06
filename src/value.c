@@ -44,14 +44,14 @@ void print_value(Value value)
     } else if (IS_NUMBER(value)) {
         printf("%g", AS_NUMBER(value));
     } else if (IS_OBJ(value)) {
-        print_object(AS_OBJ(value));
+        Object_Print(AS_OBJ(value));
     }
 #else
     switch (value.type) {
         case VALUE_BOOL: printf(AS_BOOL(value) ? "true" : "false"); break;
         case VALUE_NUMBER: printf("%g", AS_NUMBER(value)); break;
         case VALUE_NIL: printf("nil"); break;
-        case VALUE_OBJ: print_object(AS_OBJ(value)); break;
+        case VALUE_OBJ: Object_Print(AS_OBJ(value)); break;
     }
 #endif
 }

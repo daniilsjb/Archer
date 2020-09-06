@@ -1,13 +1,13 @@
 fun nothing() {}
 
-print nothing; //Expected: <fn nothing>
+print nothing; //Expected: <fn 'nothing'>
 
 fun talk() {
     print "Hello from talk!";
 }
 
 var func = talk;
-print func; //Expected: <fn talk>
+print func; //Expected: <fn 'talk'>
 talk();     //Expected: Hello from talk!
 
 fun sum(a, b) {
@@ -15,7 +15,7 @@ fun sum(a, b) {
 }
 
 func = sum;
-print func;       //Expected: <fn sum>
+print func;       //Expected: <fn 'sum'>
 print func(2, 3); //Expected: 5
 
 fun funcA() {
@@ -27,5 +27,5 @@ fun funcB() {
 }
 
 func = funcB;
-print func();   //Expected: <fn funcA>
+print func();   //Expected: <fn 'funcA'>
 print func()(); //Expected: A

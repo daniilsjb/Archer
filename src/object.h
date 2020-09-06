@@ -9,7 +9,7 @@
 
 #define OBJ_TYPE(object) ((object)->type)
 
-#define ALLOCATE_OBJ(vm, type, objectType) (type*)allocate_object(vm, sizeof(type), objectType)
+#define ALLOCATE_OBJ(vm, objectType) Object_New(vm, objectType)
 
 typedef struct GC GC;
 typedef struct VM VM;
@@ -18,41 +18,67 @@ typedef struct ObjectType ObjectType;
 
 typedef struct Object {
     ObjectType* type;
+    Table fields;
     struct Object* next;
     bool marked;
 } Object;
 
-typedef void (*PrintObj)(Object* object);
-typedef uint32_t (*HashObj)(Object* object);
-typedef Value(*GetMethodObj)(Object* object, Object* key, VM* vm);
-typedef bool (*CallObj)(Object* callee, uint8_t argCount, VM* vm);
-typedef void (*TraverseObj)(Object* object, GC* gc);
-typedef void (*FreeObj)(Object* object, GC* gc);
+Object* Object_Allocate(VM* vm, size_t size);
+void Object_Deallocate(GC* gc, Object* object);
+
+Object* Object_New(VM* vm, ObjectType* type);
+
+bool Object_IsType(Object* object);
+
+bool Object_ValueHasType(Value value, ObjectType* type);
+bool Object_ValueIsType(Value value);
+
+void Object_Print(Object* object);
+uint32_t Object_Hash(Object* object);
+Value Object_GetMethod(Object* object, Object* key, VM* vm);
+bool Object_Call(Object* callee, uint8_t argCount, VM* vm);
+void Object_Traverse(Object* object, GC* gc);
+void Object_Free(Object* object, GC* gc);
+
+Value Object_GenericGetMethod(Object* object, Object* key, VM* vm);
+void Object_GenericTraverse(Object* object, GC* gc);
+void Object_GenericFree(Object* object, GC* gc);
+
+#define AS_TYPE(object) ((ObjectType*)object)
+#define IS_TYPE(object) (Object_IsType(object))
+
+#define VAL_AS_TYPE(value) (AS_TYPE(AS_OBJ(value)))
+#define VAL_IS_TYPE(value) (Object_ValueIsType(value))
+
+typedef void (*PrintFn)(Object* object);
+typedef uint32_t (*HashFn)(Object* object);
+typedef Value (*GetMethodFn)(Object* object, Object* key, VM* vm);
+typedef bool (*CallFn)(Object* callee, uint8_t argCount, VM* vm);
+typedef void (*TraverseFn)(Object* object, GC* gc);
+typedef void (*FreeFn)(Object* object, GC* gc);
 
 typedef struct ObjectType {
+    Object base;
     const char* name;
-
-    PrintObj print;
-    HashObj hash;
-    GetMethodObj getMethod;
-    CallObj call;
-    TraverseObj traverse;
-    FreeObj free;
-
+    size_t size;
     Table methods;
+
+    PrintFn Print;
+    HashFn Hash;
+    GetMethodFn GetMethod;
+    CallFn Call;
+    TraverseFn Traverse;
+    FreeFn Free;
 } ObjectType;
 
-void print_object(Object* object);
-uint32_t hash_object(Object* object);
-Value get_method_object(Object* object, Object* key, VM* vm);
-bool call_object(Object* callee, uint8_t argCount, VM* vm);
-void traverse_object(Object* object, GC* gc);
-void free_object(Object* object, GC* gc);
+ObjectType* Type_Allocate(VM* vm);
+void Type_Deallocate(ObjectType* type, GC* gc);
 
-Object* allocate_object(VM* vm, size_t size, ObjectType* type);
+ObjectType* Type_New(VM* vm);
 
-bool value_is_object_of_type(Value value, ObjectType* type);
+void Type_GenericTraverse(Object* object, GC* gc);
+void Type_GenericFree(Object* object, GC* gc);
 
-Value generic_get_method(Object* object, Object* key, VM* vm);
+ObjectType* Type_NewClass(VM* vm, const char* name);
 
 #endif

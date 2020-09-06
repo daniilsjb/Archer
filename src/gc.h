@@ -22,18 +22,18 @@ typedef struct GC {
     Object** grayStack;
 } GC;
 
-void gc_init(GC* gc);
-void gc_free(GC* gc);
+void GC_Init(GC* gc);
+void GC_Free(GC* gc);
 
-void gc_allocate_bytes(GC* gc, size_t size);
-void gc_deallocate_bytes(GC* gc, size_t size);
-void gc_attempt_collection(GC* gc);
+void GC_AllocateBytes(GC* gc, size_t size);
+void GC_DeallocateBytes(GC* gc, size_t size);
+void GC_AttemptCollection(GC* gc);
 
-void gc_mark_object(GC* gc, Object* object);
-void gc_mark_value(GC* gc, Value value);
-void gc_mark_array(GC* gc, ValueArray* array);
-void gc_mark_table(GC* gc, Table* table);
+void GC_MarkObject(GC* gc, Object* object);
+void GC_MarkValue(GC* gc, Value value);
+void GC_MarkArray(GC* gc, ValueArray* array);
+void GC_MarkTable(GC* gc, Table* table);
 
-void gc_append_object(GC* gc, Object* object);
+void GC_AppendObject(GC* gc, Object* object);
 
 #endif

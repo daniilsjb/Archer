@@ -8,7 +8,6 @@
 #include "objstring.h"
 #include "objnative.h"
 #include "objfunction.h"
-#include "objclass.h"
 #include "common.h"
 #include "memory.h"
 #include "chunk.h"
@@ -20,7 +19,7 @@
 
 static bool native_error(VM* vm, const char* message, Value* args)
 {
-    args[-1] = OBJ_VAL(copy_string(vm, message, strlen(message)));
+    args[-1] = OBJ_VAL(String_FromCString(vm, message));
     return false;
 }
 
@@ -53,10 +52,20 @@ static bool pow_native(VM* vm, Value* args)
     return true;
 }
 
+static bool typeof_native(VM* vm, Value* args)
+{
+    if (!IS_OBJ(args[0])) {
+        return native_error(vm, "Expected an object.", args);
+    }
+
+    args[-1] = OBJ_VAL(AS_OBJ(args[0])->type);
+    return true;
+}
+
 static void define_native(VM* vm, const char* name, NativeFn function, int arity)
 {
-    vm_push(vm, OBJ_VAL(copy_string(vm, name, strlen(name))));
-    vm_push(vm, OBJ_VAL(new_native(vm, function, arity)));
+    vm_push(vm, OBJ_VAL(String_FromCString(vm, name)));
+    vm_push(vm, OBJ_VAL(Native_New(vm, function, arity)));
     table_put(vm, &vm->globals, VAL_AS_STRING(vm->stack[0]), vm->stack[1]);
     vm_pop(vm);
     vm_pop(vm);
@@ -76,54 +85,54 @@ void vm_init(VM* vm)
 
     reset_stack(vm);
 
-    gc_init(&vm->gc);
+    vm->initString = NULL;
+    vm->stringType = NULL;
+    vm->nativeType = NULL;
+    vm->functionType = NULL;
+    vm->upvalueType = NULL;
+    vm->closureType = NULL;
+    vm->boundMethodType = NULL;
+
+    GC_Init(&vm->gc);
     vm->gc.vm = vm;
 
     table_init(&vm->globals);
     table_init(&vm->strings);
 
-    vm->stringType = new_string_type(vm);
-    vm->nativeType = new_native_type(vm);
-    vm->functionType = new_function_type(vm);
-    vm->upvalueType = new_upvalue_type(vm);
-    vm->closureType = new_closure_type(vm);
-    vm->instanceType = new_instance_type(vm);
-    vm->classType = new_class_type(vm);
-    vm->boundMethodType = new_bound_method_type(vm);
+    vm->stringType = String_NewType(vm);
+    vm->nativeType = Native_NewType(vm);
+    vm->functionType = Function_NewType(vm);
+    vm->upvalueType = Upvalue_NewType(vm);
+    vm->closureType = Closure_NewType(vm);
+    vm->boundMethodType = BoundMethod_NewType(vm);
 
-    prepare_string_type(vm->stringType, vm);
-    prepare_native_type(vm->nativeType, vm);
-    prepare_function_type(vm->functionType, vm);
-    prepare_upvalue_type(vm->upvalueType, vm);
-    prepare_closure_type(vm->closureType, vm);
-    prepare_instance_type(vm->instanceType, vm);
-    prepare_class_type(vm->classType, vm);
-    prepare_bound_method_type(vm->boundMethodType, vm);
+    vm->initString = String_FromCString(vm, "init");
 
-    vm->initString = copy_string(vm, "init", 4);
+    String_PrepareType(vm->stringType, vm);
+    Native_PrepareType(vm->nativeType, vm);
+    Function_PrepareType(vm->functionType, vm);
+    Upvalue_PrepareType(vm->upvalueType, vm);
+    Closure_PrepareType(vm->closureType, vm);
+    BoundMethod_PrepareType(vm->boundMethodType, vm);
+
+    vm_push(vm, OBJ_VAL(String_FromCString(vm, "String")));
+    table_put(vm, &vm->globals, String_FromCString(vm, "String"), OBJ_VAL(vm->stringType));
+    vm_pop(vm);
 
     define_native(vm, "clock", clock_native, 0);
     define_native(vm, "abs", abs_native, 1);
     define_native(vm, "pow", pow_native, 2);
+    define_native(vm, "typeOf", typeof_native, 1);
 }
 
 void vm_free(VM* vm)
 {
     vm->initString = NULL;
 
-    free_bound_method_type(vm->boundMethodType, vm);
-    free_class_type(vm->classType, vm);
-    free_instance_type(vm->instanceType, vm);
-    free_native_type(vm->nativeType, vm);
-    free_closure_type(vm->closureType, vm);
-    free_upvalue_type(vm->upvalueType, vm);
-    free_function_type(vm->functionType, vm);
-    free_string_type(vm->stringType, vm);
-
     table_free(&vm->gc, &vm->globals);
     table_free(&vm->gc, &vm->strings);
 
-    gc_free(&vm->gc);
+    GC_Free(&vm->gc);
 
     reset_stack(vm);
 }
@@ -154,7 +163,7 @@ static int get_current_line(CallFrame* frame)
 
 static void print_call_frame(CallFrame* frame)
 {
-    ObjFunction* function = frame->closure->function;
+    ObjectFunction* function = frame->closure->function;
     char* functionName = function->name ? function->name->chars : "script";
     fprintf(stderr, "[Line %d] in %s\n", get_current_line(frame), functionName);
 }
@@ -181,7 +190,7 @@ InterpretStatus runtime_error(VM* vm, const char* format, ...)
     return INTERPRET_RUNTIME_ERROR;
 }
 
-bool call(VM* vm, ObjClosure* closure, uint8_t argCount)
+bool call(VM* vm, ObjectClosure* closure, uint8_t argCount)
 {
     if (argCount != closure->function->arity) {
         runtime_error(vm, "Expected %d arguments but got %d", closure->function->arity, argCount);
@@ -208,15 +217,15 @@ static bool call_value(VM* vm, Value callee, uint8_t argCount)
     }
 
     Object* object = AS_OBJ(callee);
-    if (!OBJ_TYPE(object)->call) {
+    if (!OBJ_TYPE(object)->Call) {
         runtime_error(vm, "Objects of type '%s' are not callable.", OBJ_TYPE(object)->name);
         return false;
     }
 
-    return call_object(object, argCount, vm);
+    return Object_Call(object, argCount, vm);
 }
 
-static bool invoke_from_class(VM* vm, ObjClass* clazz, ObjString* name, uint8_t argCount)
+static bool invoke_from_class(VM* vm, ObjectType* clazz, ObjectString* name, uint8_t argCount)
 {
     Value method;
     if (!table_get(&clazz->methods, name, &method)) {
@@ -227,7 +236,7 @@ static bool invoke_from_class(VM* vm, ObjClass* clazz, ObjString* name, uint8_t 
     return call(vm, VAL_AS_CLOSURE(method), argCount);
 }
 
-static bool invoke(VM* vm, ObjString* name, uint8_t argCount)
+static bool invoke(VM* vm, ObjectString* name, uint8_t argCount)
 {
     Value value = peek(vm, argCount);
     if (!IS_OBJ(value)) {
@@ -237,31 +246,29 @@ static bool invoke(VM* vm, ObjString* name, uint8_t argCount)
 
     Object* receiver = AS_OBJ(peek(vm, argCount));
 
-    if (IS_INSTANCE(receiver, vm)) {
-        if (table_get(&AS_INSTANCE(receiver)->fields, name, &value)) {
-            vm->stackTop[-argCount - 1] = value;
-            return call_value(vm, value, argCount);
-        }
+    if (table_get(&receiver->fields, name, &value)) {
+        vm->stackTop[-argCount - 1] = value;
+        return call_value(vm, value, argCount);
     }
 
-    if (!OBJ_TYPE(receiver)->getMethod) {
-        runtime_error(vm, "Objects of type '%s' cannot be invoked.", OBJ_TYPE(receiver)->name);
+    if (!OBJ_TYPE(receiver)->GetMethod) {
+        runtime_error(vm, "Objects of type '%s' do not have methods.", OBJ_TYPE(receiver)->name);
         return false;
     }
 
-    Value method = OBJ_TYPE(receiver)->getMethod(receiver, (Object*)name, vm);
+    Value method = OBJ_TYPE(receiver)->GetMethod(receiver, (Object*)name, vm);
     if (IS_NIL(method)) {
         runtime_error(vm, "Undefined property '%s'.", name->chars);
         return false;
     }
 
-    return call_object(AS_OBJ(method), argCount, vm);
+    return Object_Call(AS_OBJ(method), argCount, vm);
 }
 
-static ObjUpvalue* capture_upvalue(VM* vm, Value* local)
+static ObjectUpvalue* capture_upvalue(VM* vm, Value* local)
 {
-    ObjUpvalue* prevUpvalue = NULL;
-    ObjUpvalue* upvalue = vm->openUpvalues;
+    ObjectUpvalue* prevUpvalue = NULL;
+    ObjectUpvalue* upvalue = vm->openUpvalues;
 
     while (upvalue != NULL && upvalue->location > local) {
         prevUpvalue = upvalue;
@@ -272,7 +279,7 @@ static ObjUpvalue* capture_upvalue(VM* vm, Value* local)
         return upvalue;
     }
 
-    ObjUpvalue* createdUpvalue = new_upvalue(vm, local);
+    ObjectUpvalue* createdUpvalue = Upvalue_New(vm, local);
     createdUpvalue->next = upvalue;
 
     if (prevUpvalue == NULL) {
@@ -287,49 +294,35 @@ static ObjUpvalue* capture_upvalue(VM* vm, Value* local)
 static void close_upvalues(VM* vm, Value* last)
 {
     while (vm->openUpvalues != NULL && vm->openUpvalues->location >= last) {
-        ObjUpvalue* upvalue = vm->openUpvalues;
+        ObjectUpvalue* upvalue = vm->openUpvalues;
         upvalue->closed = *upvalue->location;
         upvalue->location = &upvalue->closed;
         vm->openUpvalues = upvalue->next;
     }
 }
 
-static void define_static_method(VM* vm, ObjString* name)
+static void define_static_method(VM* vm, ObjectString* name)
 {
     Value method = peek(vm, 0);
-    ObjInstance* metaInstance = VAL_AS_INSTANCE(peek(vm, 1));
-    table_put(vm, &metaInstance->clazz->methods, name, method);
+    ObjectType* meta = VAL_AS_TYPE(peek(vm, 1))->base.type;
+    table_put(vm, &meta->methods, name, method);
     vm_pop(vm);
 }
 
-static void define_method(VM* vm, ObjString* name)
+static void define_method(VM* vm, ObjectString* name)
 {
     Value method = peek(vm, 0);
-    ObjClass* clazz = VAL_AS_CLASS(peek(vm, 1));
+    ObjectType* clazz = VAL_AS_TYPE(peek(vm, 1));
     table_put(vm, &clazz->methods, name, method);
     vm_pop(vm);
 }
 
-static bool bind_method(VM* vm, ObjClass* clazz, ObjString* name)
+static bool invoke_static_constructor(VM* vm, ObjectType* clazz)
 {
-    Value method;
-    if (!table_get(&clazz->methods, name, &method)) {
-        runtime_error(vm, "Undefined property '%s'.", name->chars);
-        return false;
-    }
-
-    ObjBoundMethod* bound = new_bound_method(vm, peek(vm, 0), AS_OBJ(method));
-    vm_pop(vm);
-    vm_push(vm, OBJ_VAL(bound));
-    return true;
-}
-
-static bool invoke_static_constructor(VM* vm, ObjClass* loxClass)
-{
-    ObjInstance* metaInstance = (ObjInstance*)loxClass;
+    ObjectType* meta = clazz->base.type;
 
     Value method;
-    if (table_get(&metaInstance->clazz->methods, vm->initString, &method)) {
+    if (table_get(&meta->methods, vm->initString, &method)) {
         return call(vm, VAL_AS_CLOSURE(method), 0);
     }
 
@@ -475,9 +468,9 @@ static InterpretStatus run(VM* vm)
             }
             case OP_ADD: {
                 if (VAL_IS_STRING(TOP, vm) && VAL_IS_STRING(SND, vm)) {
-                    ObjString* b = VAL_AS_STRING(TOP);
-                    ObjString* a = VAL_AS_STRING(SND);
-                    ObjString* result = concatenate_strings(vm, a, b);
+                    ObjectString* b = VAL_AS_STRING(TOP);
+                    ObjectString* a = VAL_AS_STRING(SND);
+                    ObjectString* result = String_Concatenate(vm, a, b);
 
                     POP();
                     TOP = OBJ_VAL(result);
@@ -663,13 +656,13 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_DEFINE_GLOBAL: {
-                ObjString* identifier = READ_STRING();
+                ObjectString* identifier = READ_STRING();
                 table_put(vm, &vm->globals, identifier, TOP);
                 POP();
                 break;
             }
             case OP_LOAD_GLOBAL: {
-                ObjString* identifier = READ_STRING();
+                ObjectString* identifier = READ_STRING();
                 Value value;
                 if (!table_get(&vm->globals, identifier, &value)) {
                     frame->ip = ip;
@@ -679,7 +672,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_STORE_GLOBAL: {
-                ObjString* identifier = READ_STRING();
+                ObjectString* identifier = READ_STRING();
                 if (table_put(vm, &vm->globals, identifier, TOP)) {
                     frame->ip = ip;
                     table_remove(&vm->globals, identifier);
@@ -711,23 +704,22 @@ static InterpretStatus run(VM* vm)
             }
             case OP_LOAD_PROPERTY: {
                 Object* object = AS_OBJ(TOP);
-                ObjString* name = READ_STRING();
+                ObjectString* name = READ_STRING();
 
-                if (IS_INSTANCE(object, vm)) {
-                    Value value;
-                    if (table_get(&AS_INSTANCE(object)->fields, name, &value)) {
-                        TOP = value;
-                        break;
-                    }
+                Value value;
+                if (table_get(&object->fields, name, &value)) {
+                    TOP = value;
+                    break;
                 }
 
-                frame->ip = ip;
-                if (!OBJ_TYPE(object)->getMethod) {
+                if (!OBJ_TYPE(object)->GetMethod) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Objects of type '%s' do not contain methods.", OBJ_TYPE(object)->name);
                 }
 
-                Value method = OBJ_TYPE(object)->getMethod(object, (Object*)name, vm);
+                Value method = Object_GetMethod(object, (Object*)name, vm);
                 if (IS_NIL(method)) {
+                    frame->ip = ip;
                     return runtime_error(vm, "Undefined property '%s'.", name->chars);
                 }
 
@@ -743,14 +735,12 @@ static InterpretStatus run(VM* vm)
                 }
             }
             case OP_STORE_PROPERTY: {
-                if (!VAL_IS_INSTANCE(TOP, vm)) {
+                if (!IS_OBJ(TOP)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Can only set properties of class instances.");
+                    return runtime_error(vm, "Can only set properties of objects.");
                 }
 
-                ObjInstance* instance = VAL_AS_INSTANCE(TOP);
-                table_put(vm, &instance->fields, READ_STRING(), SND);
-
+                table_put(vm, &AS_OBJ(TOP)->fields, READ_STRING(), SND);
                 POP();
                 break;
             }
@@ -760,8 +750,8 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_CLOSURE: {
-                ObjFunction* function = VAL_AS_FUNCTION(READ_CONSTANT());
-                ObjClosure* closure = new_closure(vm, function);
+                ObjectFunction* function = VAL_AS_FUNCTION(READ_CONSTANT());
+                ObjectClosure* closure = Closure_New(vm, function);
                 PUSH(OBJ_VAL(closure));
                 for (size_t i = 0; i < closure->upvalueCount; i++) {
                     uint8_t isLocal = READ_BYTE();
@@ -781,7 +771,6 @@ static InterpretStatus run(VM* vm)
             }
             case OP_CALL: {
                 uint8_t argCount = READ_BYTE();
-                frame->ip = ip;
 
                 frame->ip = ip;
                 if (!call_value(vm, peek(vm, argCount), argCount)) {
@@ -800,7 +789,7 @@ static InterpretStatus run(VM* vm)
                 }
             }
             case OP_INVOKE: {
-                ObjString* method = READ_STRING();
+                ObjectString* method = READ_STRING();
                 uint8_t argCount = READ_BYTE();
 
                 frame->ip = ip;
@@ -831,7 +820,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_CLASS: {
-                PUSH(OBJ_VAL(new_class(vm, READ_STRING())));
+                PUSH(OBJ_VAL(Type_NewClass(vm, READ_STRING()->chars)));
                 break;
             }
             case OP_STATIC_METHOD: {
@@ -844,30 +833,33 @@ static InterpretStatus run(VM* vm)
             }
             case OP_INHERIT: {
                 Value superclass = SND;
-                if (!VAL_IS_CLASS(superclass, vm)) {
+                if (!VAL_IS_TYPE(superclass)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Superclass must be a class.");
                 }
 
-                ObjClass* subclass = VAL_AS_CLASS(TOP);
-                table_put_from(vm, &VAL_AS_CLASS(superclass)->methods, &subclass->methods);
+                ObjectType* subclass = VAL_AS_TYPE(TOP);
+                table_put_from(vm, &VAL_AS_TYPE(superclass)->methods, &subclass->methods);
                 POP();
                 break;
             }
             case OP_GET_SUPER: {
-                ObjString* name = READ_STRING();
-                ObjClass* superclass = VAL_AS_CLASS(POP());
+                ObjectString* name = READ_STRING();
+                ObjectType* superclass = VAL_AS_TYPE(POP());
 
-                frame->ip = ip;
-                if (!bind_method(vm, superclass, name)) {
-                    return INTERPRET_RUNTIME_ERROR;
+                Value method = superclass->GetMethod((Object*)superclass, (Object*)name, vm);
+                if (IS_NIL(method)) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Undefined method '%s' of superclass.", name->chars);
                 }
+
+                TOP = method;
                 break;
             }
             case OP_SUPER_INVOKE: {
-                ObjString* method = READ_STRING();
+                ObjectString* method = READ_STRING();
                 uint8_t argCount = READ_BYTE();
-                ObjClass* superclass = VAL_AS_CLASS(POP());
+                ObjectType* superclass = VAL_AS_TYPE(POP());
 
                 frame->ip = ip;
                 if (!invoke_from_class(vm, superclass, method, argCount)) {
@@ -880,7 +872,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_END_CLASS: {
                 frame->ip = ip;
-                if (!invoke_static_constructor(vm, VAL_AS_CLASS(TOP))) {
+                if (!invoke_static_constructor(vm, VAL_AS_TYPE(TOP))) {
                     POP();
                 }
                 frame = &vm->frames[vm->frameCount - 1];
@@ -913,13 +905,13 @@ static InterpretStatus run(VM* vm)
 
 InterpretStatus vm_interpret(VM* vm, const char* source)
 {
-    ObjFunction* function = compile(vm, source);
+    ObjectFunction* function = compile(vm, source);
     if (function == NULL) {
         return INTERPRET_COMPILE_ERROR;
     }
 
     vm_push(vm, OBJ_VAL(function));
-    ObjClosure* closure = new_closure(vm, function);
+    ObjectClosure* closure = Closure_New(vm, function);
     vm_pop(vm);
     vm_push(vm, OBJ_VAL(closure));
     call_value(vm, OBJ_VAL(closure), 0);
