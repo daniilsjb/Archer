@@ -830,14 +830,19 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_INHERIT: {
-                Value superclass = SND;
-                if (!VAL_IS_TYPE(superclass)) {
+                if (!VAL_IS_TYPE(SND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Superclass must be a class.");
                 }
 
+                ObjectType* superclass = VAL_AS_TYPE(SND);
+                if (!(superclass->flags & TF_ALLOW_INHERITANCE)) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Class '%s' cannot be inherited from.", superclass->name);
+                }
+
                 ObjectType* subclass = VAL_AS_TYPE(TOP);
-                table_put_from(vm, &VAL_AS_TYPE(superclass)->methods, &subclass->methods);
+                table_put_from(vm, &superclass->methods, &subclass->methods);
                 POP();
                 break;
             }

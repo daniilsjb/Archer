@@ -36,6 +36,7 @@ ObjectType* Function_NewType(VM* vm)
     ObjectType* type = Type_New(vm);
     type->name = "Function";
     type->size = sizeof(ObjectFunction);
+    type->flags = 0x0;
     type->Print = print_function;
     type->Hash = NULL;
     type->GetField = NULL;
@@ -78,6 +79,7 @@ ObjectType* Upvalue_NewType(VM* vm)
     ObjectType* type = Type_New(vm);
     type->name = "Upvalue";
     type->size = sizeof(ObjectUpvalue);
+    type->flags = 0x0;
     type->Print = print_upvalue;
     type->Hash = NULL;
     type->GetField = NULL;
@@ -136,6 +138,7 @@ ObjectType* Closure_NewType(VM* vm)
     ObjectType* type = Type_New(vm);
     type->name = "Closure";
     type->size = sizeof(ObjectClosure);
+    type->flags = 0x0;
     type->Print = print_closure;
     type->Hash = NULL;
     type->GetField = NULL;
@@ -191,6 +194,7 @@ ObjectType* BoundMethod_NewType(VM* vm)
     ObjectType* type = Type_New(vm);
     type->name = "BoundMethod";
     type->size = sizeof(ObjectBoundMethod);
+    type->flags = 0x0;
     type->Print = print_bound_method;
     type->Hash = NULL;
     type->GetField = NULL;

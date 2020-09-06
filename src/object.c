@@ -192,6 +192,7 @@ static ObjectType* new_meta_type(VM* vm)
     ObjectType* meta = Type_Allocate(vm);
     meta->name = "MetaType";
     meta->size = sizeof(ObjectType);
+    meta->flags = 0x0,
     meta->Print = type_print;
     meta->Hash = NULL;
     meta->GetField = Object_GenericGetField;
@@ -234,6 +235,7 @@ ObjectType* Type_NewClass(VM* vm, const char* name)
     ObjectType* type = Type_New(vm);
     type->name = name;
     type->size = sizeof(Object);
+    type->flags = TF_DEFAULT,
     type->Print = instance_print;
     type->Hash = NULL;
     type->GetField = Object_GenericGetField;

@@ -100,6 +100,7 @@ ObjectType* String_NewType(VM* vm)
     ObjectType* type = Type_New(vm);
     type->name = "String";
     type->size = sizeof(ObjectString);
+    type->flags = 0x0;
     type->Print = string_print;
     type->Hash = string_hash;
     type->GetField = NULL;

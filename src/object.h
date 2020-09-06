@@ -58,6 +58,11 @@ void Object_GenericFree(Object* object, GC* gc);
 #define VAL_AS_TYPE(value) (AS_TYPE(AS_OBJ(value)))
 #define VAL_IS_TYPE(value) (Object_ValueIsType(value))
 
+typedef enum {
+    TF_ALLOW_INHERITANCE = 0x1,
+    TF_DEFAULT = TF_ALLOW_INHERITANCE
+} TypeFlag;
+
 typedef void (*PrintFn)(Object* object);
 typedef uint32_t (*HashFn)(Object* object);
 typedef bool(*GetFieldFn)(Object* object, Object* key, VM* vm, Value* result);
@@ -72,6 +77,7 @@ typedef struct ObjectType {
     Object base;
     const char* name;
     size_t size;
+    uint16_t flags;
     Table methods;
 
     PrintFn Print;

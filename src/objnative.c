@@ -33,6 +33,7 @@ ObjectType* Native_NewType(VM* vm)
     ObjectType* type = Type_New(vm);
     type->name = "Native";
     type->size = sizeof(ObjectNative);
+    type->flags = 0x0;
     type->Print = print_native;
     type->Hash = NULL;
     type->GetField = NULL;
