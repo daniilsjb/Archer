@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <ctype.h>
 
 #include "objstring.h"
 #include "objnative.h"
@@ -6,19 +7,53 @@
 #include "memory.h"
 #include "gc.h"
 
-static bool init_method(VM* vm, Value* args)
+static bool method_init(VM* vm, Value* args)
 {
     args[-1] = OBJ_VAL(String_FromValue(vm, args[0]));
     return true;
 }
 
-static bool length_method(VM* vm, Value* args)
+static bool method_length(VM* vm, Value* args)
 {
     args[-1] = NUMBER_VAL((double)VAL_AS_STRING(args[-1])->length);
     return true;
 }
 
-static bool starts_with_method(VM* vm, Value* args)
+static bool method_is_empty(VM* vm, Value* args)
+{
+    args[-1] = BOOL_VAL(VAL_AS_STRING(args[-1])->length == 0);
+    return true;
+}
+
+static bool method_to_lower(VM* vm, Value* args)
+{
+    ObjectString* object = VAL_AS_STRING(args[-1]);
+
+    char* cstring = _strdup(object->chars);
+    for (char* current = cstring; *current != '\0'; current++) {
+        *current = tolower(*current);
+    }
+
+    args[-1] = OBJ_VAL(String_FromCString(vm, cstring));
+    raw_deallocate(cstring);
+    return true;
+}
+
+static bool method_to_upper(VM* vm, Value* args)
+{
+    ObjectString* object = VAL_AS_STRING(args[-1]);
+
+    char* cstring = _strdup(object->chars);
+    for (char* current = cstring; *current != '\0'; current++) {
+        *current = toupper(*current);
+    }
+
+    args[-1] = OBJ_VAL(String_FromCString(vm, cstring));
+    raw_deallocate(cstring);
+    return true;
+}
+
+static bool method_starts_with(VM* vm, Value* args)
 {
     if (!VAL_IS_STRING(args[0], vm)) {
         return false;
@@ -35,7 +70,7 @@ static bool starts_with_method(VM* vm, Value* args)
     return true;
 }
 
-static bool ends_with_method(VM* vm, Value* args)
+static bool method_ends_with(VM* vm, Value* args)
 {
     if (!VAL_IS_STRING(args[0], vm)) {
         return false;
@@ -52,7 +87,7 @@ static bool ends_with_method(VM* vm, Value* args)
     return true;
 }
 
-static bool from_number_method(VM* vm, Value* args)
+static bool method_from_number(VM* vm, Value* args)
 {
     if (!IS_NUMBER(args[0])) {
         return false;
@@ -130,12 +165,15 @@ static void define_string_method(ObjectType* type, VM* vm, const char* name, Nat
 
 void String_PrepareType(ObjectType* type, VM* vm)
 {
-    define_string_method(type, vm, "init", init_method, 1);
-    define_string_method(type, vm, "length", length_method, 0);
-    define_string_method(type, vm, "startsWith", starts_with_method, 1);
-    define_string_method(type, vm, "endsWith", ends_with_method, 1);
+    define_string_method(type, vm, "init", method_init, 1);
+    define_string_method(type, vm, "length", method_length, 0);
+    define_string_method(type, vm, "isEmpty", method_is_empty, 0);
+    define_string_method(type, vm, "toLower", method_to_lower, 0);
+    define_string_method(type, vm, "toUpper", method_to_upper, 0);
+    define_string_method(type, vm, "startsWith", method_starts_with, 1);
+    define_string_method(type, vm, "endsWith", method_ends_with, 1);
 
-    define_string_method(type->base.type, vm, "fromNumber", from_number_method, 1);
+    define_string_method(type->base.type, vm, "fromNumber", method_from_number, 1);
 }
 
 ObjectString* String_New(VM* vm, size_t length)
