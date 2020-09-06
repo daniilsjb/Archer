@@ -86,6 +86,7 @@ void vm_init(VM* vm)
     reset_stack(vm);
 
     vm->initString = NULL;
+
     vm->stringType = NULL;
     vm->nativeType = NULL;
     vm->functionType = NULL;

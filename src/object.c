@@ -3,6 +3,7 @@
 #include "object.h"
 #include "objfunction.h"
 #include "objnative.h"
+#include "objstring.h"
 #include "vm.h"
 #include "gc.h"
 #include "memory.h"
@@ -52,6 +53,11 @@ bool Object_ValueHasType(Value value, ObjectType* type)
 bool Object_ValueIsType(Value value)
 {
     return IS_OBJ(value) && Object_IsType(AS_OBJ(value));
+}
+
+ObjectString* Object_ToString(Object* object, VM* vm)
+{
+    return object->type->ToString(object, vm);
 }
 
 void Object_Print(Object* object)
@@ -164,6 +170,13 @@ void Type_Deallocate(ObjectType* type, GC* gc)
     Object_Deallocate(gc, (Object*)type);
 }
 
+static ObjectString* type_to_string(Object* object, VM* vm)
+{
+    char cstring[100];
+    snprintf(cstring, 100, "<class '%s'>", AS_TYPE(object)->name);
+    return String_FromCString(vm, cstring);
+}
+
 static void type_print(Object* object)
 {
     printf("<class '%s'>", AS_TYPE(object)->name);
@@ -193,6 +206,7 @@ static ObjectType* new_meta_type(VM* vm)
     meta->name = "MetaType";
     meta->size = sizeof(ObjectType);
     meta->flags = 0x0,
+    meta->ToString = type_to_string;
     meta->Print = type_print;
     meta->Hash = NULL;
     meta->GetField = Object_GenericGetField;
@@ -225,6 +239,13 @@ void Type_GenericFree(Object* object, GC* gc)
     Type_Deallocate((ObjectType*)object, gc);
 }
 
+static ObjectString* instance_to_string(Object* object, VM* vm)
+{
+    char cstring[100];
+    snprintf(cstring, 100, "<'%s' instance>", object->type->name);
+    return String_FromCString(vm, cstring);
+}
+
 static void instance_print(Object* object)
 {
     printf("<'%s' instance>", object->type->name);
@@ -236,6 +257,7 @@ ObjectType* Type_NewClass(VM* vm, const char* name)
     type->name = name;
     type->size = sizeof(Object);
     type->flags = TF_DEFAULT,
+    type->ToString = instance_to_string;
     type->Print = instance_print;
     type->Hash = NULL;
     type->GetField = Object_GenericGetField;

@@ -14,6 +14,7 @@
 typedef struct GC GC;
 typedef struct VM VM;
 
+typedef struct ObjectString ObjectString;
 typedef struct ObjectType ObjectType;
 
 typedef struct Object {
@@ -33,6 +34,7 @@ bool Object_IsType(Object* object);
 bool Object_ValueHasType(Value value, ObjectType* type);
 bool Object_ValueIsType(Value value);
 
+ObjectString* Object_ToString(Object* object, VM* vm);
 void Object_Print(Object* object);
 uint32_t Object_Hash(Object* object);
 bool Object_GetField(Object* object, Object* key, VM* vm, Value* result);
@@ -63,6 +65,7 @@ typedef enum {
     TF_DEFAULT = TF_ALLOW_INHERITANCE
 } TypeFlag;
 
+typedef ObjectString* (*ToStringFn)(Object* object, VM* vm);
 typedef void (*PrintFn)(Object* object);
 typedef uint32_t (*HashFn)(Object* object);
 typedef bool(*GetFieldFn)(Object* object, Object* key, VM* vm, Value* result);
@@ -80,6 +83,7 @@ typedef struct ObjectType {
     uint16_t flags;
     Table methods;
 
+    ToStringFn ToString;
     PrintFn Print;
     HashFn Hash;
     GetFieldFn GetField;

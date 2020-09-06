@@ -88,6 +88,11 @@ static uint32_t string_hash(Object* object)
     return hash_cstring(string->chars, string->length);
 }
 
+static ObjectString* string_to_string(Object* object, VM* vm)
+{
+    return AS_STRING(object);
+}
+
 static void string_free(Object* object, GC* gc)
 {
     ObjectString* string = AS_STRING(object);
@@ -101,6 +106,7 @@ ObjectType* String_NewType(VM* vm)
     type->name = "String";
     type->size = sizeof(ObjectString);
     type->flags = 0x0;
+    type->ToString = string_to_string;
     type->Print = string_print;
     type->Hash = string_hash;
     type->GetField = NULL;
@@ -193,15 +199,28 @@ ObjectString* String_Concatenate(VM* vm, ObjectString* a, ObjectString* b)
 
 ObjectString* String_FromValue(VM* vm, Value value)
 {
+#if NAN_BOXING
     if (IS_BOOL(value)) {
-        return AS_BOOL(value) ? String_FromCString(vm, "true") : String_FromCString(vm, "false");
-    } else if IS_NIL(value) {
-        return String_FromCString(vm, "nil");
+        return String_FromCString(vm, AS_BOOL(value) ? "true" : "false");
     } else if IS_NUMBER(value) {
         char cstring[50];
-        sprintf(cstring, "%g", AS_NUMBER(value));
+        snprintf(cstring, 50, "%g", AS_NUMBER(value));
         return String_FromCString(vm, cstring);
+    } else if IS_NIL(value) {
+        return String_FromCString(vm, "nil");
     } else {
-        return String_FromCString(vm, "<instance>");    //Temporary code, delegate this to the object's type
+        return Object_ToString(AS_OBJ(value), vm);
     }
+#else
+    switch (value.type) {
+        case VALUE_BOOL: return String_FromCString(vm, AS_BOOL(value) ? "true" : "false");
+        case VALUE_NUMBER: {
+            char cstring[50];
+            snprintf(cstring, 50, "%g", AS_NUMBER(value));
+            return String_FromCString(vm, cstring);
+        }
+        case VALUE_NIL: return String_FromCString("nil");
+        case VALUE_OBJ: Object_ToString(AS_OBJ(value), vm);
+    }
+#endif
 }

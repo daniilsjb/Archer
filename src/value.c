@@ -2,6 +2,7 @@
 
 #include "vm.h"
 #include "value.h"
+#include "objstring.h"
 #include "object.h"
 #include "memory.h"
 

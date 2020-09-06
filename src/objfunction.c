@@ -6,18 +6,31 @@
 #include "memory.h"
 #include "gc.h"
 
-static void print_function(Object* object)
+static ObjectString* function_to_string(Object* object, VM* vm)
 {
     ObjectFunction* function = AS_FUNCTION(object);
 
     if (!function->name) {
-        printf("<script>");
+        return String_FromCString(vm, "<lambda fn>");
+    } else {
+        char cstring[100];
+        snprintf(cstring, 100, "<fn '%s'>", function->name->chars);
+        return String_FromCString(vm, cstring);
+    }
+}
+
+static void function_print(Object* object)
+{
+    ObjectFunction* function = AS_FUNCTION(object);
+
+    if (!function->name) {
+        printf("<lambda fn>");
     } else {
         printf("<fn '%s'>", function->name->chars);
     }
 }
 
-static void traverse_function(Object* object, GC* gc)
+static void function_traverse(Object* object, GC* gc)
 {
     ObjectFunction* function = AS_FUNCTION(object);
     GC_MarkObject(gc, (Object*)function->name);
@@ -25,7 +38,7 @@ static void traverse_function(Object* object, GC* gc)
     Object_GenericTraverse(object, gc);
 }
 
-static void free_function(Object* object, GC* gc)
+static void function_free(Object* object, GC* gc)
 {
     chunk_free(gc, &AS_FUNCTION(object)->chunk);
     Object_Deallocate(gc, object);
@@ -37,15 +50,16 @@ ObjectType* Function_NewType(VM* vm)
     type->name = "Function";
     type->size = sizeof(ObjectFunction);
     type->flags = 0x0;
-    type->Print = print_function;
+    type->ToString = function_to_string;
+    type->Print = function_print;
     type->Hash = NULL;
     type->GetField = NULL;
     type->SetField = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
     type->Call = NULL;
-    type->Traverse = traverse_function;
-    type->Free = free_function;
+    type->Traverse = function_traverse;
+    type->Free = function_free;
     return type;
 }
 
@@ -63,12 +77,17 @@ ObjectFunction* Function_New(VM* vm)
     return function;
 }
 
-static void print_upvalue(Object* object)
+static ObjectString* upvalue_to_string(Object* object, VM* vm)
+{
+    return String_FromCString(vm, "<upvalue>");
+}
+
+static void upvalue_print(Object* object)
 {
     printf("<upvalue>");
 }
 
-static void traverse_upvalue(Object* object, GC* gc)
+static void upvalue_traverse(Object* object, GC* gc)
 {
     GC_MarkValue(gc, AS_UPVALUE(object)->closed);
     Object_GenericTraverse(object, gc);
@@ -80,14 +99,15 @@ ObjectType* Upvalue_NewType(VM* vm)
     type->name = "Upvalue";
     type->size = sizeof(ObjectUpvalue);
     type->flags = 0x0;
-    type->Print = print_upvalue;
+    type->ToString = upvalue_to_string;
+    type->Print = upvalue_print;
     type->Hash = NULL;
     type->GetField = NULL;
     type->SetField = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
     type->Call = NULL;
-    type->Traverse = traverse_upvalue;
+    type->Traverse = upvalue_traverse;
     type->Free = Object_GenericFree;
     return type;
 }
@@ -105,12 +125,22 @@ ObjectUpvalue* Upvalue_New(VM* vm, Value* slot)
     return upvalue;
 }
 
-static void print_closure(Object* object)
+static ObjectString* closure_to_string(Object* object, VM* vm)
 {
-    print_function((Object*)AS_CLOSURE(object)->function);
+    return function_to_string((Object*)AS_CLOSURE(object)->function, vm);
 }
 
-static void traverse_closure(Object* object, GC* gc)
+static void closure_print(Object* object)
+{
+    function_print((Object*)AS_CLOSURE(object)->function);
+}
+
+static bool closure_call(Object* callee, uint8_t argCount, VM* vm)
+{
+    return call(vm, AS_CLOSURE(callee), argCount);
+}
+
+static void closure_traverse(Object* object, GC* gc)
 {
     ObjectClosure* closure = AS_CLOSURE(object);
     GC_MarkObject(gc, (Object*)closure->function);
@@ -121,12 +151,7 @@ static void traverse_closure(Object* object, GC* gc)
     Object_GenericTraverse(object, gc);
 }
 
-static bool call_closure(Object* callee, uint8_t argCount, VM* vm)
-{
-    return call(vm, AS_CLOSURE(callee), argCount);
-}
-
-static void free_closure(Object* object, GC* gc)
+static void closure_free(Object* object, GC* gc)
 {
     ObjectClosure* closure = AS_CLOSURE(object);
     FREE_ARRAY(gc, ObjectUpvalue*, closure->upvalues, closure->upvalueCount);
@@ -139,15 +164,16 @@ ObjectType* Closure_NewType(VM* vm)
     type->name = "Closure";
     type->size = sizeof(ObjectClosure);
     type->flags = 0x0;
-    type->Print = print_closure;
+    type->ToString = closure_to_string;
+    type->Print = closure_print;
     type->Hash = NULL;
     type->GetField = NULL;
     type->SetField = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
-    type->Call = call_closure;
-    type->Traverse = traverse_closure;
-    type->Free = free_closure;
+    type->Call = closure_call;
+    type->Traverse = closure_traverse;
+    type->Free = closure_free;
     return type;
 }
 
@@ -169,19 +195,24 @@ ObjectClosure* Closure_New(VM* vm, ObjectFunction* function)
     return closure;
 }
 
-static void print_bound_method(Object* object)
+static ObjectString* bound_method_to_string(Object* object, VM* vm)
+{
+    return Object_ToString(AS_BOUND_METHOD(object)->method, vm);
+}
+
+static void bound_method_print(Object* object)
 {
     Object_Print(AS_BOUND_METHOD(object)->method);
 }
 
-static bool call_bound_method(Object* callee, uint8_t argCount, VM* vm)
+static bool bound_method_call(Object* callee, uint8_t argCount, VM* vm)
 {
     ObjectBoundMethod* bound = AS_BOUND_METHOD(callee);
     vm->stackTop[-argCount - 1] = bound->receiver;
     return Object_Call(bound->method, argCount, vm);
 }
 
-static void traverse_bound_method(Object* object, GC* gc)
+static void bound_method_traverse(Object* object, GC* gc)
 {
     ObjectBoundMethod* boundMethod = AS_BOUND_METHOD(object);
     GC_MarkValue(gc, boundMethod->receiver);
@@ -195,14 +226,15 @@ ObjectType* BoundMethod_NewType(VM* vm)
     type->name = "BoundMethod";
     type->size = sizeof(ObjectBoundMethod);
     type->flags = 0x0;
-    type->Print = print_bound_method;
+    type->ToString = bound_method_to_string;
+    type->Print = bound_method_print;
     type->Hash = NULL;
     type->GetField = NULL;
     type->SetField = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
-    type->Call = call_bound_method;
-    type->Traverse = traverse_bound_method;
+    type->Call = bound_method_call;
+    type->Traverse = bound_method_traverse;
     type->Free = Object_GenericFree;
     return type;
 }

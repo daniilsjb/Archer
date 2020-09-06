@@ -6,12 +6,17 @@
 #include "memory.h"
 #include "gc.h"
 
-static void print_native(Object* object)
+static ObjectString* native_to_string(Object* object, VM* vm)
+{
+    return String_FromCString(vm, "<native fn>");
+}
+
+static void native_print(Object* object)
 {
     printf("<native fn>");
 }
 
-static bool call_native(Object* callee, uint8_t argCount, VM* vm)
+static bool native_call(Object* callee, uint8_t argCount, VM* vm)
 {
     ObjectNative* native = AS_NATIVE(callee);
     if (native->arity != argCount) {
@@ -34,13 +39,14 @@ ObjectType* Native_NewType(VM* vm)
     type->name = "Native";
     type->size = sizeof(ObjectNative);
     type->flags = 0x0;
-    type->Print = print_native;
+    type->ToString = native_to_string;
+    type->Print = native_print;
     type->Hash = NULL;
     type->GetField = NULL;
     type->SetField = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
-    type->Call = call_native;
+    type->Call = native_call;
     type->Traverse = Object_GenericTraverse;
     type->Free = Object_GenericFree;
     return type;
