@@ -6,6 +6,7 @@
 #include "vm.h"
 #include "memory.h"
 #include "gc.h"
+#include "library.h"
 
 static bool method_init(VM* vm, Value* args)
 {
@@ -56,7 +57,7 @@ static bool method_to_upper(VM* vm, Value* args)
 static bool method_starts_with(VM* vm, Value* args)
 {
     if (!VAL_IS_STRING(args[0], vm)) {
-        return false;
+        return Library_Error(vm, "Expected a string.", args);
     }
 
     ObjectString* original = VAL_AS_STRING(args[-1]);
@@ -73,7 +74,7 @@ static bool method_starts_with(VM* vm, Value* args)
 static bool method_ends_with(VM* vm, Value* args)
 {
     if (!VAL_IS_STRING(args[0], vm)) {
-        return false;
+        return Library_Error(vm, "Expected a string.", args);
     }
 
     ObjectString* original = VAL_AS_STRING(args[-1]);
@@ -90,7 +91,7 @@ static bool method_ends_with(VM* vm, Value* args)
 static bool method_from_number(VM* vm, Value* args)
 {
     if (!IS_NUMBER(args[0])) {
-        return false;
+        return Library_Error(vm, "Expected a number.", args);
     }
 
     char result[50];

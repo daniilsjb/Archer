@@ -28,7 +28,7 @@ static bool native_call(Object* callee, uint8_t argCount, VM* vm)
         vm->stackTop -= (uint64_t)argCount;
         return true;
     } else {
-        runtime_error(vm, AS_CSTRING(vm->stackTop[-argCount - 1]));
+        runtime_error(vm, VAL_AS_CSTRING(vm->stackTop[-argCount - 1]));
         return false;
     }
 }
