@@ -35,12 +35,20 @@ bool Object_ValueIsType(Value value);
 
 void Object_Print(Object* object);
 uint32_t Object_Hash(Object* object);
-Value Object_GetMethod(Object* object, Object* key, VM* vm);
+bool Object_GetField(Object* object, Object* key, VM* vm, Value* result);
+bool Object_SetField(Object* object, Object* key, Value value, VM* vm);
+bool Object_GetMethod(Object* object, Object* key, VM* vm, Value* result);
+bool Object_GetMethodDirectly(Object* object, Object* key, VM* vm, Value* result);
+bool Object_SetMethod(Object* object, Object* key, Value value, VM* vm);
+bool Object_SetMethodDirectly(Object* object, Object* key, Value value, VM* vm);
 bool Object_Call(Object* callee, uint8_t argCount, VM* vm);
 void Object_Traverse(Object* object, GC* gc);
 void Object_Free(Object* object, GC* gc);
 
-Value Object_GenericGetMethod(Object* object, Object* key, VM* vm);
+bool Object_GenericGetField(Object* object, Object* key, VM* vm, Value* result);
+bool Object_GenericSetField(Object* object, Object* key, Value value, VM* vm);
+bool Object_GenericGetMethod(ObjectType* type, Object* key, VM* vm, Value* result);
+bool Object_GenericSetMethod(ObjectType* type, Object* key, Value value, VM* vm);
 void Object_GenericTraverse(Object* object, GC* gc);
 void Object_GenericFree(Object* object, GC* gc);
 
@@ -52,7 +60,10 @@ void Object_GenericFree(Object* object, GC* gc);
 
 typedef void (*PrintFn)(Object* object);
 typedef uint32_t (*HashFn)(Object* object);
-typedef Value (*GetMethodFn)(Object* object, Object* key, VM* vm);
+typedef bool(*GetFieldFn)(Object* object, Object* key, VM* vm, Value* result);
+typedef bool (*SetFieldFn)(Object* object, Object* key, Value value, VM* vm);
+typedef bool (*GetMethodFn)(ObjectType* type, Object* key, VM* vm, Value* result);
+typedef bool (*SetMethodFn)(ObjectType* type, Object* key, Value value, VM* vm);
 typedef bool (*CallFn)(Object* callee, uint8_t argCount, VM* vm);
 typedef void (*TraverseFn)(Object* object, GC* gc);
 typedef void (*FreeFn)(Object* object, GC* gc);
@@ -65,7 +76,10 @@ typedef struct ObjectType {
 
     PrintFn Print;
     HashFn Hash;
+    GetFieldFn GetField;
+    SetFieldFn SetField;
     GetMethodFn GetMethod;
+    SetMethodFn SetMethod;
     CallFn Call;
     TraverseFn Traverse;
     FreeFn Free;

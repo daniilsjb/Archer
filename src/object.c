@@ -64,9 +64,39 @@ uint32_t Object_Hash(Object* object)
     return object->type->Hash(object);
 }
 
-Value Object_GetMethod(Object* object, Object* key, VM* vm)
+bool Object_GetField(Object* object, Object* key, VM* vm, Value* result)
 {
-    return object->type->GetMethod(object, key, vm);
+    return object->type->GetField(object, key, vm, result);
+}
+
+bool Object_SetField(Object* object, Object* key, Value value, VM* vm)
+{
+    return object->type->SetField(object, key, value, vm);
+}
+
+bool Object_GetMethod(Object* object, Object* key, VM* vm, Value* result)
+{
+    if (!object->type->GetMethod(object->type, key, vm, result)) {
+        return false;
+    }
+
+    *result = OBJ_VAL(BoundMethod_New(vm, OBJ_VAL(object), AS_OBJ(*result)));
+    return true;
+}
+
+bool Object_GetMethodDirectly(Object* object, Object* key, VM* vm, Value* result)
+{
+    return AS_TYPE(object)->GetMethod(AS_TYPE(object), key, vm, result);
+}
+
+bool Object_SetMethod(Object* object, Object* key, Value value, VM* vm)
+{
+    return object->type->SetMethod(object->type, key, value, vm);
+}
+
+bool Object_SetMethodDirectly(Object* object, Object* key, Value value, VM* vm)
+{
+    return AS_TYPE(object)->SetMethod(AS_TYPE(object), key, value, vm);
 }
 
 bool Object_Call(Object* callee, uint8_t argCount, VM* vm)
@@ -90,14 +120,24 @@ void Object_Free(Object* object, GC* gc)
     object->type->Free(object, gc);
 }
 
-Value Object_GenericGetMethod(Object* object, Object* key, VM* vm)
+bool Object_GenericGetField(Object* object, Object* key, VM* vm, Value* result)
 {
-    Value method;
-    if (!table_get(&object->type->methods, (ObjectString*)key, &method)) {
-        return NIL_VAL();
-    }
+    return table_get(&object->fields, (ObjectString*)key, result);
+}
 
-    return OBJ_VAL(BoundMethod_New(vm, OBJ_VAL(object), AS_OBJ(method)));
+bool Object_GenericSetField(Object* object, Object* key, Value value, VM* vm)
+{
+    return table_put(vm, &object->fields, (ObjectString*)key, value);
+}
+
+bool Object_GenericGetMethod(ObjectType* type, Object* key, VM* vm, Value* result)
+{
+    return table_get(&type->methods, (ObjectString*)key, result);
+}
+
+bool Object_GenericSetMethod(ObjectType* type, Object* key, Value value, VM* vm)
+{
+    return table_put(vm, &type->methods, (ObjectString*)key, value);
 }
 
 void Object_GenericTraverse(Object* object, GC* gc)
@@ -154,7 +194,10 @@ static ObjectType* new_meta_type(VM* vm)
     meta->size = sizeof(ObjectType);
     meta->Print = type_print;
     meta->Hash = NULL;
+    meta->GetField = Object_GenericGetField;
+    meta->SetField = NULL;
     meta->GetMethod = Object_GenericGetMethod;
+    meta->SetMethod = NULL;
     meta->Call = type_call;
     meta->Traverse = Type_GenericTraverse;
     meta->Free = Type_GenericFree;
@@ -193,9 +236,15 @@ ObjectType* Type_NewClass(VM* vm, const char* name)
     type->size = sizeof(Object);
     type->Print = instance_print;
     type->Hash = NULL;
+    type->GetField = Object_GenericGetField;
+    type->SetField = Object_GenericSetField;
     type->GetMethod = Object_GenericGetMethod;
+    type->SetMethod = Object_GenericSetMethod;
     type->Call = NULL;
     type->Traverse = Object_GenericTraverse;
     type->Free = Object_GenericFree;
+
+    type->base.type->SetField = Object_GenericSetField;
+    type->base.type->SetMethod = Object_GenericSetMethod;
     return type;
 }

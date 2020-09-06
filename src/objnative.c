@@ -35,8 +35,11 @@ ObjectType* Native_NewType(VM* vm)
     type->size = sizeof(ObjectNative);
     type->Print = print_native;
     type->Hash = NULL;
-    type->Call = call_native;
+    type->GetField = NULL;
+    type->SetField = NULL;
     type->GetMethod = NULL;
+    type->SetMethod = NULL;
+    type->Call = call_native;
     type->Traverse = Object_GenericTraverse;
     type->Free = Object_GenericFree;
     return type;

@@ -225,15 +225,36 @@ static bool call_value(VM* vm, Value callee, uint8_t argCount)
     return Object_Call(object, argCount, vm);
 }
 
+static bool load_property(VM* vm, Object* object, ObjectString* name, Value* result)
+{
+    if (object->type->GetField) {
+        if (Object_GetField(object, (Object*)name, vm, result)) {
+            return true;
+        }
+    }
+
+    if (!object->type->GetMethod) {
+        runtime_error(vm, "Objects of type '%s' do not have methods.", object->type->name);
+        return false;
+    }
+
+    if (!Object_GetMethod(object, (Object*)name, vm, result)) {
+        runtime_error(vm, "Undefined property '%s'.", name->chars);
+        return false;
+    }
+
+    return true;
+}
+
 static bool invoke_from_class(VM* vm, ObjectType* clazz, ObjectString* name, uint8_t argCount)
 {
     Value method;
-    if (!table_get(&clazz->methods, name, &method)) {
+    if (!Object_GetMethodDirectly((Object*)clazz, (Object*)name, vm, &method)) {
         runtime_error(vm, "Undefined property '%s'", name->chars);
         return false;
     }
 
-    return call(vm, VAL_AS_CLOSURE(method), argCount);
+    return call_value(vm, method, argCount);
 }
 
 static bool invoke(VM* vm, ObjectString* name, uint8_t argCount)
@@ -244,25 +265,28 @@ static bool invoke(VM* vm, ObjectString* name, uint8_t argCount)
         return false;
     }
 
-    Object* receiver = AS_OBJ(peek(vm, argCount));
-
-    if (table_get(&receiver->fields, name, &value)) {
-        vm->stackTop[-argCount - 1] = value;
-        return call_value(vm, value, argCount);
-    }
-
-    if (!OBJ_TYPE(receiver)->GetMethod) {
-        runtime_error(vm, "Objects of type '%s' do not have methods.", OBJ_TYPE(receiver)->name);
+    Object* receiver = AS_OBJ(value);
+    Value method;
+    if (!load_property(vm, receiver, name, &method)) {
         return false;
     }
 
-    Value method = OBJ_TYPE(receiver)->GetMethod(receiver, (Object*)name, vm);
-    if (IS_NIL(method)) {
-        runtime_error(vm, "Undefined property '%s'.", name->chars);
-        return false;
+    if (VAL_IS_BOUND_METHOD(method, vm)) {
+        return Object_Call(AS_OBJ(method), argCount, vm);
+    } else {
+        vm->stackTop[-argCount - 1] = method;
+        return call_value(vm, method, argCount);
+    }
+}
+
+static bool invoke_static_constructor(VM* vm, ObjectType* clazz)
+{
+    Value method;
+    if (Object_GetMethod((Object*)clazz, (Object*)vm->initString, vm, &method)) {
+        return call_value(vm, method, 0);
     }
 
-    return Object_Call(AS_OBJ(method), argCount, vm);
+    return false;
 }
 
 static ObjectUpvalue* capture_upvalue(VM* vm, Value* local)
@@ -270,19 +294,19 @@ static ObjectUpvalue* capture_upvalue(VM* vm, Value* local)
     ObjectUpvalue* prevUpvalue = NULL;
     ObjectUpvalue* upvalue = vm->openUpvalues;
 
-    while (upvalue != NULL && upvalue->location > local) {
+    while (upvalue && upvalue->location > local) {
         prevUpvalue = upvalue;
         upvalue = upvalue->next;
     }
 
-    if (upvalue != NULL && upvalue->location == local) {
+    if (upvalue && upvalue->location == local) {
         return upvalue;
     }
 
     ObjectUpvalue* createdUpvalue = Upvalue_New(vm, local);
     createdUpvalue->next = upvalue;
 
-    if (prevUpvalue == NULL) {
+    if (!prevUpvalue) {
         vm->openUpvalues = createdUpvalue;
     } else {
         prevUpvalue->next = createdUpvalue;
@@ -293,40 +317,12 @@ static ObjectUpvalue* capture_upvalue(VM* vm, Value* local)
 
 static void close_upvalues(VM* vm, Value* last)
 {
-    while (vm->openUpvalues != NULL && vm->openUpvalues->location >= last) {
+    while (vm->openUpvalues && vm->openUpvalues->location >= last) {
         ObjectUpvalue* upvalue = vm->openUpvalues;
         upvalue->closed = *upvalue->location;
         upvalue->location = &upvalue->closed;
         vm->openUpvalues = upvalue->next;
     }
-}
-
-static void define_static_method(VM* vm, ObjectString* name)
-{
-    Value method = peek(vm, 0);
-    ObjectType* meta = VAL_AS_TYPE(peek(vm, 1))->base.type;
-    table_put(vm, &meta->methods, name, method);
-    vm_pop(vm);
-}
-
-static void define_method(VM* vm, ObjectString* name)
-{
-    Value method = peek(vm, 0);
-    ObjectType* clazz = VAL_AS_TYPE(peek(vm, 1));
-    table_put(vm, &clazz->methods, name, method);
-    vm_pop(vm);
-}
-
-static bool invoke_static_constructor(VM* vm, ObjectType* clazz)
-{
-    ObjectType* meta = clazz->base.type;
-
-    Value method;
-    if (table_get(&meta->methods, vm->initString, &method)) {
-        return call(vm, VAL_AS_CLOSURE(method), 0);
-    }
-
-    return false;
 }
 
 static InterpretStatus run(VM* vm)
@@ -475,6 +471,7 @@ static InterpretStatus run(VM* vm)
                     POP();
                     TOP = OBJ_VAL(result);
                 } else if (IS_NUMBER(TOP) || IS_NUMBER(SND)) {
+                    //TODO: Only perform this when both are numbers, but also ensure safety assignment still works
                     double rhs = AS_NUMBER(POP());
                     TOP = NUMBER_VAL(AS_NUMBER(TOP) + rhs);
                 } else {
@@ -706,24 +703,13 @@ static InterpretStatus run(VM* vm)
                 Object* object = AS_OBJ(TOP);
                 ObjectString* name = READ_STRING();
 
-                Value value;
-                if (table_get(&object->fields, name, &value)) {
-                    TOP = value;
-                    break;
+                frame->ip = ip;
+                Value property;
+                if (!load_property(vm, object, name, &property)) {
+                    return INTERPRET_RUNTIME_ERROR;
                 }
 
-                if (!OBJ_TYPE(object)->GetMethod) {
-                    frame->ip = ip;
-                    return runtime_error(vm, "Objects of type '%s' do not contain methods.", OBJ_TYPE(object)->name);
-                }
-
-                Value method = Object_GetMethod(object, (Object*)name, vm);
-                if (IS_NIL(method)) {
-                    frame->ip = ip;
-                    return runtime_error(vm, "Undefined property '%s'.", name->chars);
-                }
-
-                TOP = method;
+                TOP = property;
                 break;
             }
             case OP_STORE_PROPERTY_SAFE: {
@@ -740,7 +726,13 @@ static InterpretStatus run(VM* vm)
                     return runtime_error(vm, "Can only set properties of objects.");
                 }
 
-                table_put(vm, &AS_OBJ(TOP)->fields, READ_STRING(), SND);
+                Object* object = AS_OBJ(TOP);
+                if (!object->type->SetField) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Properties on objects of type '%s' cannot be assigned.", object->type->name);
+                }
+
+                Object_SetField(object, (Object*)READ_STRING(), SND, vm);
                 POP();
                 break;
             }
@@ -824,11 +816,17 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_STATIC_METHOD: {
-                define_static_method(vm, READ_STRING());
+                Value method = TOP;
+                ObjectType* clazz = VAL_AS_TYPE(SND);
+                Object_SetMethod((Object*)clazz, (Object*)READ_STRING(), method, vm);
+                vm_pop(vm);
                 break;
             }
             case OP_METHOD: {
-                define_method(vm, READ_STRING());
+                Value method = TOP;
+                ObjectType* clazz = VAL_AS_TYPE(SND);
+                Object_SetMethodDirectly((Object*)clazz, (Object*)READ_STRING(), method, vm);
+                vm_pop(vm);
                 break;
             }
             case OP_INHERIT: {
@@ -847,8 +845,8 @@ static InterpretStatus run(VM* vm)
                 ObjectString* name = READ_STRING();
                 ObjectType* superclass = VAL_AS_TYPE(POP());
 
-                Value method = superclass->GetMethod((Object*)superclass, (Object*)name, vm);
-                if (IS_NIL(method)) {
+                Value method;
+                if (!Object_GetMethod((Object*)superclass, (Object*)name, vm, &method)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Undefined method '%s' of superclass.", name->chars);
                 }
@@ -857,12 +855,12 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_SUPER_INVOKE: {
-                ObjectString* method = READ_STRING();
+                ObjectString* name = READ_STRING();
                 uint8_t argCount = READ_BYTE();
                 ObjectType* superclass = VAL_AS_TYPE(POP());
 
                 frame->ip = ip;
-                if (!invoke_from_class(vm, superclass, method, argCount)) {
+                if (!invoke_from_class(vm, superclass, name, argCount)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
 

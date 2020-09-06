@@ -102,7 +102,10 @@ ObjectType* String_NewType(VM* vm)
     type->size = sizeof(ObjectString);
     type->Print = string_print;
     type->Hash = string_hash;
+    type->GetField = NULL;
+    type->SetField = NULL;
     type->GetMethod = Object_GenericGetMethod;
+    type->SetMethod = NULL;
     type->Call = NULL;
     type->Traverse = Object_GenericTraverse;
     type->Free = string_free;
