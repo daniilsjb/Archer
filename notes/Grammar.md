@@ -11,6 +11,7 @@ The notation used is a modified version of Extended Backus-Naur Form. It uses sy
 Operators and their meanings:
 
 - operator `|` denotes *alternative* (only a single rule must match)
+- operator `~` denotes *negation* (matches anything other than the rule)
 - operator `?` denotes *option* (zero or one match)
 - operator `*` denotes *iteration* (zero or more matches)
 - operator `+` denotes *iteration* (one or more matches)
@@ -36,28 +37,36 @@ Script → Declaration* EOF
 
 ### Declarations
 
-```ebnf
+```
 Declaration → ClassDeclaration
             | FunctionDeclaration
             | VariableDeclaration
             | Statement
 ```
 
-```ebnf
+#### Class
+
+```
 ClassDeclaration → "class" Identifier ("<" Identifier)? "{" Method* "}"
+
+Method → "static"? NamedFunction
 ```
 
-```ebnf
+#### Function
+
+```
 FunctionDeclaration → "fun" NamedFunction
 ```
 
-```ebnf
+#### Variable
+
+```
 VariableDeclaration → "var" Identifier ("=" Expression)? ";"
 ```
 
 ### Statements
 
-```ebnf
+```
 Statement → ForStatement
           | WhileStatement
           | BreakStatement
@@ -70,43 +79,67 @@ Statement → ForStatement
           | ExpressionStatement
 ```
 
-```ebnf
+#### For
+
+```
 ForStatement → "for" "(" (VariableDeclaration | ExpressionStatement | ";")? Expression? ";" Expression? ")" Statement
 ```
 
-```ebnf
+#### While
+
+```
 WhileStatement → "while" "(" Expression ")" Statement
 ```
 
-```ebnf
+#### Break
+
+```
 BreakStatement → "break" ";"
 ```
 
-```ebnf
+#### Continue
+
+```
 ContinueStatement → "continue" ";"
 ```
 
-```ebnf
+#### When
+
+```
 WhenStatement → "when" "(" Expression ")" "{" WhenEntry* WhenElse? "}"
+
+WhenEntry → Expression ("," Expression)* "->" Statement
+
+WhenElse → "else" "->" Statement
 ```
 
-```ebnf
+#### If
+
+```
 IfStatement → "if" "(" Expression ")" Statement ("else" Statement)?
 ```
 
-```ebnf
+#### Return
+
+```
 ReturnStatement → "return" Expression? ";"
 ```
 
-```ebnf
+#### Print
+
+```
 PrintStatement → "print" Expression ";"
 ```
 
-```ebnf
+#### Block
+
+```
 BlockStatement → "{" Declaration* "}"
 ```
 
-```ebnf
+#### Expression
+
+```
 ExpressionStatement → Expression ";"
 ```
 
@@ -130,112 +163,132 @@ ExpressionStatement → Expression ";"
 | 14         | Conditional     | `? :`, `?:`                                                               | Right-to-left |
 | 15         | Assignment      | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `\|=`, `>>=`, `<<=` | Right-to-left |
 
-```ebnf
+```
 Expression → AssignmentExpression
 ```
 
-```ebnf
+#### Assignment
+
+```
 AssignmentExpression → (PostfixExpression MemberAccessOperator)? Identifier AssignmentOperator AssignmentExpression
                      | ConditionalExpression
 ```
 
-```ebnf
+#### Conditional
+
+```
 ConditionalExpression → LogicOrExpression (TernaryExpressionFinish | ElvisExpressionFinish)?
-```
 
-```ebnf
 TernaryExpressionFinish → "?" Expression ":" ConditionalExpression
-```
 
-```ebnf
 ElvisExpressionFinish → "?:" ConditionalExpression
 ```
 
-```ebnf
+#### Logic OR
+
+```
 LogicOrExpression → LogicAndExpression ("or" LogicAndExpression)*
 ```
 
-```ebnf
+#### Logic AND
+
+```
 LogicAndExpression → BitwiseOrExpression ("and" BitwiseOrExpression)*
 ```
 
-```ebnf
+#### Bitwise OR
+
+```
 BitwiseOrExpression → BitwiseXorExpression ("|" BitwiseXorExpression)*
 ```
 
-```ebnf
+#### Bitwise XOR
+
+```
 BitwiseXorExpression → BitwiseAndExpression ("^" BitwiseAndExpression)*
 ```
 
-```ebnf
+#### Bitwise AND
+
+```
 BitwiseAndExpression → EqualityExpression ("&" EqualityExpression)*
 ```
 
-```ebnf
+#### Equality
+
+```
 EqualityExpression → ComparisonExpression (EqualityOperator ComparisonExpression)*
 ```
 
-```ebnf
+#### Comparison
+
+```
 ComparisonExpression → BitwiseShiftExpression (ComparisonOperator BitwiseShiftExpression)*
 ```
 
-```ebnf
+#### Bitwise Shift
+
+```
 BitwiseShiftExpression → AdditiveExpression (BitwiseShiftOperator AdditiveExpression)*
 ```
 
-```ebnf
+#### Additive
+
+```
 AdditiveExpression → MultiplicativeExpression (AdditiveOperator MultiplicativeExpression)*
 ```
 
-```ebnf
+#### Multiplicative
+
+```
 MultiplicativeExpression → ExponentiationExpression (MultiplicativeOperator ExponentiationExpression)*
 ```
 
-```ebnf
+#### Exponentiation
+
+```
 ExponentiationExpression → UnaryExpression ("**" UnaryExpression)*
 ```
 
-```ebnf
+#### Unary
+
+```
 UnaryExpression → PrefixUnaryOperator UnaryExpression
                 | PostfixExpression
 ```
 
-```ebnf
-PostfixExpression → PrimaryExpression PostfixUnarySuffix*
-```
+#### Postfix
 
-```ebnf
+```
+PostfixExpression → PrimaryExpression PostfixUnarySuffix*
+
 PostfixUnarySuffix → PostfixUnaryOperator
                    | CallSuffix
                    | NavigationSuffix
-```
 
-```ebnf
 CallSuffix → "(" Arguments? ")"
-```
 
-```ebnf
+Arguments → Expression ("," Expression)*
+
 NavigationSuffix → MemberAccessOperator Identifier
 ```
 
-```ebnf
+#### Primary
+
+```
 PrimaryExpression → Literal
                   | Identifier
                   | GroupingExpression
                   | SuperExpression
-```
 
-```ebnf
 GroupingExpression → "(" Expression ")"
-```
 
-```ebnf
 SuperExpression → "super" "." Identifier
 ```
 
 ### Literals
 
-```ebnf
+```
 Literal → BooleanLiteral
         | NumberLiteral
         | StringLiteral
@@ -243,116 +296,53 @@ Literal → BooleanLiteral
         | "nil"
         | "this"
 
-```
-
-```ebnf
 BooleanLiteral → "true"
                | "false"
-```
 
-```ebnf
-NumberLiteral → Digit* ("." Digit*)?
-```
-
-```ebnf
-Digit → "0".."9"
-```
-
-```ebnf
-StringLiteral → '"' TEXT '"'
-```
-
-```ebnf
 LambdaLiteral → "\" Parameters? "->" (Expression | BlockStatement)
-```
-
-### Identifiers
-
-```ebnf
-Identifier → Alpha (Alpha | Digit)*
-```
-
-```ebnf
-Alpha → "a".."z"
-      | "A".."Z"
-      | "_"
 ```
 
 ### Helpers
 
-```ebnf
-Method → "static"? NamedFunction
 ```
-
-```ebnf
 NamedFunction → Identifier "(" Parameters? ")" ("=" Expression | BlockStatement)
-```
 
-```ebnf
-WhenEntry → Expression ("," Expression)* "->" Statement
-```
-
-```ebnf
-WhenElse → "else" "->" Statement
-```
-
-```ebnf
 Parameters → Identifier ("," Identifier)*
-```
-
-```ebnf
-Arguments → Expression ("," Expression)*
 ```
 
 ### Operator Terminals
 
-```ebnf
+```
 MemberAccessOperator → "."
                      | "?."
-```
 
-```ebnf
 PostfixUnaryOperator → "++"
                      | "--"
-```
 
-```ebnf
 PrefixUnaryOperator → "-"
                     | "~"
                     | "!"
                     | "++"
                     | "--"
-```
 
-```ebnf
 MultiplicativeOperator → "*"
                        | "/"
                        | "%"
-```
 
-```ebnf
 AdditiveOperator → "+"
                  | "-"
-```
 
-```ebnf
 BitwiseShiftOperator → ">>"
                      | "<<"
-```
 
-```ebnf
 ComparisonOperator → ">"
                    | ">="
                    | "<"
                    | "<="
-```
 
-```ebnf
 EqualityOperator → "=="
                  | "!="
-```
 
-```ebnf
 AssignmentOperator → "="
                    | "+="
                    | "-="
@@ -365,4 +355,20 @@ AssignmentOperator → "="
                    | "&="
                    | "|="
                    | "^="
+```
+
+## Lexical Grammar
+
+```
+NumberLiteral → Digit* ("." Digit*)?
+
+StringLiteral → '"' (~('"'))* '"'
+
+Identifier → Alpha (Alpha | Digit)*
+
+Alpha → "a".."z"
+      | "A".."Z"
+      | "_"
+
+Digit → "0".."9"
 ```
