@@ -58,5 +58,8 @@ CMakeSettings.json
 # Visual Studio
 *.vs/
 
+# Visual Studio Code
+.markdownlint.json
+
 # Windows Batch
 *.bat
