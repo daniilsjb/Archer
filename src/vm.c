@@ -913,6 +913,7 @@ static InterpretStatus run(VM* vm)
 #undef TOP
 #undef SECOND
 #undef THIRD
+#undef FOURTH
 
 #undef PUSH
 #undef POP
