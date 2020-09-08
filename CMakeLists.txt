@@ -53,4 +53,6 @@ add_executable (clox
     "src/library.c"
     "src/objlist.h"
     "src/objlist.c"
+    "src/objarray.h"
+    "src/objarray.c"
 )

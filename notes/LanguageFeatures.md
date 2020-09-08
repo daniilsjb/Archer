@@ -8,54 +8,6 @@ This document contains various notes and thoughts regarding the set of new featu
 
 ### Data Structures
 
-#### Array
-
-The most basic and fundamental data structure, a fixed-size array. Static programming languages normally provide only this data structure as built-in because it is trivially simple and the information about its size can be used during compilation to simplify memory allocations. However, scripting languages are usually interpreted and as such often don't benefit from these factors, as it is much easier to implement more advanced data structures straight away. On the other, arrays are fairly fast as they don't add overhead of dynamic reallocations of memory. This language is aimed more towards ease of use than performance, but it could be beneficial to provide a way of using a fixed-size array to make programs faster. The proposed solution is to add an Array class with indexing syntax, like the following:
-
-```js
-var x = Array(5); //x is [nil, nil, nil, nil, nil]
-x[0] = 10;        //x is [10, nil, nil, nil, nil]
-x.set(1, 11);     //x is [10, 11, nil, nil, nil]
-
-x[-1] = 20;       //x is [10, 11, nil, nil, 20]
-x.set(-2, 19);    //x is [10, 11, nil, 19, 20]
-
-x[0];             //Equals to 10
-x.get(0);         //Equals to 10
-x.length();       //Equals to 5
-```
-
-Accessing an element out of array's range results in a runtime error.
-
-#### List
-
-List is a very popular data structure, which can be used to produce behavior of other data structures as well. A list is a dynamic array, meaning it is a contigious block of memory that may be accessed randomly, but unlike ordinary array, it can grow and shrink in size. A list can be used as a stack or a queue by only adding and removing elements from the ends of the list.
-
-Technically, a list could be implemented from an array without built-in support from the language. However, the implementation would likely be less efficient than a foreign one, as the language does not provide any mechanisms for reallocating memory in a fast manner. Additionally, the standard library is not developed enough yet to support native implementations of data structures.
-
-As such, the inspiration is drawn from dynamic scripting languages like JavaScript, Python, and Lua. The following is the proposed syntax for lists:
-
-```js
-var x = [1, 2, 3, 4, 5]; //x is [1, 2, 3, 4, 5]
-x.append(6);             //x is [1, 2, 3, 4, 5, 6]
-x.remove(0);             //x is [2, 3, 4, 5, 6]
-
-x[0] = 6;                //x is [6, 3, 4, 5]
-x.set(0, 7);             //x is [7, 3, 4, 5]
-
-x.length();              //Equals to 5
-
-var y = x[0];            //Equals to 2
-x.get(0);                //Equals to 2
-
-var z = x[-1];           //Equals to 6
-x.get(-1);               //Equals to 6
-```
-
-Various other methods should be added to this to make the data structure more flexible, such as insertion of elements into arbitrary positions and copying elements from other lists.
-
-Accessing an index out of the list's range results in a runtime error.
-
 #### Hash Map
 
 Another really common data structure is an associative array. It has many names, but the proposed name is "hash map", taken from Java. This may arguably be a poor decision because it relies on the implementation details unlike "dictionary" or "table", but it describes the idea fairly well. Drawing inspiration from languages like JavaScript and Python, the following is the proposed syntax:
@@ -79,7 +31,7 @@ x.containsKey(5);   //Equals false
 x.remove("B");      //x is now { "A": 1, "C": 3, "D": 4 }
 ```
 
-Non-homogeneous keys are allowed, as well as nested maps. Accessing a non-existen key results in a runtime error.
+Non-homogeneous keys are allowed, as well as nested maps. Accessing a non-existent key results in a runtime error.
 
 ### Strings
 

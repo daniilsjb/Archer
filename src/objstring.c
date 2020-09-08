@@ -10,6 +10,7 @@
 
 static bool method_init(VM* vm, Value* args)
 {
+    //TODO: By creating a new string here we are discarding the object that was pre-allocated, find a way to fix this
     args[-1] = OBJ_VAL(String_FromValue(vm, args[0]));
     return true;
 }

@@ -130,6 +130,7 @@ static void mark_roots(GC* gc)
     GC_MarkObject(gc, (Object*)vm->closureType);
     GC_MarkObject(gc, (Object*)vm->boundMethodType);
     GC_MarkObject(gc, (Object*)vm->listType);
+    GC_MarkObject(gc, (Object*)vm->arrayType);
 
     GC_MarkTable(gc, &vm->globals);
     GC_MarkObject(gc, (Object*)vm->initString);

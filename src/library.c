@@ -9,6 +9,7 @@
 #include "objnative.h"
 #include "objfunction.h"
 #include "objlist.h"
+#include "objarray.h"
 
 bool Library_Error(VM* vm, const char* message, Value* args)
 {
@@ -73,6 +74,7 @@ void Library_Init(VM* vm)
     vm->closureType = Closure_NewType(vm);
     vm->boundMethodType = BoundMethod_NewType(vm);
     vm->listType = List_NewType(vm);
+    vm->arrayType = Array_NewType(vm);
 
     vm->initString = String_FromCString(vm, "init");
 
@@ -83,9 +85,14 @@ void Library_Init(VM* vm)
     Closure_PrepareType(vm->closureType, vm);
     BoundMethod_PrepareType(vm->boundMethodType, vm);
     List_PrepareType(vm->listType, vm);
+    Array_PrepareType(vm->arrayType, vm);
 
     vm_push(vm, OBJ_VAL(String_FromCString(vm, "String")));
     table_put(vm, &vm->globals, VAL_AS_STRING(vm->stackTop[-1]), OBJ_VAL(vm->stringType));
+    vm_pop(vm);
+
+    vm_push(vm, OBJ_VAL(String_FromCString(vm, "Array")));
+    table_put(vm, &vm->globals, VAL_AS_STRING(vm->stackTop[-1]), OBJ_VAL(vm->arrayType));
     vm_pop(vm);
 
     define_native(vm, "clock", clock_native, 0);
