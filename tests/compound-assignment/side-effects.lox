@@ -5,7 +5,7 @@ foo.field = 10;
 foo.counter = 0;
 
 fun getFoo() {
-    foo.counter += 1;
+    foo.counter++;
     return foo;
 }
 
@@ -13,3 +13,20 @@ getFoo().field += 20;
 
 print foo.field;   //Expected: 30
 print foo.counter; //Expected: 1
+
+var bar = [1, 2, 3];
+var counter = 0;
+
+fun getBar() {
+    counter++;
+    return bar;
+}
+
+fun getIndex() {
+    counter++;
+    return 0;
+}
+
+getBar()[getIndex()] += 2;
+print bar;     //Expected: [3, 2, 3]
+print counter; //Expected: 2

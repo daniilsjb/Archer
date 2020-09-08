@@ -1,0 +1,2 @@
+var list = nil;
+print list?[0] = 3; //Expected: nil

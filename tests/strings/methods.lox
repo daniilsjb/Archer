@@ -1,0 +1,16 @@
+var string = String(true);
+print string;                          //Expected: true
+print string.length();                 //Expected: 4
+
+print string.startsWith("tr");         //Expected: true
+print string.startsWith("tra");        //Expected: false
+print string.endsWith("ue");           //Expected: true
+print string.endsWith("uel");          //Expected: false
+
+print string.toUpper();                //Expected: TRUE
+print string.toUpper().toLower();      //Expected: true
+
+print string.isEmpty();                //Expected: false
+print "".isEmpty();                    //Expected: true
+
+print String.fromNumber(5) + " units"; //Expected: 5 units

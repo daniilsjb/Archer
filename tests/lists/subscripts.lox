@@ -1,0 +1,27 @@
+var list = [1, 2, 3, 4];
+
+print list[0]; //Expected: 1
+print list[1]; //Expected: 2
+print list[2]; //Expected: 3
+print list[3]; //Expected: 4
+
+print list[-1]; //Expected: 4
+print list[-2]; //Expected: 3
+print list[-3]; //Expected: 2
+print list[-4]; //Expected: 1
+
+print list[0] = "A"; //Expected: A
+print list[1] = "B"; //Expected: B
+print list[2] = "C"; //Expected: C
+print list[3] = "D"; //Expected: D
+
+print list; //Expected: [A, B, C, D]
+
+print list[-1] = "A"; //Expected: A
+print list[-2] = "B"; //Expected: B
+print list[-3] = "C"; //Expected: C
+print list[-4] = "D"; //Expected: D
+
+print list; //Expected: [D, C, B, A]
+
+print [1, 2, 3][0]; //Expected: 1

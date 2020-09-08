@@ -7,6 +7,7 @@
 #include "objstring.h"
 #include "objnative.h"
 #include "objfunction.h"
+#include "objlist.h"
 #include "common.h"
 #include "memory.h"
 #include "chunk.h"
@@ -268,8 +269,9 @@ static InterpretStatus run(VM* vm)
 #define AS_COMPLEMENT(value) ((int64_t)AS_NUMBER(value))
 
 #define TOP vm->stackTop[-1]
-#define SND vm->stackTop[-2]
-#define THD vm->stackTop[-3]
+#define SECOND vm->stackTop[-2]
+#define THIRD vm->stackTop[-3]
+#define FOURTH vm->stackTop[-4]
 
 #define PUSH(value) vm_push(vm, (value))
 #define POP() vm_pop(vm)
@@ -316,7 +318,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_GREATER: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -326,7 +328,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_GREATER_EQUAL: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -336,7 +338,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_LESS: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -346,7 +348,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_LESS_EQUAL: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -387,15 +389,14 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_ADD: {
-                if (VAL_IS_STRING(TOP, vm) && VAL_IS_STRING(SND, vm)) {
+                if (VAL_IS_STRING(TOP, vm) && VAL_IS_STRING(SECOND, vm)) {
                     ObjectString* b = VAL_AS_STRING(TOP);
-                    ObjectString* a = VAL_AS_STRING(SND);
+                    ObjectString* a = VAL_AS_STRING(SECOND);
                     ObjectString* result = String_Concatenate(vm, a, b);
 
                     POP();
                     TOP = OBJ_VAL(result);
-                } else if (IS_NUMBER(TOP) || IS_NUMBER(SND)) {
-                    //TODO: Only perform this when both are numbers, but also ensure safety assignment still works
+                } else if (IS_NUMBER(TOP) && IS_NUMBER(SECOND)) {
                     double rhs = AS_NUMBER(POP());
                     TOP = NUMBER_VAL(AS_NUMBER(TOP) + rhs);
                 } else {
@@ -405,7 +406,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_SUBTRACT: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -415,7 +416,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_MULTIPLY: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -425,7 +426,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_DIVIDE: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -435,7 +436,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_MODULO: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -445,7 +446,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_POWER: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -464,7 +465,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_BITWISE_AND: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -474,7 +475,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_BITWISE_OR: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -484,7 +485,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_BITWISE_XOR: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -494,7 +495,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_BITWISE_LEFT_SHIFT: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -504,7 +505,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_BITWISE_RIGHT_SHIFT: {
-                if (!IS_NUMBER(TOP) || !IS_NUMBER(SND)) {
+                if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Operands must be numbers");
                 }
@@ -560,20 +561,38 @@ static InterpretStatus run(VM* vm)
                 PUSH(TOP);
                 break;
             }
+            case OP_DUP_TWO: {
+                PUSH(SECOND);
+                PUSH(SECOND);
+                break;
+            }
             case OP_SWAP: {
-                Value tmp = SND;
-                SND = TOP;
+                Value tmp = SECOND;
+                SECOND = TOP;
                 TOP = tmp;
                 break;
             }
             case OP_SWAP_THREE: {
-                Value oldThd = THD;
-                THD = TOP;
+                Value third = THIRD;
+                THIRD = TOP;
 
-                Value oldSnd = SND;
-                SND = oldThd;
+                Value second = SECOND;
+                SECOND = third;
 
-                TOP = oldSnd;
+                TOP = second;
+                break;
+            }
+            case OP_SWAP_FOUR: {
+                Value fourth = FOURTH;
+                FOURTH = TOP;
+
+                Value third = THIRD;
+                THIRD = fourth;
+
+                Value second = SECOND;
+                SECOND = third;
+
+                TOP = second;
                 break;
             }
             case OP_DEFINE_GLOBAL: {
@@ -656,7 +675,7 @@ static InterpretStatus run(VM* vm)
                     return runtime_error(vm, "Properties on objects of type '%s' cannot be assigned.", object->type->name);
                 }
 
-                Object_SetField(object, (Object*)READ_STRING(), SND, vm);
+                Object_SetField(object, (Object*)READ_STRING(), SECOND, vm);
                 POP();
                 break;
             }
@@ -741,25 +760,25 @@ static InterpretStatus run(VM* vm)
             }
             case OP_STATIC_METHOD: {
                 Value method = TOP;
-                ObjectType* clazz = VAL_AS_TYPE(SND);
+                ObjectType* clazz = VAL_AS_TYPE(SECOND);
                 Object_SetMethod((Object*)clazz, (Object*)READ_STRING(), method, vm);
                 vm_pop(vm);
                 break;
             }
             case OP_METHOD: {
                 Value method = TOP;
-                ObjectType* clazz = VAL_AS_TYPE(SND);
+                ObjectType* clazz = VAL_AS_TYPE(SECOND);
                 Object_SetMethodDirectly((Object*)clazz, (Object*)READ_STRING(), method, vm);
                 vm_pop(vm);
                 break;
             }
             case OP_INHERIT: {
-                if (!VAL_IS_TYPE(SND)) {
+                if (!VAL_IS_TYPE(SECOND)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Superclass must be a class.");
                 }
 
-                ObjectType* superclass = VAL_AS_TYPE(SND);
+                ObjectType* superclass = VAL_AS_TYPE(SECOND);
                 if (!(superclass->flags & TF_ALLOW_INHERITANCE)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Class '%s' cannot be inherited from.", superclass->name);
@@ -806,6 +825,75 @@ static InterpretStatus run(VM* vm)
                 ip = frame->ip;
                 break;
             }
+            case OP_LOAD_SUBSCRIPT_SAFE: {
+                if (IS_NIL(SECOND)) {
+                    POP();
+                    TOP = NIL_VAL();
+                    break;
+                }
+            }
+            case OP_LOAD_SUBSCRIPT: {
+                if (!IS_OBJ(SECOND)) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Can only subscript objects.");
+                }
+
+                Object* object = AS_OBJ(SECOND);
+
+                if (!object->type->GetSubscript) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Objects of type '%s' cannot be subscripted.", object->type->name);
+                }
+
+                Value result;
+                frame->ip = ip;
+                if (!Object_GetSubscript(object, TOP, vm, &result)) {
+                    return false;
+                }
+
+                POP();
+                TOP = result;
+                break;
+            }
+            case OP_STORE_SUBSCRIPT_SAFE: {
+                if (IS_NIL(SECOND)) {
+                    POP();
+                    TOP = NIL_VAL();
+                    break;
+                }
+            }
+            case OP_STORE_SUBSCRIPT: {
+                if (!IS_OBJ(SECOND)) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Can only subscript objects.");
+                }
+
+                Object* object = AS_OBJ(SECOND);
+
+                if (!object->type->SetSubscript) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Objects of type '%s' cannot be subscripted.", object->type->name);
+                }
+
+                frame->ip = ip;
+                if (!Object_SetSubscript(object, TOP, THIRD, vm)) {
+                    return false;
+                }
+
+                POP();
+                POP();
+                break;
+            }
+            case OP_LIST: {
+                uint8_t elementCount = READ_BYTE();
+                ObjectList* list = List_New(vm);
+                for (Value* value = vm->stackTop - elementCount; value < vm->stackTop; value++) {
+                    List_Append(list, *value, vm);
+                }
+                vm->stackTop -= elementCount;
+                PUSH(OBJ_VAL(list));
+                break;
+            }
         }
     }
 
@@ -823,8 +911,8 @@ static InterpretStatus run(VM* vm)
 #undef AS_COMPLEMENT
 
 #undef TOP
-#undef SND
-#undef THD
+#undef SECOND
+#undef THIRD
 
 #undef PUSH
 #undef POP

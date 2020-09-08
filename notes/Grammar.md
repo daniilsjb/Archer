@@ -17,7 +17,7 @@ Operators and their meanings:
 - operator `+` denotes *iteration* (one or more matches)
 - operator `()` denotes *grouping* (a sequence of symbols is treated as a single rule)
 - operator `..` denotes *range* (match anything between two iterative values)
-- operator `→` denotes *binding* (name is bound to a rule)
+- operator `→` denotes *binding* (rule is bound to a name)
 
 ### Symbols
 
@@ -82,7 +82,7 @@ Statement → ForStatement
 #### For
 
 ```
-ForStatement → "for" "(" (VariableDeclaration | ExpressionStatement | ";")? Expression? ";" Expression? ")" Statement
+ForStatement → "for" "(" (VariableDeclaration | ExpressionStatement | ";") Expression? ";" Expression? ")" Statement
 ```
 
 #### While
@@ -147,7 +147,7 @@ ExpressionStatement → Expression ";"
 
 | Precedence | Title           | Operators                                                                 | Associativity |
 |:----------:| --------------- | ------------------------------------------------------------------------- | ------------- |
-| 1          | Postfix         | `++`, `--`,  `.`, `?.`, `()`                                              | Left-to-right |
+| 1          | Postfix         | `++`, `--`,  `.`, `?.`, `[]`, `?[]`, `()`                                 | Left-to-right |
 | 2          | Prefix          | `++`, `--`, `-`, `~`, `!`                                                 | Right-to-left |
 | 3          | Exponentiation  | `**`                                                                      | Left-to-right |
 | 4          | Multiplicative  | `*`, `/`, `%`                                                             | Left-to-right |
@@ -265,12 +265,15 @@ PostfixExpression → PrimaryExpression PostfixUnarySuffix*
 PostfixUnarySuffix → PostfixUnaryOperator
                    | CallSuffix
                    | NavigationSuffix
+                   | SubscriptSuffix
 
 CallSuffix → "(" Arguments? ")"
 
 Arguments → Expression ("," Expression)*
 
 NavigationSuffix → MemberAccessOperator Identifier
+
+SubscriptSuffix → SubscriptOperator Expression "]"
 ```
 
 #### Primary
@@ -292,12 +295,15 @@ SuperExpression → "super" "." Identifier
 Literal → BooleanLiteral
         | NumberLiteral
         | StringLiteral
+        | ListLiteral
         | LambdaLiteral
         | "nil"
         | "this"
 
 BooleanLiteral → "true"
                | "false"
+
+ListLiteral → "[" (Expression ("," Expression)?)? "]"
 
 LambdaLiteral → "\" Parameters? "->" (Expression | BlockStatement)
 ```
@@ -315,6 +321,9 @@ Parameters → Identifier ("," Identifier)*
 ```
 MemberAccessOperator → "."
                      | "?."
+
+SubscriptOperator → "["
+                  | "?["
 
 PostfixUnaryOperator → "++"
                      | "--"

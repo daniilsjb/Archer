@@ -26,6 +26,7 @@ static void print_expression_stmt(int indent, Statement* stmt);
 static void print_expression(int indent, Expression* expr);
 static void print_call_expr(int indent, Expression* expr);
 static void print_property_expr(int indent, Expression* expr);
+static void print_subscript_expr(int indent, Expression* expr);
 static void print_super_expr(int indent, Expression* expr);
 static void print_assignment_expr(int indent, Expression* expr);
 static void print_compound_assignment_expr(int indent, Expression* expr);
@@ -38,6 +39,7 @@ static void print_binary_expr(int indent, Expression* expr);
 static void print_unary_expr(int indent, Expression* expr);
 static void print_literal_expr(int indent, Expression* expr);
 static void print_lambda_expr(int indent, Expression* expr);
+static void print_list_expr(int indent, Expression* expr);
 static void print_identifier_expr(int indent, Expression* expr);
 
 static void print_when_entry(int indent, WhenEntry* entry);
@@ -318,6 +320,7 @@ void print_expression(int indent, Expression* expr)
     switch (expr->type) {
         case EXPR_CALL: print_call_expr(indent, expr); return;
         case EXPR_PROPERTY: print_property_expr(indent, expr); return;
+        case EXPR_SUBSCRIPT: print_subscript_expr(indent, expr); return;
         case EXPR_SUPER: print_super_expr(indent, expr); return;
         case EXPR_ASSIGNMENT: print_assignment_expr(indent, expr); return;
         case EXPR_COMPOUND_ASSIGNMNET: print_compound_assignment_expr(indent, expr); return;
@@ -330,6 +333,7 @@ void print_expression(int indent, Expression* expr)
         case EXPR_UNARY: print_unary_expr(indent, expr); return;
         case EXPR_LITERAL: print_literal_expr(indent, expr); return;
         case EXPR_LAMBDA: print_lambda_expr(indent, expr); return;
+        case EXPR_LIST: print_list_expr(indent, expr); return;
         case EXPR_IDENTIFIER: print_identifier_expr(indent, expr); return;
     }
 }
@@ -364,6 +368,26 @@ void print_property_expr(int indent, Expression* expr)
     print_expr_context(indent, context);
 
     bool safe = expr->as.propertyExpr.safe;
+    print_indented(indent, "Safe: %s\n", safe ? "true" : "false");
+}
+
+void print_subscript_expr(int indent, Expression* expr)
+{
+    print_header(indent, "Subscript");
+    indent++;
+
+    Expression* object = expr->as.subscriptExpr.object;
+    print_indented(indent, "Object:\n");
+    print_expression(indent + 1, object);
+
+    Expression* index = expr->as.subscriptExpr.index;
+    print_indented(indent, "Index:\n");
+    print_expression(indent + 1, index);
+
+    ExprContext context = expr->as.subscriptExpr.context;
+    print_expr_context(indent, context);
+
+    bool safe = expr->as.subscriptExpr.safe;
     print_indented(indent, "Safe: %s\n", safe ? "true" : "false");
 }
 
@@ -522,6 +546,15 @@ void print_lambda_expr(int indent, Expression* expr)
 {
     print_header(indent, "Lambda");
     print_function(indent + 1, expr->as.lambdaExpr.function);
+}
+
+void print_list_expr(int indent, Expression* expr)
+{
+    print_header(indent, "List");
+    indent++;
+
+    print_indented(indent, "Elements:\n");
+    print_expression_list(indent + 1, expr->as.listExpr.elements);
 }
 
 void print_identifier_expr(int indent, Expression* expr)

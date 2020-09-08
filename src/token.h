@@ -22,6 +22,7 @@ typedef enum {
     TOKEN_BACKSLASH,
     TOKEN_QUESTION_DOT,
     TOKEN_QUESTION_COLON,
+    TOKEN_QUESTION_L_BRACKET,
 
     /* Arithmetic */
     TOKEN_TILDE,

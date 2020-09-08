@@ -1,0 +1,11 @@
+var list = [1, 2, 3];
+print list;          //Expected: [1, 2, 3]
+print list.length(); //Expected: 3
+
+list.append(4);
+print list;          //Expected: [1, 2, 3, 4]
+print list.length(); //Expected: 4
+
+list.pop();
+print list;          //Expected: [1, 2, 3]
+print list.length(); //Expected: 3

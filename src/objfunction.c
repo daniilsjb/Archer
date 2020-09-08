@@ -55,6 +55,8 @@ ObjectType* Function_NewType(VM* vm)
     type->Hash = NULL;
     type->GetField = NULL;
     type->SetField = NULL;
+    type->GetSubscript = NULL;
+    type->SetSubscript = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
     type->Call = NULL;
@@ -104,6 +106,8 @@ ObjectType* Upvalue_NewType(VM* vm)
     type->Hash = NULL;
     type->GetField = NULL;
     type->SetField = NULL;
+    type->GetSubscript = NULL;
+    type->SetSubscript = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
     type->Call = NULL;
@@ -169,6 +173,8 @@ ObjectType* Closure_NewType(VM* vm)
     type->Hash = NULL;
     type->GetField = NULL;
     type->SetField = NULL;
+    type->GetSubscript = NULL;
+    type->SetSubscript = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
     type->Call = closure_call;
@@ -231,6 +237,8 @@ ObjectType* BoundMethod_NewType(VM* vm)
     type->Hash = NULL;
     type->GetField = NULL;
     type->SetField = NULL;
+    type->GetSubscript = NULL;
+    type->SetSubscript = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
     type->Call = bound_method_call;

@@ -9,7 +9,23 @@ fun getFoo() {
     return foo;
 }
 
-
 print getFoo().field++; //Expected: 10
 print foo.field;        //Expected: 11
 print foo.counter;      //Expected: 1
+
+var bar = [1, 2, 3];
+var counter = 0;
+
+fun getBar() {
+    counter++;
+    return bar;
+}
+
+fun getIndex() {
+    counter++;
+    return 0;
+}
+
+getBar()[getIndex()]++;
+print bar;     //Expected: [2, 2, 3]
+print counter; //Expected: 2

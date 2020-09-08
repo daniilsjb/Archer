@@ -1,0 +1,7 @@
+var list = [[1, 2, 3], [4, 5, 6]];
+
+print list;       //Expected: [[1, 2, 3], [4, 5, 6]]
+print list[0];    //Expected: [1, 2, 3]
+print list[1];    //Expected: [4, 5, 6]
+print list[0][0]; //Expected: 1
+print list[1][0]; //Expected: 4

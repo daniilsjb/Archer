@@ -33,6 +33,7 @@ typedef struct VM {
     ObjectType* closureType;
     ObjectType* nativeType;
     ObjectType* boundMethodType;
+    ObjectType* listType;
 
     CallFrame frames[FRAMES_MAX];
     size_t frameCount;

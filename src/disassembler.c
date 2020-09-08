@@ -164,10 +164,14 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("POP", offset);
         case OP_DUP:
             return simple_instruction("DUP", offset);
+        case OP_DUP_TWO:
+            return simple_instruction("DUP_TWO", offset);
         case OP_SWAP:
             return simple_instruction("SWAP", offset);
         case OP_SWAP_THREE:
             return simple_instruction("SWAP_THREE", offset);
+        case OP_SWAP_FOUR:
+            return simple_instruction("SWAP_FOUR", offset);
         case OP_DEFINE_GLOBAL:
             return constant_instruction("DEFINE_GLOBAL", chunk, offset);
         case OP_LOAD_GLOBAL:
@@ -216,6 +220,16 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return invoke_instruction("SUPER_INVOKE", chunk, offset);
         case OP_END_CLASS:
             return simple_instruction("END_CLASS", offset);
+        case OP_LIST:
+            return byte_instruction("LIST", chunk, offset);
+        case OP_LOAD_SUBSCRIPT:
+            return simple_instruction("LOAD_SUBSCRIPT", offset);
+        case OP_LOAD_SUBSCRIPT_SAFE:
+            return simple_instruction("LOAD_SUBSCRIPT_SAFE", offset);
+        case OP_STORE_SUBSCRIPT:
+            return simple_instruction("STORE_SUBSCRIPT", offset);
+        case OP_STORE_SUBSCRIPT_SAFE:
+            return simple_instruction("STORE_SUBSCRIPT_SAFE", offset);
         default:
             return unknown_instruction(instruction, offset);
     }

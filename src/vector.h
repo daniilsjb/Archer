@@ -38,4 +38,6 @@
         vector->count++;                                                                   \
     } while (0)                                                                            \
 
+#define VECTOR_POP(vec) (vec)->count--
+
 #endif

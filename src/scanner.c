@@ -266,6 +266,7 @@ Token scanner_scan_token(Scanner* scanner)
             switch (peek(scanner)) {
                 case '.': advance(scanner); return make_token(scanner, TOKEN_QUESTION_DOT);
                 case ':': advance(scanner); return make_token(scanner, TOKEN_QUESTION_COLON);
+                case '[': advance(scanner); return make_token(scanner, TOKEN_QUESTION_L_BRACKET);
             }
             return make_token(scanner, TOKEN_QUESTION);
         }

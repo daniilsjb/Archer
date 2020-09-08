@@ -44,6 +44,8 @@ ObjectType* Native_NewType(VM* vm)
     type->Hash = NULL;
     type->GetField = NULL;
     type->SetField = NULL;
+    type->GetSubscript = NULL;
+    type->SetSubscript = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
     type->Call = native_call;

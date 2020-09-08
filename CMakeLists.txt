@@ -49,4 +49,8 @@ add_executable (clox
     "src/objnative.c"
     "src/objfunction.h"
     "src/objfunction.c"
-  "src/library.h" "src/library.c")
+    "src/library.h"
+    "src/library.c"
+    "src/objlist.h"
+    "src/objlist.c"
+)

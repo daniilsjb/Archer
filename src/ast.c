@@ -336,6 +336,7 @@ void ast_delete_expression(Expression* expression)
     switch (expression->type) {
         case EXPR_CALL: ast_delete_call_expr(expression); return;
         case EXPR_PROPERTY: ast_delete_property_expr(expression); return;
+        case EXPR_SUBSCRIPT: ast_delete_subscript_expr(expression); return;
         case EXPR_SUPER: ast_delete_super_expr(expression); return;
         case EXPR_ASSIGNMENT: ast_delete_assignment_expr(expression); return;
         case EXPR_COMPOUND_ASSIGNMNET: ast_delete_compound_assignment_expr(expression); return;
@@ -348,6 +349,7 @@ void ast_delete_expression(Expression* expression)
         case EXPR_UNARY: ast_delete_unary_expr(expression); return;
         case EXPR_LITERAL: ast_delete_literal_expr(expression); return;
         case EXPR_LAMBDA: ast_delete_lambda_expr(expression); return;
+        case EXPR_LIST: ast_delete_list_expr(expression); return;
         case EXPR_IDENTIFIER: ast_delete_identifier_expr(expression); return;
     }
 }
@@ -390,6 +392,28 @@ Expression* ast_new_property_expr(Expression* object, Token property, ExprContex
 void ast_delete_property_expr(Expression* expression)
 {
     ast_delete_expression(expression->as.propertyExpr.object);
+    raw_deallocate(expression);
+}
+
+Expression* ast_new_subscript_expr(Expression* object, Expression* index, ExprContext context, bool safe)
+{
+    Expression* expr = raw_allocate(sizeof(Expression));
+    if (!expr) {
+        return NULL;
+    }
+
+    expr->type = EXPR_SUBSCRIPT;
+    expr->as.subscriptExpr.object = object;
+    expr->as.subscriptExpr.index = index;
+    expr->as.subscriptExpr.context = context;
+    expr->as.subscriptExpr.safe = safe;
+    return expr;
+}
+
+void ast_delete_subscript_expr(Expression* expression)
+{
+    ast_delete_expression(expression->as.subscriptExpr.object);
+    ast_delete_expression(expression->as.subscriptExpr.index);
     raw_deallocate(expression);
 }
 
@@ -625,6 +649,24 @@ Expression* ast_new_lambda_expr(Function* function)
 void ast_delete_lambda_expr(Expression* expression)
 {
     ast_delete_function(expression->as.lambdaExpr.function);
+    raw_deallocate(expression);
+}
+
+Expression* ast_new_list_expr(ExpressionList* elements)
+{
+    Expression* expr = raw_allocate(sizeof(Expression));
+    if (!expr) {
+        return NULL;
+    }
+
+    expr->type = EXPR_LIST;
+    expr->as.listExpr.elements = elements;
+    return expr;
+}
+
+void ast_delete_list_expr(Expression* expression)
+{
+    ast_delete_expression_list(expression->as.listExpr.elements);
     raw_deallocate(expression);
 }
 

@@ -1,0 +1,8 @@
+print typeof("Hello!");    //Expected: <class 'String'>
+print typeof(String);      //Expected: <class 'MetaType'>
+
+class Foo {}
+print typeof(Foo());       //Expected: <class 'Foo'>
+print typeof(Foo);         //Expected: <class 'MetaType'>
+
+print typeof(typeof(Foo)); //Expected: <class 'MetaType'>

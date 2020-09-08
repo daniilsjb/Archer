@@ -1,2 +1,1 @@
 print "Hello, " + "World!"; //Expected: Hello, World!
-print "A" + "B" == "AB";    //Expected: true

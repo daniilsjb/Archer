@@ -1,0 +1,2 @@
+print [1, 2, "Hello", [4, 5, 3], true]; //Expected: [1, 2, Hello, [4, 5, 3], true]
+print [];                               //Expected: []

@@ -1,0 +1,13 @@
+var foo = [10, 13, 8];
+
+print --foo[0]; //Expected: 9
+print foo[0];   //Expected: 9
+
+print ++foo[0]; //Expected: 10
+print foo[0];   //Expected: 10
+
+print foo[0]++; //Expected: 10
+print foo[0];   //Expected: 11
+
+print foo[0]--; //Expected: 11
+print foo[0];   //Expected: 10

@@ -147,6 +147,8 @@ ObjectType* String_NewType(VM* vm)
     type->Hash = string_hash;
     type->GetField = NULL;
     type->SetField = NULL;
+    type->GetSubscript = NULL;
+    type->SetSubscript = NULL;
     type->GetMethod = Object_GenericGetMethod;
     type->SetMethod = NULL;
     type->Call = NULL;

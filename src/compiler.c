@@ -107,6 +107,7 @@ static void compile_expression_stmt(Compiler* compiler, Statement* stmt);
 static void compile_expression(Compiler* compiler, Expression* expr);
 static void compile_call_expr(Compiler* compiler, Expression* expr);
 static void compile_property_expr(Compiler* compiler, Expression* expr);
+static void compile_subscript_expr(Compiler* compiler, Expression* expr);
 static void compile_super_expr(Compiler* compiler, Expression* expr);
 static void compile_assignment_expr(Compiler* compiler, Expression* expr);
 static void compile_compound_assignment_expr(Compiler* compiler, Expression* expr);
@@ -119,6 +120,7 @@ static void compile_binary_expr(Compiler* compiler, Expression* expr);
 static void compile_unary_expr(Compiler* compiler, Expression* expr);
 static void compile_literal_expr(Compiler* compiler, Expression* expr);
 static void compile_lambda_expr(Compiler* compiler, Expression* expr);
+static void compile_list_expr(Compiler* compiler, Expression* expr);
 static void compile_identifier_expr(Compiler* compiler, Expression* expr);
 
 static void compile_when_entry(Compiler* compiler, WhenEntry* entry);
@@ -130,6 +132,7 @@ static void compile_function(Compiler* compiler, Function* function, CompilerTyp
 static void compile_named_function(Compiler* compiler, NamedFunction* function, CompilerType type);
 static size_t compile_method_list(Compiler* compiler, MethodList* list);
 static size_t compile_argument_list(Compiler* compiler, ArgumentList* list);
+static size_t compile_expression_list(Compiler* compiler, ExpressionList* list);
 static size_t compile_declaration_list(Compiler* compiler, DeclarationList* list);
 
 static void compiler_init(Compiler* compiler, VM* vm, CompilerType type, Token identifier)
@@ -842,6 +845,7 @@ void compile_expression(Compiler* compiler, Expression* expr)
     switch (expr->type) {
         case EXPR_CALL: compile_call_expr(compiler, expr); return;
         case EXPR_PROPERTY: compile_property_expr(compiler, expr); return;
+        case EXPR_SUBSCRIPT: compile_subscript_expr(compiler, expr); return;
         case EXPR_SUPER: compile_super_expr(compiler, expr); return;
         case EXPR_ASSIGNMENT: compile_assignment_expr(compiler, expr); return;
         case EXPR_COMPOUND_ASSIGNMNET: compile_compound_assignment_expr(compiler, expr); return;
@@ -854,6 +858,7 @@ void compile_expression(Compiler* compiler, Expression* expr)
         case EXPR_UNARY: compile_unary_expr(compiler, expr); return;
         case EXPR_LITERAL: compile_literal_expr(compiler, expr); return;
         case EXPR_LAMBDA: compile_lambda_expr(compiler, expr); return;
+        case EXPR_LIST: compile_list_expr(compiler, expr); return;
         case EXPR_IDENTIFIER: compile_identifier_expr(compiler, expr); return;
     }
 }
@@ -936,6 +941,20 @@ void compile_property_expr(Compiler* compiler, Expression* expr)
     bool safe = expr->as.propertyExpr.safe;
     uint8_t operation = context == LOAD ? (safe ? OP_LOAD_PROPERTY_SAFE : OP_LOAD_PROPERTY) : (safe ? OP_STORE_PROPERTY_SAFE : OP_STORE_PROPERTY);
     emit_bytes(compiler, operation, name);
+}
+
+void compile_subscript_expr(Compiler* compiler, Expression* expr)
+{
+    Expression* object = expr->as.subscriptExpr.object;
+    compile_expression(compiler, object);
+
+    Expression* index = expr->as.subscriptExpr.index;
+    compile_expression(compiler, index);
+
+    ExprContext context = expr->as.subscriptExpr.context;
+    bool safe = expr->as.subscriptExpr.safe;
+    uint8_t operation = context == LOAD ? (safe ? OP_LOAD_SUBSCRIPT_SAFE : OP_LOAD_SUBSCRIPT) : (safe ? OP_STORE_SUBSCRIPT_SAFE : OP_STORE_SUBSCRIPT);
+    emit_byte(compiler, operation);
 }
 
 void compile_super_expr(Compiler* compiler, Expression* expr)
@@ -1025,6 +1044,27 @@ static void compile_compound_property_assignment(Compiler* compiler, Expression*
     emit_bytes(compiler, safe ? OP_STORE_PROPERTY_SAFE : OP_STORE_PROPERTY, name);
 }
 
+static void compile_compound_subscript_assignment(Compiler* compiler, Expression* expr)
+{
+    Expression* target = expr->as.compoundAssignmentExpr.target;
+
+    compile_expression(compiler, target->as.subscriptExpr.object);
+    compile_expression(compiler, target->as.subscriptExpr.index);
+    emit_byte(compiler, OP_DUP_TWO);
+
+    bool safe = target->as.subscriptExpr.safe;
+    emit_byte(compiler, safe ? OP_LOAD_SUBSCRIPT_SAFE : OP_LOAD_SUBSCRIPT);
+
+    compile_expression(compiler, expr->as.compoundAssignmentExpr.value);
+
+    Token op = expr->as.compoundAssignmentExpr.op;
+    compiler->token = op;
+    emit_byte(compiler, compound_opcode(op));
+
+    emit_byte(compiler, OP_SWAP_THREE);
+    emit_byte(compiler, safe ? OP_STORE_SUBSCRIPT_SAFE : OP_STORE_SUBSCRIPT);
+}
+
 void compile_compound_assignment_expr(Compiler* compiler, Expression* expr)
 {
     Expression* target = expr->as.compoundAssignmentExpr.target;
@@ -1035,6 +1075,10 @@ void compile_compound_assignment_expr(Compiler* compiler, Expression* expr)
         }
         case EXPR_PROPERTY: {
             compile_compound_property_assignment(compiler, expr);
+            break;
+        }
+        case EXPR_SUBSCRIPT: {
+            compile_compound_subscript_assignment(compiler, expr);
             break;
         }
         default: {
@@ -1091,6 +1135,26 @@ static void compile_property_postfix_inc(Compiler* compiler, Expression* expr)
     emit_byte(compiler, OP_POP);
 }
 
+static void compile_subscript_postfix_inc(Compiler* compiler, Expression* expr)
+{
+    Expression* target = expr->as.postfixIncExpr.target;
+
+    compile_expression(compiler, target->as.subscriptExpr.object);
+    compile_expression(compiler, target->as.subscriptExpr.index);
+    emit_byte(compiler, OP_DUP_TWO);
+
+    emit_byte(compiler, OP_LOAD_SUBSCRIPT);
+    emit_bytes(compiler, OP_DUP, OP_SWAP_FOUR);
+
+    Token op = expr->as.postfixIncExpr.op;
+    compiler->token = op;
+    emit_byte(compiler, increment_operation(op));
+
+    emit_byte(compiler, OP_SWAP_THREE);
+    emit_byte(compiler, OP_STORE_SUBSCRIPT);
+    emit_byte(compiler, OP_POP);
+}
+
 void compile_postfix_inc_expr(Compiler* compiler, Expression* expr)
 {
     Expression* target = expr->as.postfixIncExpr.target;
@@ -1101,6 +1165,10 @@ void compile_postfix_inc_expr(Compiler* compiler, Expression* expr)
         }
         case EXPR_PROPERTY: {
             compile_property_postfix_inc(compiler, expr);
+            break;
+        }
+        case EXPR_SUBSCRIPT: {
+            compile_subscript_postfix_inc(compiler, expr);
             break;
         }
         default: {
@@ -1142,6 +1210,23 @@ static void compile_property_prefix_inc(Compiler* compiler, Expression* expr)
     emit_bytes(compiler, OP_STORE_PROPERTY, name);
 }
 
+static void compile_subscript_prefix_inc(Compiler* compiler, Expression* expr)
+{
+    Expression* target = expr->as.prefixIncExpr.target;
+
+    compile_expression(compiler, target->as.subscriptExpr.object);
+    compile_expression(compiler, target->as.subscriptExpr.index);
+    emit_byte(compiler, OP_DUP_TWO);
+
+    emit_byte(compiler, OP_LOAD_SUBSCRIPT);
+
+    Token op = expr->as.prefixIncExpr.op;
+    emit_byte(compiler, increment_operation(op));
+
+    emit_byte(compiler, OP_SWAP_THREE);
+    emit_byte(compiler, OP_STORE_SUBSCRIPT);
+}
+
 void compile_prefix_inc_expr(Compiler* compiler, Expression* expr)
 {
     Expression* target = expr->as.prefixIncExpr.target;
@@ -1152,6 +1237,10 @@ void compile_prefix_inc_expr(Compiler* compiler, Expression* expr)
         }
         case EXPR_PROPERTY: {
             compile_property_prefix_inc(compiler, expr);
+            break;
+        }
+        case EXPR_SUBSCRIPT: {
+            compile_subscript_prefix_inc(compiler, expr);
             break;
         }
         default: {
@@ -1321,6 +1410,15 @@ void compile_lambda_expr(Compiler* compiler, Expression* expr)
     compile_function(compiler, expr->as.lambdaExpr.function, TYPE_LAMBDA, empty_token());
 }
 
+void compile_list_expr(Compiler* compiler, Expression* expr)
+{
+    size_t elementCount = compile_expression_list(compiler, expr->as.listExpr.elements);
+    if (elementCount > 255) {
+        error(compiler, "Cannot have more than 255 elements in a list expression.");
+    }
+    emit_bytes(compiler, OP_LIST, (uint8_t)elementCount);
+}
+
 void compile_identifier_expr(Compiler* compiler, Expression* expr)
 {
     Token identifier = expr->as.identifierExpr.identifier;
@@ -1384,8 +1482,23 @@ size_t compile_argument_list(Compiler* compiler, ArgumentList* list)
 
         count++;
         if (count > 255) {
-            error(compiler, "Cannot have more than 255 parameters.");
+            error(compiler, "Cannot have more than 255 arguments.");
         }
+
+        current = current->next;
+    }
+
+    return count;
+}
+
+size_t compile_expression_list(Compiler* compiler, ExpressionList* list)
+{
+    ExpressionList* current = list;
+    size_t count = 0;
+
+    while (current) {
+        compile_expression(compiler, current->expression);
+        count++;
 
         current = current->next;
     }

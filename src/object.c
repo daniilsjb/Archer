@@ -80,6 +80,16 @@ bool Object_SetField(Object* object, Object* key, Value value, VM* vm)
     return object->type->SetField(object, key, value, vm);
 }
 
+bool Object_GetSubscript(Object* object, Value index, VM* vm, Value* result)
+{
+    return object->type->GetSubscript(object, index, vm, result);
+}
+
+bool Object_SetSubscript(Object* object, Value index, Value value, VM* vm)
+{
+    return object->type->SetSubscript(object, index, value, vm);
+}
+
 bool Object_GetMethod(Object* object, Object* key, VM* vm, Value* result)
 {
     if (!object->type->GetMethod(object->type, key, vm, result)) {

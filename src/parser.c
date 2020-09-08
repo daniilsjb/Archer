@@ -65,6 +65,7 @@ static Statement* expression_stmt(Parser* parser);
 static Expression* expression(Parser* parser);
 static Expression* literal_expr(Parser* parser);
 static Expression* lambda_expr(Parser* parser);
+static Expression* list_expr(Parser* parser);
 static Expression* identifier_expr(Parser* parser);
 static Expression* prefix_inc_expr(Parser* parser);
 static Expression* unary_expr(Parser* parser);
@@ -72,6 +73,7 @@ static Expression* grouping_expr(Parser* parser);
 static Expression* super_expr(Parser* parser);
 static Expression* call_expr(Parser* parser, Expression* prefix);
 static Expression* property_expr(Parser* parser, Expression* prefix);
+static Expression* subscript_expr(Parser* parser, Expression* prefix);
 static Expression* postfix_inc_expr(Parser* parser, Expression* prefix);
 static Expression* assignment_expr(Parser* parser, Expression* prefix);
 static Expression* compound_assignment_expr(Parser* parser, Expression* prefix);
@@ -96,81 +98,82 @@ typedef struct {
 } ParseRule;
 
 ParseRule rules[] = {
-    [TOKEN_L_PAREN]           = { grouping_expr,   call_expr,                PREC_POSTFIX,        ASSOC_LEFT   },
-    [TOKEN_R_PAREN]           = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_L_BRACE]           = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_R_BRACE]           = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_L_BRACKET]         = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_R_BRACKET]         = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_COMMA]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_DOT]               = { NULL,            property_expr,            PREC_POSTFIX,        ASSOC_LEFT   },
-    [TOKEN_SEMICOLON]         = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_QUESTION]          = { NULL,            conditional_expr,         PREC_CONDITIONAL,    ASSOC_RIGHT  },
-    [TOKEN_COLON]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_R_ARROW]           = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_BACKSLASH]         = { lambda_expr,     NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_QUESTION_DOT]      = { NULL,            property_expr,            PREC_POSTFIX,        ASSOC_LEFT   },
-    [TOKEN_QUESTION_COLON]    = { NULL,            elvis_expr,               PREC_CONDITIONAL,    ASSOC_RIGHT  },
-    [TOKEN_TILDE]             = { unary_expr,      NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_MINUS]             = { unary_expr,      binary_expr,              PREC_ADDITIVE,       ASSOC_LEFT   },
-    [TOKEN_MINUS_EQUAL]       = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_DOUBLE_MINUS]      = { prefix_inc_expr, postfix_inc_expr,         PREC_POSTFIX,        ASSOC_LEFT   },
-    [TOKEN_PLUS]              = { NULL,            binary_expr,              PREC_ADDITIVE,       ASSOC_LEFT   },
-    [TOKEN_PLUS_EQUAL]        = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_DOUBLE_PLUS]       = { prefix_inc_expr, postfix_inc_expr,         PREC_POSTFIX,        ASSOC_LEFT   },
-    [TOKEN_STAR]              = { NULL,            binary_expr,              PREC_MULTIPLICATIVE, ASSOC_LEFT   },
-    [TOKEN_STAR_EQUAL]        = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_DOUBLE_STAR]       = { NULL,            binary_expr,              PREC_EXPONENTIATION, ASSOC_RIGHT  },
-    [TOKEN_DOUBLE_STAR_EQUAL] = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_SLASH]             = { NULL,            binary_expr,              PREC_MULTIPLICATIVE, ASSOC_LEFT   },
-    [TOKEN_SLASH_EQUAL]       = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_PERCENT]           = { NULL,            binary_expr,              PREC_MULTIPLICATIVE, ASSOC_LEFT   },
-    [TOKEN_PERCENT_EQUAL]     = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_AMPERSAND]         = { NULL,            binary_expr,              PREC_BITWISE_AND,    ASSOC_LEFT   },
-    [TOKEN_AMPERSAND_EQUAL]   = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_PIPE]              = { NULL,            binary_expr,              PREC_BITWISE_OR,     ASSOC_LEFT   },
-    [TOKEN_PIPE_EQUAL]        = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_CARET]             = { NULL,            binary_expr,              PREC_BITWISE_XOR,    ASSOC_LEFT   },
-    [TOKEN_CARET_EQUAL]       = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_BANG]              = { unary_expr,      NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_BANG_EQUAL]        = { NULL,            binary_expr,              PREC_EQUALITY,       ASSOC_LEFT   },
-    [TOKEN_EQUAL]             = { NULL,            assignment_expr,          PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_EQUAL_EQUAL]       = { NULL,            binary_expr,              PREC_EQUALITY,       ASSOC_LEFT   },
-    [TOKEN_GREATER]           = { NULL,            binary_expr,              PREC_RELATIONAL,     ASSOC_LEFT   },
-    [TOKEN_GREATER_EQUAL]     = { NULL,            binary_expr,              PREC_RELATIONAL,     ASSOC_LEFT   },
-    [TOKEN_R_SHIFT]           = { NULL,            binary_expr,              PREC_SHIFT,          ASSOC_LEFT   },
-    [TOKEN_R_SHIFT_EQUAL]     = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_LESS]              = { NULL,            binary_expr,              PREC_RELATIONAL,     ASSOC_LEFT   },
-    [TOKEN_LESS_EQUAL]        = { NULL,            binary_expr,              PREC_RELATIONAL,     ASSOC_LEFT   },
-    [TOKEN_L_SHIFT]           = { NULL,            binary_expr,              PREC_SHIFT,          ASSOC_LEFT   },
-    [TOKEN_L_SHIFT_EQUAL]     = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
-    [TOKEN_AND]               = { NULL,            logical_expr,             PREC_LOGICAL_AND,    ASSOC_LEFT   },
-    [TOKEN_BREAK]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_CLASS]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_CONTINUE]          = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_DEFAULT]           = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_ELSE]              = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_FALSE]             = { literal_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_FUN]               = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_FOR]               = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_IF]                = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_NIL]               = { literal_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_OR]                = { NULL,            logical_expr,             PREC_LOGICAL_OR,     ASSOC_LEFT   },
-    [TOKEN_PRINT]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_RETURN]            = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_STATIC]            = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_SUPER]             = { super_expr,      NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_THIS]              = { literal_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_TRUE]              = { literal_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_VAR]               = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_VAR]               = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_WHILE]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_IDENTIFIER]        = { identifier_expr, NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_STRING]            = { literal_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_NUMBER]            = { literal_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_ERROR]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_NONE]              = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
-    [TOKEN_EOF]               = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_L_PAREN]            = { grouping_expr,   call_expr,                PREC_POSTFIX,        ASSOC_LEFT   },
+    [TOKEN_R_PAREN]            = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_L_BRACE]            = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_R_BRACE]            = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_L_BRACKET]          = { list_expr,       subscript_expr,           PREC_POSTFIX,        ASSOC_LEFT   },
+    [TOKEN_R_BRACKET]          = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_COMMA]              = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_DOT]                = { NULL,            property_expr,            PREC_POSTFIX,        ASSOC_LEFT   },
+    [TOKEN_SEMICOLON]          = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_QUESTION]           = { NULL,            conditional_expr,         PREC_CONDITIONAL,    ASSOC_RIGHT  },
+    [TOKEN_COLON]              = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_R_ARROW]            = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_BACKSLASH]          = { lambda_expr,     NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_QUESTION_DOT]       = { NULL,            property_expr,            PREC_POSTFIX,        ASSOC_LEFT   },
+    [TOKEN_QUESTION_COLON]     = { NULL,            elvis_expr,               PREC_CONDITIONAL,    ASSOC_RIGHT  },
+    [TOKEN_QUESTION_L_BRACKET] = { NULL,            subscript_expr,           PREC_POSTFIX,        ASSOC_LEFT   },
+    [TOKEN_TILDE]              = { unary_expr,      NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_MINUS]              = { unary_expr,      binary_expr,              PREC_ADDITIVE,       ASSOC_LEFT   },
+    [TOKEN_MINUS_EQUAL]        = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
+    [TOKEN_DOUBLE_MINUS]       = { prefix_inc_expr, postfix_inc_expr,         PREC_POSTFIX,        ASSOC_LEFT   },
+    [TOKEN_PLUS]               = { NULL,            binary_expr,              PREC_ADDITIVE,       ASSOC_LEFT   },
+    [TOKEN_PLUS_EQUAL]         = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
+    [TOKEN_DOUBLE_PLUS]        = { prefix_inc_expr, postfix_inc_expr,         PREC_POSTFIX,        ASSOC_LEFT   },
+    [TOKEN_STAR]               = { NULL,            binary_expr,              PREC_MULTIPLICATIVE, ASSOC_LEFT   },
+    [TOKEN_STAR_EQUAL]         = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
+    [TOKEN_DOUBLE_STAR]        = { NULL,            binary_expr,              PREC_EXPONENTIATION, ASSOC_RIGHT  },
+    [TOKEN_DOUBLE_STAR_EQUAL]  = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
+    [TOKEN_SLASH]              = { NULL,            binary_expr,              PREC_MULTIPLICATIVE, ASSOC_LEFT   },
+    [TOKEN_SLASH_EQUAL]        = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
+    [TOKEN_PERCENT]            = { NULL,            binary_expr,              PREC_MULTIPLICATIVE, ASSOC_LEFT   },
+    [TOKEN_PERCENT_EQUAL]      = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
+    [TOKEN_AMPERSAND]          = { NULL,            binary_expr,              PREC_BITWISE_AND,    ASSOC_LEFT   },
+    [TOKEN_AMPERSAND_EQUAL]    = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
+    [TOKEN_PIPE]               = { NULL,            binary_expr,              PREC_BITWISE_OR,     ASSOC_LEFT   },
+    [TOKEN_PIPE_EQUAL]         = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
+    [TOKEN_CARET]              = { NULL,            binary_expr,              PREC_BITWISE_XOR,    ASSOC_LEFT   },
+    [TOKEN_CARET_EQUAL]        = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
+    [TOKEN_BANG]               = { unary_expr,      NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_BANG_EQUAL]         = { NULL,            binary_expr,              PREC_EQUALITY,       ASSOC_LEFT   },
+    [TOKEN_EQUAL]              = { NULL,            assignment_expr,          PREC_ASSIGNMENT,     ASSOC_RIGHT  },
+    [TOKEN_EQUAL_EQUAL]        = { NULL,            binary_expr,              PREC_EQUALITY,       ASSOC_LEFT   },
+    [TOKEN_GREATER]            = { NULL,            binary_expr,              PREC_RELATIONAL,     ASSOC_LEFT   },
+    [TOKEN_GREATER_EQUAL]      = { NULL,            binary_expr,              PREC_RELATIONAL,     ASSOC_LEFT   },
+    [TOKEN_R_SHIFT]            = { NULL,            binary_expr,              PREC_SHIFT,          ASSOC_LEFT   },
+    [TOKEN_R_SHIFT_EQUAL]      = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
+    [TOKEN_LESS]               = { NULL,            binary_expr,              PREC_RELATIONAL,     ASSOC_LEFT   },
+    [TOKEN_LESS_EQUAL]         = { NULL,            binary_expr,              PREC_RELATIONAL,     ASSOC_LEFT   },
+    [TOKEN_L_SHIFT]            = { NULL,            binary_expr,              PREC_SHIFT,          ASSOC_LEFT   },
+    [TOKEN_L_SHIFT_EQUAL]      = { NULL,            compound_assignment_expr, PREC_ASSIGNMENT,     ASSOC_RIGHT  },
+    [TOKEN_AND]                = { NULL,            logical_expr,             PREC_LOGICAL_AND,    ASSOC_LEFT   },
+    [TOKEN_BREAK]              = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_CLASS]              = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_CONTINUE]           = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_DEFAULT]            = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_ELSE]               = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_FALSE]              = { literal_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_FUN]                = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_FOR]                = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_IF]                 = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_NIL]                = { literal_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_OR]                 = { NULL,            logical_expr,             PREC_LOGICAL_OR,     ASSOC_LEFT   },
+    [TOKEN_PRINT]              = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_RETURN]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_STATIC]             = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_SUPER]              = { super_expr,      NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_THIS]               = { literal_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_TRUE]               = { literal_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_VAR]                = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_VAR]                = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_WHILE]              = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_IDENTIFIER]         = { identifier_expr, NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_STRING]             = { literal_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_NUMBER]             = { literal_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_ERROR]              = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_NONE]               = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_EOF]                = { NULL,            NULL,                     PREC_NONE,           ASSOC_NONE   },
 };
 
 static void parser_init(Parser* parser, const char* source)
@@ -526,6 +529,20 @@ Expression* lambda_expr(Parser* parser)
     return ast_new_lambda_expr(function);
 }
 
+Expression* list_expr(Parser* parser)
+{
+    ExpressionList* elements = NULL;
+    if (!check(parser, TOKEN_R_BRACKET)) {
+        do {
+            ast_expression_list_append(&elements, expression(parser));
+        } while (match(parser, TOKEN_COMMA));
+    }
+
+    consume(parser, TOKEN_R_BRACKET, "Expected ']' after list expression.");
+
+    return ast_new_list_expr(elements);
+}
+
 Expression* identifier_expr(Parser* parser)
 {
     return ast_new_identifier_expr(parser->previous, LOAD);
@@ -537,6 +554,8 @@ static void set_assignment_context(Parser* parser, Expression* expr)
         expr->as.identifierExpr.context = STORE;
     } else if (expr->type == EXPR_PROPERTY) {
         expr->as.propertyExpr.context = STORE;
+    } else if (expr->type == EXPR_SUBSCRIPT) {
+        expr->as.subscriptExpr.context = STORE;
     } else {
         error(parser, "Invalid assignment target.");
     }
@@ -585,6 +604,14 @@ Expression* property_expr(Parser* parser, Expression* prefix)
     bool safe = parser->previous.type == TOKEN_QUESTION_DOT;
     consume(parser, TOKEN_IDENTIFIER, "Expected property name.");
     return ast_new_property_expr(prefix, parser->previous, LOAD, safe);
+}
+
+Expression* subscript_expr(Parser* parser, Expression* prefix)
+{
+    bool safe = parser->previous.type == TOKEN_QUESTION_L_BRACKET;
+    Expression* index = expression(parser);
+    consume(parser, TOKEN_R_BRACKET, "Expected ']' after subscript.");
+    return ast_new_subscript_expr(prefix, index, LOAD, safe);
 }
 
 Expression* postfix_inc_expr(Parser* parser, Expression* prefix)

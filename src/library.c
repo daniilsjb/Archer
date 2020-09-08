@@ -8,6 +8,7 @@
 #include "objstring.h"
 #include "objnative.h"
 #include "objfunction.h"
+#include "objlist.h"
 
 bool Library_Error(VM* vm, const char* message, Value* args)
 {
@@ -71,6 +72,7 @@ void Library_Init(VM* vm)
     vm->upvalueType = Upvalue_NewType(vm);
     vm->closureType = Closure_NewType(vm);
     vm->boundMethodType = BoundMethod_NewType(vm);
+    vm->listType = List_NewType(vm);
 
     vm->initString = String_FromCString(vm, "init");
 
@@ -80,13 +82,14 @@ void Library_Init(VM* vm)
     Upvalue_PrepareType(vm->upvalueType, vm);
     Closure_PrepareType(vm->closureType, vm);
     BoundMethod_PrepareType(vm->boundMethodType, vm);
+    List_PrepareType(vm->listType, vm);
 
     vm_push(vm, OBJ_VAL(String_FromCString(vm, "String")));
-    table_put(vm, &vm->globals, String_FromCString(vm, "String"), OBJ_VAL(vm->stringType));
+    table_put(vm, &vm->globals, VAL_AS_STRING(vm->stackTop[-1]), OBJ_VAL(vm->stringType));
     vm_pop(vm);
 
     define_native(vm, "clock", clock_native, 0);
     define_native(vm, "abs", abs_native, 1);
     define_native(vm, "pow", pow_native, 2);
-    define_native(vm, "typeOf", typeof_native, 1);
+    define_native(vm, "typeof", typeof_native, 1);
 }

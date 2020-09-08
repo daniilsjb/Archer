@@ -1,0 +1,9 @@
+var listA = [1, 2, 3];
+print listA?[0]; //Expected: 1
+print listA?[1]; //Expected: 2
+print listA?[2]; //Expected: 3
+
+var listB = nil;
+print listB?[0]; //Expected: nil
+print listB?[1]; //Expected: nil
+print listB?[2]; //Expected: nil

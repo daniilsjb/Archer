@@ -128,6 +128,7 @@ typedef struct Expression {
     enum {
         EXPR_CALL,
         EXPR_PROPERTY,
+        EXPR_SUBSCRIPT,
         EXPR_SUPER,
         EXPR_ASSIGNMENT,
         EXPR_COMPOUND_ASSIGNMNET,
@@ -140,6 +141,7 @@ typedef struct Expression {
         EXPR_POSTFIX_INC,
         EXPR_LITERAL,
         EXPR_LAMBDA,
+        EXPR_LIST,
         EXPR_IDENTIFIER,
     } type;
 
@@ -155,6 +157,13 @@ typedef struct Expression {
             ExprContext context;
             bool safe;
         } propertyExpr;
+
+        struct {
+            Expression* object;
+            Expression* index;
+            ExprContext context;
+            bool safe;
+        } subscriptExpr;
 
         struct {
             Token keyword;
@@ -217,6 +226,10 @@ typedef struct Expression {
         struct {
             Function* function;
         } lambdaExpr;
+
+        struct {
+            ExpressionList* elements;
+        } listExpr;
 
         struct {
             Token identifier;
@@ -332,6 +345,8 @@ Expression* ast_new_call_expr(Expression* callee, ArgumentList* arguments);
 void ast_delete_call_expr(Expression* expression);
 Expression* ast_new_property_expr(Expression* object, Token property, ExprContext context, bool safe);
 void ast_delete_property_expr(Expression* expression);
+Expression* ast_new_subscript_expr(Expression* object, Expression* index, ExprContext context, bool safe);
+void ast_delete_subscript_expr(Expression* expression);
 Expression* ast_new_super_expr(Token keyword, Token method);
 void ast_delete_super_expr(Expression* expression);
 Expression* ast_new_assignment_expr(Expression* target, Expression* value);
@@ -356,6 +371,8 @@ Expression* ast_new_literal_expr(Token value);
 void ast_delete_literal_expr(Expression* expression);
 Expression* ast_new_lambda_expr(Function* function);
 void ast_delete_lambda_expr(Expression* expression);
+Expression* ast_new_list_expr(ExpressionList* elements);
+void ast_delete_list_expr(Expression* expression);
 Expression* ast_new_identifier_expr(Token identifier, ExprContext context);
 void ast_delete_identifier_expr(Expression* expression);
 
