@@ -170,7 +170,7 @@ Expression → AssignmentExpression
 #### Assignment
 
 ```
-AssignmentExpression → (PostfixExpression MemberAccessOperator?)? Identifier AssignmentOperator AssignmentExpression
+AssignmentExpression → PostfixExpression AssignmentOperator AssignmentExpression
                      | ConditionalExpression
 ```
 
