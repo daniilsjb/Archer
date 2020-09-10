@@ -373,16 +373,16 @@ NumberLiteral → Digit* ("." Digit*)?
 
 StringLiteral → '"' (EscapeSequence | ~'"')* '"'
 
-EscapeSequence → "\\a"
-               | "\\b"
-               | "\\f"
-               | "\\n"
-               | "\\r"
-               | "\\t"
-               | "\\v"
-               | "\\"
-               | "\\'"
-               | "\\""
+EscapeSequence → "\a"
+               | "\b"
+               | "\f"
+               | "\n"
+               | "\r"
+               | "\t"
+               | "\v"
+               | "\"
+               | "\'"
+               | "\""
 
 Identifier → Alpha (Alpha | Digit)*
 
