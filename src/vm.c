@@ -252,7 +252,7 @@ static void close_upvalues(VM* vm, Value* last)
 
 static InterpretStatus run(VM* vm)
 {
-    CallFrame* frame = &vm->frames[vm->frameCount - 1];
+    register CallFrame* frame = &vm->frames[vm->frameCount - 1];
     register uint8_t* ip = frame->ip;
 
 #define READ_BYTE() (*ip++)
