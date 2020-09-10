@@ -60,36 +60,6 @@ y.length();     //Equals to 5
 
 The string can now be seen as an array of characters with appropriate syntax. Various functions may also be added that operate on individual characters, such as `toUpperCase` and `toLowerCase`, `isAlpha`, etc.
 
-#### Escape Characters
-
-Certain characters should have special meaning in string literals. For example, the newline character is denoted as `\n`, tabulation is `\t`, etc. As such, the proposed syntax is fairly standard:
-
-```js
-/*
- Prints:
- Hello
- World
-*/
-print "Hello\nWorld!";
-
-/*
- Prints:
- Hello    World!
-*/
-print "Hello\tWorld!";
-
-/*
- Prints:
- Hello\\nWorld!
-*/
-print "Hello\\nWorld!";
-
-/*
- Invalid escape character
-*/
-print "Hello\World!";
-```
-
 #### To String
 
 There should be a support for converting various data types to strings. This functionality is already handled for built-in types, but classes should be able to define a `toString` method which will be called whenever an object has to be converted to a string, either directly or indirectly. Each class also should have a default `toString` implementation which simply prints out its contents in the form `{fieldA = value, fieldB = value, ...}`.

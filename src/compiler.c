@@ -1368,10 +1368,54 @@ static void compile_number_literal(Compiler* compiler, Token literal)
     emit_constant(compiler, value);
 }
 
+static char complete_escape_sequence(const char* start)
+{
+    switch (*start) {
+        case 'a': return '\a';
+        case 'b': return '\b';
+        case 'f': return '\f';
+        case 'n': return '\n';
+        case 'r': return '\r';
+        case 't': return '\t';
+        case 'v': return '\v';
+        case '\\': return '\\';
+        case '\'': return '\'';
+        case '\"': return '\"';
+    }
+
+    return -1;
+}
+
 static void compile_string_literal(Compiler* compiler, Token literal)
 {
-    Value value = OBJ_VAL(String_Copy(compiler->vm, literal.start + 1, literal.length - 2));
-    emit_constant(compiler, value);
+    size_t length = literal.length - 2;
+    const char* start = literal.start + 1;
+    const char* end = start + length;
+
+    size_t bufferLength = length;
+    for (const char* current = start; current < end; current++) {
+        if (*current == '\\') {
+            bufferLength--;
+            ++current;
+        }
+    }
+
+    char* stringBuffer = raw_allocate(bufferLength);
+
+    size_t i = 0;
+    for (const char* current = start; current < end; current++) {
+        if (*current == '\\') {
+            stringBuffer[i] = complete_escape_sequence(++current);
+        } else {
+            stringBuffer[i] = *current;
+        }
+        i++;
+    }
+
+    ObjectString* string = String_Copy(compiler->vm, stringBuffer, bufferLength);
+    raw_deallocate(stringBuffer);
+
+    emit_constant(compiler, OBJ_VAL(string));
 }
 
 static void compile_this_literal(Compiler* compiler, Token literal)

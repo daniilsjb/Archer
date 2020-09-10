@@ -124,15 +124,29 @@ static Token skip_whitespace(Scanner* scanner)
 
 static Token string(Scanner* scanner)
 {
-    while (peek(scanner) != '"' && !reached_end(scanner)) {
-        if (peek(scanner) == '\n') {
-            scanner->line++;
+    while (peek(scanner) != '"') {
+        char c = peek(scanner);
+        if (c == '\n' || reached_end(scanner)) {
+            return error_token("Unterminated string.", scanner->line);
         }
-        advance(scanner);
-    }
 
-    if (reached_end(scanner)) {
-        return error_token("Unterminated string.", scanner->line);
+        if (c == '\\') {
+            switch (peek_next(scanner)) {
+                case 'a':
+                case 'b':
+                case 'f':
+                case 'n':
+                case 'r':
+                case 't':
+                case 'v':
+                case '\\':
+                case '\'':
+                case '\"': advance(scanner); break;
+                default: return error_token("Invalid escape sequence.", scanner->line);
+            }
+        }
+
+        advance(scanner);
     }
 
     advance(scanner);
