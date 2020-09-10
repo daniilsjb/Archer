@@ -371,7 +371,18 @@ AssignmentOperator → "="
 ```
 NumberLiteral → Digit* ("." Digit*)?
 
-StringLiteral → '"' (~('"'))* '"'
+StringLiteral → '"' (EscapeSequence | ~'"')* '"'
+
+EscapeSequence → "\\a"
+               | "\\b"
+               | "\\f"
+               | "\\n"
+               | "\\r"
+               | "\\t"
+               | "\\v"
+               | "\\"
+               | "\\'"
+               | "\\""
 
 Identifier → Alpha (Alpha | Digit)*
 
