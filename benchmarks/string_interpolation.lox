@@ -2,7 +2,7 @@ var begin = clock();
 
 var result;
 for (var i = 0; i < 100000; i++) {
-    result = "The value of i is ${i}. Previous value was ${i - 1}. Next value will be ${i + 1}.";
+    result = "The value of i is $i. Previous value was ${i - 1}. Next value will be ${i + 1}.";
 }
 print result;
 
