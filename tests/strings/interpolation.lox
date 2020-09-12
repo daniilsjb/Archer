@@ -1,0 +1,21 @@
+var x = 5;
+
+class Foo {}
+var foo = Foo();
+foo.bar = 10;
+
+print "$x"; //Expected: 5
+print "The value of x is $x."; //Expected: The value of x is 5.
+print "The value of x is $x, which is greater than ${x - 1} by one."; //Expected: The value of x is 5, which is greater than 4 by one.
+
+print "The value of foo.bar is ${foo.bar}"; //Expected: The value of foo.bar is 10
+print "The result of 2 + 5 is ${2 + 5}."; //Expected: The result of 2 + 5 is 7.
+print "${ \x -> x }"; //Expected: <fn 'lambda'>
+
+print "Hello ${"World"}"; //Expected: Hello World
+print "Hello ${ "t${ "h${ "e${ "r${ "e" }" }" }" }" }"; //Expected: Hello there
+
+print "\${}"; //Expected: ${}
+print "\$foo"; //Expected: $foo
+
+print "$5"; //Expected: $5

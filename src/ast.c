@@ -348,6 +348,7 @@ void ast_delete_expression(Expression* expression)
         case EXPR_BINARY: ast_delete_binary_expr(expression); return;
         case EXPR_UNARY: ast_delete_unary_expr(expression); return;
         case EXPR_LITERAL: ast_delete_literal_expr(expression); return;
+        case EXPR_STRING_INTERP: ast_delete_string_interp_expr(expression); return;
         case EXPR_LAMBDA: ast_delete_lambda_expr(expression); return;
         case EXPR_LIST: ast_delete_list_expr(expression); return;
         case EXPR_IDENTIFIER: ast_delete_identifier_expr(expression); return;
@@ -631,6 +632,27 @@ Expression* ast_new_literal_expr(Token value)
 
 void ast_delete_literal_expr(Expression* expression)
 {
+    raw_deallocate(expression);
+}
+
+Expression* ast_new_string_interp_expr(Token prefix, Expression* expression, Expression* postfix)
+{
+    Expression* expr = raw_allocate(sizeof(Expression));
+    if (!expr) {
+        return NULL;
+    }
+
+    expr->type = EXPR_STRING_INTERP;
+    expr->as.stringInterpExpr.prefix = prefix;
+    expr->as.stringInterpExpr.expression = expression;
+    expr->as.stringInterpExpr.postfix = postfix;
+    return expr;
+}
+
+void ast_delete_string_interp_expr(Expression* expression)
+{
+    ast_delete_expression(expression->as.stringInterpExpr.expression);
+    ast_delete_expression(expression->as.stringInterpExpr.postfix);
     raw_deallocate(expression);
 }
 

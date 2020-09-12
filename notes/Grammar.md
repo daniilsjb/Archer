@@ -371,7 +371,10 @@ AssignmentOperator → "="
 ```
 NumberLiteral → Digit* ("." Digit*)?
 
-StringLiteral → '"' (EscapeSequence | ~'"')* '"'
+StringLiteral → '"' (StringInterpolation | EscapeSequence | ~'"')* '"'
+
+StringInterpolation → "$" Identifier
+                    | "${" Expression "}"
 
 EscapeSequence → "\a"
                | "\b"
@@ -383,6 +386,7 @@ EscapeSequence → "\a"
                | "\"
                | "\'"
                | "\""
+               | "\$"
 
 Identifier → Alpha (Alpha | Digit)*
 

@@ -119,6 +119,7 @@ static void compile_elvis_expr(Compiler* compiler, Expression* expr);
 static void compile_binary_expr(Compiler* compiler, Expression* expr);
 static void compile_unary_expr(Compiler* compiler, Expression* expr);
 static void compile_literal_expr(Compiler* compiler, Expression* expr);
+static void compile_string_interp_expr(Compiler* compiler, Expression* expr);
 static void compile_lambda_expr(Compiler* compiler, Expression* expr);
 static void compile_list_expr(Compiler* compiler, Expression* expr);
 static void compile_identifier_expr(Compiler* compiler, Expression* expr);
@@ -857,6 +858,7 @@ void compile_expression(Compiler* compiler, Expression* expr)
         case EXPR_BINARY: compile_binary_expr(compiler, expr); return;
         case EXPR_UNARY: compile_unary_expr(compiler, expr); return;
         case EXPR_LITERAL: compile_literal_expr(compiler, expr); return;
+        case EXPR_STRING_INTERP: compile_string_interp_expr(compiler, expr); return;
         case EXPR_LAMBDA: compile_lambda_expr(compiler, expr); return;
         case EXPR_LIST: compile_list_expr(compiler, expr); return;
         case EXPR_IDENTIFIER: compile_identifier_expr(compiler, expr); return;
@@ -1381,6 +1383,7 @@ static char complete_escape_sequence(const char* start)
         case '\\': return '\\';
         case '\'': return '\'';
         case '\"': return '\"';
+        case '$': return '$';
     }
 
     return -1;
@@ -1388,12 +1391,10 @@ static char complete_escape_sequence(const char* start)
 
 static void compile_string_literal(Compiler* compiler, Token literal)
 {
-    size_t length = literal.length - 2;
-    const char* start = literal.start + 1;
-    const char* end = start + length;
+    const char* end = literal.start + literal.length;
 
-    size_t bufferLength = length;
-    for (const char* current = start; current < end; current++) {
+    size_t bufferLength = literal.length;
+    for (const char* current = literal.start; current < end; current++) {
         if (*current == '\\') {
             bufferLength--;
             ++current;
@@ -1403,7 +1404,7 @@ static void compile_string_literal(Compiler* compiler, Token literal)
     char* stringBuffer = raw_allocate(bufferLength);
 
     size_t i = 0;
-    for (const char* current = start; current < end; current++) {
+    for (const char* current = literal.start; current < end; current++) {
         if (*current == '\\') {
             stringBuffer[i] = complete_escape_sequence(++current);
         } else {
@@ -1447,6 +1448,14 @@ void compile_literal_expr(Compiler* compiler, Expression* expr)
         case TOKEN_STRING: compile_string_literal(compiler, value); return;
         default: compile_language_literal(compiler, value); return;
     }
+}
+
+void compile_string_interp_expr(Compiler* compiler, Expression* expr)
+{
+    compile_string_literal(compiler, expr->as.stringInterpExpr.prefix);
+    compile_expression(compiler, expr->as.stringInterpExpr.expression);
+    compile_expression(compiler, expr->as.stringInterpExpr.postfix);
+    emit_byte(compiler, OP_INTERPOLATE_STRING);
 }
 
 void compile_lambda_expr(Compiler* compiler, Expression* expr)

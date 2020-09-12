@@ -127,6 +127,7 @@ static uint32_t string_hash(Object* object)
 
 static ObjectString* string_to_string(Object* object, VM* vm)
 {
+    //TODO: Should this return a copy or the string itself?
     return AS_STRING(object);
 }
 

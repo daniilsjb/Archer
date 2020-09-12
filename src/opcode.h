@@ -40,7 +40,7 @@ typedef enum {
     OP_POP, OP_DUP, OP_DUP_TWO, OP_SWAP, OP_SWAP_THREE, OP_SWAP_FOUR,
     
     /* Miscellaneous */
-    OP_PRINT
+    OP_PRINT, OP_INTERPOLATE_STRING
 } OpCode;
 
 #endif

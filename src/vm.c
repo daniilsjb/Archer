@@ -40,6 +40,8 @@ void vm_init(VM* vm)
     vm->upvalueType = NULL;
     vm->closureType = NULL;
     vm->boundMethodType = NULL;
+    vm->listType = NULL;
+    vm->arrayType = NULL;
 
     GC_Init(&vm->gc);
     vm->gc.vm = vm;
@@ -892,6 +894,20 @@ static InterpretStatus run(VM* vm)
                 }
                 vm->stackTop -= elementCount;
                 PUSH(OBJ_VAL(list));
+                break;
+            }
+            case OP_INTERPOLATE_STRING: {
+                SECOND = OBJ_VAL(String_FromValue(vm, SECOND));
+                TOP = OBJ_VAL(String_FromValue(vm, TOP));
+
+                ObjectString* prefix = VAL_AS_STRING(THIRD);
+                ObjectString* expression = VAL_AS_STRING(SECOND);
+                ObjectString* postfix = VAL_AS_STRING(TOP);
+
+                THIRD = OBJ_VAL(String_Concatenate(vm, prefix, expression));
+                THIRD = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(THIRD), postfix));
+                POP();
+                POP();
                 break;
             }
         }

@@ -82,23 +82,6 @@ class Foo {
 print Foo(1, true); //Prints "This Foo object has bar of '1' and baz of 'true'"
 ```
 
-#### String Interpolation
-
-The proposed way of concatenating strings with values of various types is through string interpolation, which allows for any arbitrary expressions, even nested interpolations. The following is the fairly standard proposed syntax:
-
-```js
-var x = 10;
-
-/* Prints "The value of x is 10, which is larger than 9 by one. */
-print "The value of x is ${x}, which is larger than ${x - 1} by one.";
-
-/* Prints "Hello World! */
-print "Hello ${"World"}!";
-
-/* The dollar sign is now considered a special character, meaning it has to be escaped in other cases */
-print "\$50";
-```
-
 ### General
 
 #### Constant Values

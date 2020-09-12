@@ -38,6 +38,7 @@ static void print_elvis_expr(int indent, Expression* expr);
 static void print_binary_expr(int indent, Expression* expr);
 static void print_unary_expr(int indent, Expression* expr);
 static void print_literal_expr(int indent, Expression* expr);
+static void print_string_interp_expr(int indent, Expression* expr);
 static void print_lambda_expr(int indent, Expression* expr);
 static void print_list_expr(int indent, Expression* expr);
 static void print_identifier_expr(int indent, Expression* expr);
@@ -73,7 +74,7 @@ static void print_header(int indent, const char* name)
 
 static void print_token(Token token)
 {
-    printf("%.*s", (int)token.length, token.start);
+    printf("'%.*s'", (int)token.length, token.start);
 }
 
 static void print_token_field(int indent, const char* fieldName, Token token)
@@ -332,6 +333,7 @@ void print_expression(int indent, Expression* expr)
         case EXPR_BINARY: print_binary_expr(indent, expr); return;
         case EXPR_UNARY: print_unary_expr(indent, expr); return;
         case EXPR_LITERAL: print_literal_expr(indent, expr); return;
+        case EXPR_STRING_INTERP: print_string_interp_expr(indent, expr); return;
         case EXPR_LAMBDA: print_lambda_expr(indent, expr); return;
         case EXPR_LIST: print_list_expr(indent, expr); return;
         case EXPR_IDENTIFIER: print_identifier_expr(indent, expr); return;
@@ -540,6 +542,21 @@ void print_literal_expr(int indent, Expression* expr)
 
     Token value = expr->as.literalExpr.value;
     print_token_field(indent, "Value", value);
+}
+
+void print_string_interp_expr(int indent, Expression* expr)
+{
+    print_header(indent, "String Interpolation");
+    indent++;
+
+    Token prefix = expr->as.stringInterpExpr.prefix;
+    print_token_field(indent, "Prefix", prefix);
+
+    print_indented(indent, "Expression:\n");
+    print_expression(indent + 1, expr->as.stringInterpExpr.expression);
+
+    print_indented(indent, "Postfix:\n");
+    print_expression(indent + 1, expr->as.stringInterpExpr.postfix);
 }
 
 void print_lambda_expr(int indent, Expression* expr)

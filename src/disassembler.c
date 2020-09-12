@@ -23,7 +23,7 @@ static uint32_t simple_instruction(const char* name, uint32_t offset)
 static uint32_t constant_instruction(const char* name, Chunk* chunk, uint32_t offset)
 {
     uint8_t location = chunk->code[offset + 1];
-    printf("%-18s %4d '", name, location);
+    printf("%-22s %4d '", name, location);
     print_value(chunk->constants.data[location]);
     printf("'\n");
     return offset + 2;
@@ -32,7 +32,7 @@ static uint32_t constant_instruction(const char* name, Chunk* chunk, uint32_t of
 static uint32_t byte_instruction(const char* name, Chunk* chunk, uint32_t offset)
 {
     uint8_t slot = chunk->code[offset + 1];
-    printf("%-18s %4d\n", name, slot);
+    printf("%-22s %4d\n", name, slot);
     return offset + 2;
 }
 
@@ -40,7 +40,7 @@ static uint32_t invoke_instruction(const char* name, Chunk* chunk, uint32_t offs
 {
     uint8_t constant = chunk->code[offset + 1];
     uint8_t argCount = chunk->code[offset + 2];
-    printf("%-18s %4d (%d args) '", name, constant, argCount);
+    printf("%-22s %4d (%d args) '", name, constant, argCount);
     print_value(chunk->constants.data[constant]);
     printf("'\n");
     return offset + 3;
@@ -49,7 +49,7 @@ static uint32_t invoke_instruction(const char* name, Chunk* chunk, uint32_t offs
 static uint32_t jump_instruction(const char* name, char sign, Chunk* chunk, uint32_t offset)
 {
     uint16_t jump = (uint16_t)(chunk->code[offset + 1] << 0) | (uint16_t)(chunk->code[offset + 2] << 8);
-    printf("%-18s %4d -> %d\n", name, offset, offset + 3 + sign * jump);
+    printf("%-22s %4d -> %d\n", name, offset, offset + 3 + sign * jump);
     return offset + 3;
 }
 
@@ -59,7 +59,7 @@ static uint32_t closure_instruction(Chunk* chunk, uint32_t offset)
     currentOffset++;
 
     uint8_t constant = chunk->code[currentOffset++];
-    printf("%-18s %4d ", "CLOSURE", constant);
+    printf("%-22s %4d ", "CLOSURE", constant);
     print_value(chunk->constants.data[constant]);
     printf("\n");
 
@@ -230,6 +230,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("STORE_SUBSCRIPT", offset);
         case OP_STORE_SUBSCRIPT_SAFE:
             return simple_instruction("STORE_SUBSCRIPT_SAFE", offset);
+        case OP_INTERPOLATE_STRING:
+            return simple_instruction("INTERPOLATE_STRING", offset);
         default:
             return unknown_instruction(instruction, offset);
     }
