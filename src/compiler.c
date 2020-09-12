@@ -1445,17 +1445,22 @@ void compile_literal_expr(Compiler* compiler, Expression* expr)
     compiler->token = value;
     switch (value.type) {
         case TOKEN_NUMBER: compile_number_literal(compiler, value); return;
-        case TOKEN_STRING: compile_string_literal(compiler, value); return;
+        case TOKEN_STRING:
+        case TOKEN_STRING_INTERP_BEGIN:
+        case TOKEN_STRING_INTERP:
+        case TOKEN_STRING_INTERP_END: compile_string_literal(compiler, value); return;
         default: compile_language_literal(compiler, value); return;
     }
 }
 
 void compile_string_interp_expr(Compiler* compiler, Expression* expr)
 {
-    compile_string_literal(compiler, expr->as.stringInterpExpr.prefix);
-    compile_expression(compiler, expr->as.stringInterpExpr.expression);
-    compile_expression(compiler, expr->as.stringInterpExpr.postfix);
-    emit_byte(compiler, OP_INTERPOLATE_STRING);
+    size_t count = compile_expression_list(compiler, expr->as.stringInterpExpr.values);
+    if (count > 255) {
+        error(compiler, "Cannot interpolate more than 255 strings.");
+    }
+
+    emit_bytes(compiler, OP_BUILD_STRING, (uint8_t)count);
 }
 
 void compile_lambda_expr(Compiler* compiler, Expression* expr)

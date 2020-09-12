@@ -225,9 +225,7 @@ typedef struct Expression {
         } literalExpr;
 
         struct {
-            Token prefix;
-            Expression* expression;
-            Expression* postfix;
+            ExpressionList* values;
         } stringInterpExpr;
 
         struct {
@@ -376,7 +374,7 @@ Expression* ast_new_prefix_inc_expr(Token op, Expression* expression);
 void ast_delete_prefix_inc_expr(Expression* expression);
 Expression* ast_new_literal_expr(Token value);
 void ast_delete_literal_expr(Expression* expression);
-Expression* ast_new_string_interp_expr(Token prefix, Expression* expression, Expression* postfix);
+Expression* ast_new_string_interp_expr(ExpressionList* values);
 void ast_delete_string_interp_expr(Expression* expression);
 Expression* ast_new_lambda_expr(Function* function);
 void ast_delete_lambda_expr(Expression* expression);

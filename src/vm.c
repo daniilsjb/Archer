@@ -896,18 +896,18 @@ static InterpretStatus run(VM* vm)
                 PUSH(OBJ_VAL(list));
                 break;
             }
-            case OP_INTERPOLATE_STRING: {
-                SECOND = OBJ_VAL(String_FromValue(vm, SECOND));
-                TOP = OBJ_VAL(String_FromValue(vm, TOP));
+            case OP_BUILD_STRING: {
+                uint8_t count = READ_BYTE();
+                
+                Value* accumulator = vm->stackTop - count;
+                *accumulator = OBJ_VAL(String_FromValue(vm, *accumulator));
 
-                ObjectString* prefix = VAL_AS_STRING(THIRD);
-                ObjectString* expression = VAL_AS_STRING(SECOND);
-                ObjectString* postfix = VAL_AS_STRING(TOP);
+                for (Value* current = vm->stackTop - count + 1; current < vm->stackTop; current++) {
+                    *current = OBJ_VAL(String_FromValue(vm, *current));
+                    *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(*current)));
+                }
 
-                THIRD = OBJ_VAL(String_Concatenate(vm, prefix, expression));
-                THIRD = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(THIRD), postfix));
-                POP();
-                POP();
+                vm->stackTop -= count - 1;
                 break;
             }
         }

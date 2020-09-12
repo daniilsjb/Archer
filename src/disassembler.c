@@ -230,8 +230,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("STORE_SUBSCRIPT", offset);
         case OP_STORE_SUBSCRIPT_SAFE:
             return simple_instruction("STORE_SUBSCRIPT_SAFE", offset);
-        case OP_INTERPOLATE_STRING:
-            return simple_instruction("INTERPOLATE_STRING", offset);
+        case OP_BUILD_STRING:
+            return byte_instruction("BUILD_STRING", chunk, offset);
         default:
             return unknown_instruction(instruction, offset);
     }

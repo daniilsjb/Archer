@@ -196,7 +196,7 @@ static char leave_interpolation(Scanner* scanner)
     return --scanner->interpolationDepth;
 }
 
-static Token string(Scanner* scanner)
+static Token string(Scanner* scanner, bool interpolation)
 {
     while (!match(scanner, '"')) {
         if (peek(scanner) == '\n' || reached_end(scanner)) {
@@ -218,7 +218,8 @@ static Token string(Scanner* scanner)
                 open_brace(scanner);
             }
 
-            return make_token_at(scanner, TOKEN_STRING_INTERP, end);
+            TokenType type = interpolation ? TOKEN_STRING_INTERP : TOKEN_STRING_INTERP_BEGIN;
+            return make_token_at(scanner, type, end);
         }
 
         if (c == '\\') {
@@ -239,7 +240,15 @@ static Token string(Scanner* scanner)
         }
     }
 
-    return make_token_at(scanner, TOKEN_STRING, scanner->current - 1);
+    TokenType type = interpolation ? TOKEN_STRING_INTERP_END : TOKEN_STRING;
+    return make_token_at(scanner, type, scanner->current - 1);
+}
+
+static Token continue_interpolated_string(Scanner* scanner)
+{
+    leave_interpolation(scanner);
+    move_start(scanner);
+    return string(scanner, true);
 }
 
 static Token number(Scanner* scanner)
@@ -366,9 +375,7 @@ static Token right_brace(Scanner* scanner)
         close_brace(scanner);
 
         if (all_braces_matched(scanner)) {
-            leave_interpolation(scanner);
-            move_start(scanner);
-            return string(scanner);
+            return continue_interpolated_string(scanner);
         }
     }
 
@@ -377,6 +384,10 @@ static Token right_brace(Scanner* scanner)
 
 Token scanner_scan_token(Scanner* scanner)
 {
+    if (interpolated_identifier(scanner)) {
+        return continue_interpolated_string(scanner);
+    }
+
     Token whitespace = skip_whitespace(scanner);
     if (whitespace.type == TOKEN_ERROR) {
         return whitespace;
@@ -385,11 +396,6 @@ Token scanner_scan_token(Scanner* scanner)
     move_start(scanner);
     if (reached_end(scanner)) {
         return make_token(scanner, TOKEN_EOF);
-    }
-
-    if (interpolated_identifier(scanner)) {
-        leave_interpolation(scanner);
-        return string(scanner);
     }
 
     char c = advance(scanner);
@@ -514,7 +520,7 @@ Token scanner_scan_token(Scanner* scanner)
         }
         case '"': {
             move_start(scanner);
-            return string(scanner);
+            return string(scanner, false);
         }
     }
 

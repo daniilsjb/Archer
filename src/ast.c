@@ -635,7 +635,7 @@ void ast_delete_literal_expr(Expression* expression)
     raw_deallocate(expression);
 }
 
-Expression* ast_new_string_interp_expr(Token prefix, Expression* expression, Expression* postfix)
+Expression* ast_new_string_interp_expr(ExpressionList* values)
 {
     Expression* expr = raw_allocate(sizeof(Expression));
     if (!expr) {
@@ -643,16 +643,13 @@ Expression* ast_new_string_interp_expr(Token prefix, Expression* expression, Exp
     }
 
     expr->type = EXPR_STRING_INTERP;
-    expr->as.stringInterpExpr.prefix = prefix;
-    expr->as.stringInterpExpr.expression = expression;
-    expr->as.stringInterpExpr.postfix = postfix;
+    expr->as.stringInterpExpr.values = values;
     return expr;
 }
 
 void ast_delete_string_interp_expr(Expression* expression)
 {
-    ast_delete_expression(expression->as.stringInterpExpr.expression);
-    ast_delete_expression(expression->as.stringInterpExpr.postfix);
+    ast_delete_expression_list(expression->as.stringInterpExpr.values);
     raw_deallocate(expression);
 }
 

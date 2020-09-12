@@ -549,14 +549,8 @@ void print_string_interp_expr(int indent, Expression* expr)
     print_header(indent, "String Interpolation");
     indent++;
 
-    Token prefix = expr->as.stringInterpExpr.prefix;
-    print_token_field(indent, "Prefix", prefix);
-
-    print_indented(indent, "Expression:\n");
-    print_expression(indent + 1, expr->as.stringInterpExpr.expression);
-
-    print_indented(indent, "Postfix:\n");
-    print_expression(indent + 1, expr->as.stringInterpExpr.postfix);
+    print_indented(indent, "Values:\n");
+    print_expression_list(indent + 1, expr->as.stringInterpExpr.values);
 }
 
 void print_lambda_expr(int indent, Expression* expr)

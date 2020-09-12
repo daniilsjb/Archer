@@ -91,7 +91,9 @@ typedef enum {
     /* Literals */
     TOKEN_IDENTIFIER,
     TOKEN_STRING,
+    TOKEN_STRING_INTERP_BEGIN,
     TOKEN_STRING_INTERP,
+    TOKEN_STRING_INTERP_END,
     TOKEN_NUMBER,
 
     /* Flags */
