@@ -1,0 +1,14 @@
+//Ensure that when statements can break out of the closest outer loop
+for (var i = 0; i < 10; i++) {
+    when (i) {
+        5 -> break;
+    }
+    
+    print i;
+}
+
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 3
+//Expected: 4

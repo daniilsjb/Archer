@@ -335,6 +335,12 @@ static void push_control_break(Compiler* compiler, size_t address)
     }
 }
 
+static void push_control_break_to_block(Compiler* compiler, size_t address, ControlBlock* block)
+{
+    ControlBreak** breaks = &block->breaks;
+    *breaks = make_control_break(compiler, address, *breaks);
+}
+
 static void push_control_block(Compiler* compiler, ControlType type, size_t start, size_t end)
 {
     ControlBlock* block = raw_allocate(sizeof(ControlBlock));
@@ -730,10 +736,23 @@ void compile_while_stmt(Compiler* compiler, Statement* stmt)
     exit_control_block(compiler);
 }
 
-static bool within_loop(Compiler* compiler)
+static bool block_is_loop(ControlBlock* block)
+{
+    return block->type == CONTROL_FOR || block->type == CONTROL_WHILE;
+}
+
+static ControlBlock* closest_loop(Compiler* compiler)
 {
     ControlBlock* block = compiler->controlBlock;
-    return block && (block->type == CONTROL_FOR || block->type == CONTROL_WHILE);
+    while (block) {
+        if (block_is_loop(block)) {
+            return block;
+        }
+
+        block = block->enclosing;
+    }
+
+    return NULL;
 }
 
 void compile_break_stmt(Compiler* compiler, Statement* stmt)
@@ -741,11 +760,12 @@ void compile_break_stmt(Compiler* compiler, Statement* stmt)
     Token keyword = stmt->as.breakStmt.keyword;
     compiler->token = keyword;
 
-    if (!within_loop(compiler)) {
+    ControlBlock* block = closest_loop(compiler);
+    if (!block) {
         error(compiler, "Cannot use 'break' outside of a loop.");
     } else {
         size_t address = emit_jump(compiler, OP_JUMP);
-        push_control_break(compiler, address);
+        push_control_break_to_block(compiler, address, block);
     }
 }
 
@@ -754,10 +774,11 @@ void compile_continue_stmt(Compiler* compiler, Statement* stmt)
     Token keyword = stmt->as.continueStmt.keyword;
     compiler->token = keyword;
 
-    if (!within_loop(compiler)) {
+    ControlBlock* block = closest_loop(compiler);
+    if (!block) {
         error(compiler, "Cannot use 'continue' outside of a loop.");
     } else {
-        emit_loop(compiler, compiler->controlBlock->start);
+        emit_loop(compiler, block->start);
     }
 }
 

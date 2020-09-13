@@ -1,0 +1,18 @@
+//Ensure that when statements can continue the closest outer loop
+for (var i = 0; i < 10; i++) {
+    when (i) {
+        5 -> continue;
+    }
+    
+    print i;
+}
+
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 3
+//Expected: 4
+//Expected: 6
+//Expected: 7
+//Expected: 8
+//Expected: 9

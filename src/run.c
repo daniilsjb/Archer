@@ -53,7 +53,7 @@ void run_file(const char* fileName)
         exit(ERR_SOFTWARE);
     }
 
-     vm_free(&vm);
+    vm_free(&vm);
 }
 
 void run_prompt()
