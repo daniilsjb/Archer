@@ -215,6 +215,16 @@ ObjectString* String_FromCString(VM* vm, const char* chars)
     return String_Copy(vm, chars, strlen(chars));
 }
 
+ObjectString* String_FromNil(VM* vm)
+{
+    return String_FromCString(vm, "nil");
+}
+
+ObjectString* String_FromBoolean(VM* vm, bool boolean)
+{
+    return String_FromCString(vm, boolean ? "true" : "false");
+}
+
 ObjectString* String_FromNumber(VM* vm, double number)
 {
     char cstring[50];
@@ -251,20 +261,20 @@ ObjectString* String_FromValue(VM* vm, Value value)
 {
 #if NAN_BOXING
     if (IS_BOOL(value)) {
-        return String_FromCString(vm, AS_BOOL(value) ? "true" : "false");
+        return String_FromBoolean(vm, AS_BOOL(value));
     } else if IS_NUMBER(value) {
         return String_FromNumber(vm, AS_NUMBER(value));
     } else if IS_NIL(value) {
-        return String_FromCString(vm, "nil");
+        return String_FromNil(vm);
     } else {
         return Object_ToString(AS_OBJ(value), vm);
     }
 #else
     switch (value.type) {
-        case VALUE_BOOL: return String_FromCString(vm, AS_BOOL(value) ? "true" : "false");
+        case VALUE_BOOL: return String_FromBoolean(vm, AS_BOOL(value));
         case VALUE_NUMBER: return String_FromNumber(vm, AS_NUMBER(value));
-        case VALUE_NIL: return String_FromCString("nil");
-        case VALUE_OBJ: Object_ToString(AS_OBJ(value), vm);
+        case VALUE_NIL: return String_FromNil(vm);
+        case VALUE_OBJ: return Object_ToString(AS_OBJ(value), vm);
     }
 #endif
 }
