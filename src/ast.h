@@ -67,6 +67,7 @@ typedef struct Statement {
     enum {
         STMT_FOR,
         STMT_WHILE,
+        STMT_DO_WHILE,
         STMT_BREAK,
         STMT_CONTINUE,
         STMT_WHEN,
@@ -89,6 +90,11 @@ typedef struct Statement {
             Expression* condition;
             Statement* body;
         } whileStmt;
+
+        struct {
+            Statement* body;
+            Expression* condition;
+        } doWhileStmt;
 
         struct {
             Token keyword;
@@ -346,6 +352,8 @@ Statement* ast_new_for_stmt(Declaration* initializer, Expression* condition, Exp
 void ast_delete_for_stmt(Statement* statement);
 Statement* ast_new_while_stmt(Expression* condition, Statement* body);
 void ast_delete_while_stmt(Statement* statement);
+Statement* ast_new_do_while_stmt(Statement* body, Expression* condition);
+void ast_delete_do_while_stmt(Statement* statement);
 Statement* ast_new_break_stmt(Token keyword);
 void ast_delete_break_stmt(Statement* statement);
 Statement* ast_new_continue_stmt(Token keyword);

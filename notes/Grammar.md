@@ -69,6 +69,7 @@ VariableDeclaration → "var" Identifier ("=" Expression)? ";"
 ```
 Statement → ForStatement
           | WhileStatement
+          | DoWhileStatement
           | BreakStatement
           | ContinueStatement
           | WhenStatement
@@ -89,6 +90,12 @@ ForStatement → "for" "(" (VariableDeclaration | ExpressionStatement | ";") Exp
 
 ```
 WhileStatement → "while" "(" Expression ")" Statement
+```
+
+#### Do While
+
+```
+DoWhileStatement → "do" Statement "while" "(" Expression ")"
 ```
 
 #### Break

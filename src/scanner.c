@@ -289,7 +289,14 @@ static TokenType identifier_type(Scanner* scanner)
                 }
             }
         }
-        case 'd': return check_keyword(scanner, 1, 6, "efault", TOKEN_DEFAULT);
+        case 'd': {
+            if (scanner->current - scanner->start > 1) {
+                switch (*(scanner->start + 1)) {
+                    case 'e': return check_keyword(scanner, 2, 5, "fault", TOKEN_DEFAULT);
+                    case 'o': return check_keyword(scanner, 2, 0, "", TOKEN_DO);
+                }
+            }
+        }
         case 'e': return check_keyword(scanner, 1, 3, "lse", TOKEN_ELSE);
         case 'f': {
             if (scanner->current - scanner->start > 1) {

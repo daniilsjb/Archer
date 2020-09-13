@@ -71,6 +71,7 @@ typedef enum {
     TOKEN_CLASS,
     TOKEN_CONTINUE,
     TOKEN_DEFAULT,
+    TOKEN_DO,
     TOKEN_ELSE,
     TOKEN_FALSE,
     TOKEN_FUN,

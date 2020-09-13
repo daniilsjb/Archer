@@ -4,7 +4,7 @@ class Person {
         print "Hello there";
     }
     
-    do(stuff) {
+    doStuff(stuff) {
         print "Doing " + stuff;
     }
     
@@ -19,7 +19,7 @@ class Person {
 var person = Person();
 person.name = "Jack";
 
-person.talk();          //Expected: Hello there
-person.do("cleaning");  //Expected: Doing cleaning
-print person.getName(); //Expected: Jack
-person.show();          //Expected: This person's name is Jack
+person.talk();               //Expected: Hello there
+person.doStuff("cleaning");  //Expected: Doing cleaning
+print person.getName();      //Expected: Jack
+person.show();               //Expected: This person's name is Jack

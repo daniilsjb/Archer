@@ -1,0 +1,16 @@
+var shouldExit = false;
+var counter = 0;
+
+do {
+    if (counter >= 3 and !shouldExit) {
+        shouldExit = true;
+        continue;
+    }
+    
+    print counter++;
+} while (!shouldExit);
+
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 3

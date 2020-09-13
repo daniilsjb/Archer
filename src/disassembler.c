@@ -150,6 +150,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("PRINT", offset);
         case OP_LOOP:
             return jump_instruction("LOOP", -1, chunk, offset);
+        case OP_POP_LOOP_IF_TRUE:
+            return jump_instruction("POP_LOOP_IF_TRUE", -1, chunk, offset);
         case OP_JUMP:
             return jump_instruction("JUMP", 1, chunk, offset);
         case OP_JUMP_IF_FALSE:

@@ -1,0 +1,15 @@
+do {
+    print "Hello!";
+} while (false);
+
+//Expected: Hello!
+
+var i = 0;
+do {
+    print i;
+    i++;
+} while (i < 3);
+
+//Expected: 0
+//Expected: 1
+//Expected: 2

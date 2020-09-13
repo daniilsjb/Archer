@@ -31,7 +31,7 @@ typedef struct {
     bool isLocal;
 } Upvalue;
 
-typedef enum { CONTROL_FOR, CONTROL_WHILE, CONTROL_WHEN } ControlType;
+typedef enum { CONTROL_FOR, CONTROL_WHILE, CONTROL_DO_WHILE, CONTROL_WHEN } ControlType;
 
 typedef struct ControlBreak {
     struct ControlBreak* enclosing;
@@ -95,6 +95,7 @@ static void compile_statement_decl(Compiler* compiler, Declaration* decl);
 static void compile_statement(Compiler* compiler, Statement* stmt);
 static void compile_for_stmt(Compiler* compiler, Statement* stmt);
 static void compile_while_stmt(Compiler* compiler, Statement* stmt);
+static void compile_do_while_stmt(Compiler* compiler, Statement* stmt);
 static void compile_break_stmt(Compiler* compiler, Statement* stmt);
 static void compile_continue_stmt(Compiler* compiler, Statement* stmt);
 static void compile_when_stmt(Compiler* compiler, Statement* stmt);
@@ -264,9 +265,9 @@ static void emit_constant(Compiler* compiler, Value value)
     emit_bytes(compiler, OP_LOAD_CONSTANT, make_constant(compiler, value));
 }
 
-static void emit_loop(Compiler* compiler, size_t loopStart)
+static void emit_loop(Compiler* compiler, size_t loopStart, uint8_t instruction)
 {
-    emit_byte(compiler, OP_LOOP);
+    emit_byte(compiler, instruction);
 
     size_t offset = current_chunk(compiler)->count - loopStart + 2;
     if (offset > UINT16_MAX) {
@@ -658,6 +659,7 @@ void compile_statement(Compiler* compiler, Statement* stmt)
     switch (stmt->type) {
         case STMT_FOR: compile_for_stmt(compiler, stmt); return;
         case STMT_WHILE: compile_while_stmt(compiler, stmt); return;
+        case STMT_DO_WHILE: compile_do_while_stmt(compiler, stmt); return;
         case STMT_BREAK: compile_break_stmt(compiler, stmt); return;
         case STMT_CONTINUE: compile_continue_stmt(compiler, stmt); return;
         case STMT_WHEN: compile_when_stmt(compiler, stmt); return;
@@ -696,7 +698,7 @@ void compile_for_stmt(Compiler* compiler, Statement* stmt)
         compile_expression(compiler, increment);
         emit_byte(compiler, OP_POP);
 
-        emit_loop(compiler, loopStart);
+        emit_loop(compiler, loopStart, OP_LOOP);
         loopStart = incrementStart;
         patch_jump(compiler, bodyJump);
     }
@@ -706,7 +708,7 @@ void compile_for_stmt(Compiler* compiler, Statement* stmt)
     Statement* body = stmt->as.forStmt.body;
     compile_statement(compiler, body);
 
-    emit_loop(compiler, loopStart);
+    emit_loop(compiler, loopStart, OP_LOOP);
 
     if (exitJump != -1) {
         patch_jump(compiler, exitJump);
@@ -730,15 +732,31 @@ void compile_while_stmt(Compiler* compiler, Statement* stmt)
     Statement* body = stmt->as.whileStmt.body;
     compile_statement(compiler, body);
 
-    emit_loop(compiler, loopStart);
+    emit_loop(compiler, loopStart, OP_LOOP);
     patch_jump(compiler, exitJump);
+
+    exit_control_block(compiler);
+}
+
+void compile_do_while_stmt(Compiler* compiler, Statement* stmt)
+{
+    size_t loopStart = current_chunk(compiler)->count;
+    push_control_block(compiler, CONTROL_DO_WHILE, loopStart, 0xFFFF);
+
+    Statement* body = stmt->as.doWhileStmt.body;
+    compile_statement(compiler, body);
+
+    Expression* condition = stmt->as.doWhileStmt.condition;
+    compile_expression(compiler, condition);
+
+    emit_loop(compiler, loopStart, OP_POP_LOOP_IF_TRUE);
 
     exit_control_block(compiler);
 }
 
 static bool block_is_loop(ControlBlock* block)
 {
-    return block->type == CONTROL_FOR || block->type == CONTROL_WHILE;
+    return block->type == CONTROL_FOR || block->type == CONTROL_WHILE || block->type == CONTROL_DO_WHILE;
 }
 
 static ControlBlock* closest_loop(Compiler* compiler)
@@ -778,7 +796,7 @@ void compile_continue_stmt(Compiler* compiler, Statement* stmt)
     if (!block) {
         error(compiler, "Cannot use 'continue' outside of a loop.");
     } else {
-        emit_loop(compiler, block->start);
+        emit_loop(compiler, block->start, OP_LOOP);
     }
 }
 

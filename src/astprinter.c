@@ -14,6 +14,7 @@ static void print_statement_decl(int indent, Declaration* decl);
 static void print_statement(int indent, Statement* stmt);
 static void print_for_stmt(int indent, Statement* stmt);
 static void print_while_stmt(int indent, Statement* stmt);
+static void print_do_while_stmt(int indent, Statement* stmt);
 static void print_break_stmt(int indent, Statement* stmt);
 static void print_continue_stmt(int indent, Statement* stmt);
 static void print_when_stmt(int indent, Statement* stmt);
@@ -194,6 +195,7 @@ void print_statement(int indent, Statement* stmt)
     switch (stmt->type) {
         case STMT_FOR: print_for_stmt(indent, stmt); return;
         case STMT_WHILE: print_while_stmt(indent, stmt); return;
+        case STMT_DO_WHILE: print_do_while_stmt(indent, stmt); return;
         case STMT_BREAK: print_break_stmt(indent, stmt); return;
         case STMT_CONTINUE: print_continue_stmt(indent, stmt); return;
         case STMT_WHEN: print_when_stmt(indent, stmt); return;
@@ -239,6 +241,20 @@ void print_while_stmt(int indent, Statement* stmt)
     Statement* body = stmt->as.whileStmt.body;
     print_indented(indent, "Body:\n");
     print_statement(indent + 1, body);
+}
+
+void print_do_while_stmt(int indent, Statement* stmt)
+{
+    print_header(indent, "Do While");
+    indent++;
+
+    Statement* body = stmt->as.doWhileStmt.body;
+    print_indented(indent, "Body:\n");
+    print_statement(indent + 1, body);
+
+    Expression* condition = stmt->as.doWhileStmt.condition;
+    print_indented(indent, "Condition:\n");
+    print_expression(indent + 1, condition);
 }
 
 void print_break_stmt(int indent, Statement* stmt)

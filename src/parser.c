@@ -53,6 +53,7 @@ static Declaration* statement_decl(Parser* parser);
 static Statement* statement(Parser* parser);
 static Statement* for_stmt(Parser* parser);
 static Statement* while_stmt(Parser* parser);
+static Statement* do_while_stmt(Parser* parser);
 static Statement* break_stmt(Parser* parser);
 static Statement* continue_stmt(Parser* parser);
 static Statement* when_stmt(Parser* parser);
@@ -155,6 +156,7 @@ ParseRule rules[] = {
     [TOKEN_CLASS]               = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_CONTINUE]            = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_DEFAULT]             = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_DO]                  = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_ELSE]                = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_FALSE]               = { literal_expr,       NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_FUN]                 = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
@@ -286,6 +288,7 @@ static void synchronize(Parser* parser)
             case TOKEN_WHEN: return;
             case TOKEN_IF: return;
             case TOKEN_WHILE: return;
+            case TOKEN_DO: return;
             case TOKEN_PRINT: return;
             case TOKEN_BREAK: return;
             case TOKEN_CONTINUE: return;
@@ -386,6 +389,7 @@ Statement* statement(Parser* parser)
     switch (parser->current.type) {
         case TOKEN_FOR: advance(parser); return for_stmt(parser);
         case TOKEN_WHILE: advance(parser); return while_stmt(parser);
+        case TOKEN_DO: advance(parser); return do_while_stmt(parser);
         case TOKEN_BREAK: advance(parser); return break_stmt(parser);
         case TOKEN_CONTINUE: advance(parser); return continue_stmt(parser);
         case TOKEN_WHEN: advance(parser); return when_stmt(parser);
@@ -431,6 +435,19 @@ Statement* while_stmt(Parser* parser)
 
     Statement* body = statement(parser);
     return ast_new_while_stmt(condition, body);
+}
+
+Statement* do_while_stmt(Parser* parser)
+{
+    Statement* body = statement(parser);
+    consume(parser, TOKEN_WHILE, "Expected 'while' after 'do' body.");
+
+    consume(parser, TOKEN_L_PAREN, "Expected '(' before condition in 'while'.");
+    Expression* condition = expression(parser);
+    consume(parser, TOKEN_R_PAREN, "Expected ')' after condition in 'while'.");
+    consume(parser, TOKEN_SEMICOLON, "Expected ';' after 'do-while' statement.");
+
+    return ast_new_do_while_stmt(body, condition);
 }
 
 Statement* break_stmt(Parser* parser)
