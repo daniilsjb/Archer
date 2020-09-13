@@ -215,6 +215,13 @@ ObjectString* String_FromCString(VM* vm, const char* chars)
     return String_Copy(vm, chars, strlen(chars));
 }
 
+ObjectString* String_FromNumber(VM* vm, double number)
+{
+    char cstring[50];
+    snprintf(cstring, 50, "%g", number);
+    return String_FromCString(vm, cstring);
+}
+
 ObjectString* String_Concatenate(VM* vm, ObjectString* a, ObjectString* b)
 {
     size_t length = a->length + b->length;
@@ -246,9 +253,7 @@ ObjectString* String_FromValue(VM* vm, Value value)
     if (IS_BOOL(value)) {
         return String_FromCString(vm, AS_BOOL(value) ? "true" : "false");
     } else if IS_NUMBER(value) {
-        char cstring[50];
-        snprintf(cstring, 50, "%g", AS_NUMBER(value));
-        return String_FromCString(vm, cstring);
+        return String_FromNumber(vm, AS_NUMBER(value));
     } else if IS_NIL(value) {
         return String_FromCString(vm, "nil");
     } else {
@@ -257,11 +262,7 @@ ObjectString* String_FromValue(VM* vm, Value value)
 #else
     switch (value.type) {
         case VALUE_BOOL: return String_FromCString(vm, AS_BOOL(value) ? "true" : "false");
-        case VALUE_NUMBER: {
-            char cstring[50];
-            snprintf(cstring, 50, "%g", AS_NUMBER(value));
-            return String_FromCString(vm, cstring);
-        }
+        case VALUE_NUMBER: return String_FromNumber(vm, AS_NUMBER(value));
         case VALUE_NIL: return String_FromCString("nil");
         case VALUE_OBJ: Object_ToString(AS_OBJ(value), vm);
     }
