@@ -33,32 +33,7 @@ x.remove("B");      //x is now { "A": 1, "C": 3, "D": 4 }
 
 Non-homogeneous keys are allowed, as well as nested maps. Accessing a non-existent key results in a runtime error.
 
-### Strings
-
-#### Char
-
-Currently, the language only supports numbers, Booleans, strings, and nil as built-in data types, apart from more advanced objects like functions and class instances. Strings allow users to group together character, but there is no way to refer to individual characters. The only way to create a single character is through a string, which is also non-efficient. To avoid this, the proposed solution is to add support for `char` data type with the following syntax:
-
-```js
-var x = 'a';    //This is a single character
-var y = "abc";  //This is a string
-
-x = x + "bc";   //Equals to "abc", as characters are allowed to be concatenated to strings
-y = y + "de";   //Equals to "abcde"
-
-y[0];           //Equals to 'a'
-y.get(0);       //Equals to 'a'
-
-y[-1];          //Equals to 'e'
-y.get(-1);      //Equals to 'e'
-
-y.[0] = 'w';    //y is now "wbcde"
-y.set(0, 'q');  //y is now "qbcde"
-
-y.length();     //Equals to 5
-```
-
-The string can now be seen as an array of characters with appropriate syntax. Various functions may also be added that operate on individual characters, such as `toUpperCase` and `toLowerCase`, `isAlpha`, etc.
+### General
 
 #### To String
 
@@ -81,8 +56,6 @@ class Foo {
 
 print Foo(1, true); //Prints "This Foo object has bar of '1' and baz of 'true'"
 ```
-
-### General
 
 #### Constant Values
 
