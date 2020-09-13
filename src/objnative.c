@@ -41,7 +41,7 @@ ObjectType* Native_NewType(VM* vm)
     type->flags = 0x0;
     type->ToString = native_to_string;
     type->Print = native_print;
-    type->Hash = NULL;
+    type->Hash = Object_GenericHash;
     type->GetField = NULL;
     type->SetField = NULL;
     type->GetSubscript = NULL;

@@ -11,11 +11,12 @@ typedef struct VM VM;
 typedef struct GC GC;
 
 typedef struct {
-    ObjectString* key;
+    Value key;
     Value value;
 } Entry;
 
 typedef struct Table {
+    size_t size;
     int count;
     int capacityMask;
     Entry* entries;
@@ -24,12 +25,14 @@ typedef struct Table {
 void table_init(Table* table);
 void table_free(GC* gc, Table* table);
 
-bool table_get(Table* table, ObjectString* key, Value* value);
+size_t table_size(Table* table);
 
-bool table_put(VM* vm, Table* table, ObjectString* key, Value value);
+bool table_get(Table* table, Value key, Value* value);
+
+bool table_put(VM* vm, Table* table, Value key, Value value);
 void table_put_from(VM* vm, Table* source, Table* destination);
 
-bool table_remove(Table* table, ObjectString* key);
+bool table_remove(Table* table, Value key);
 
 ObjectString* table_find_string(Table* table, const char* chars, size_t length, uint32_t hash);
 

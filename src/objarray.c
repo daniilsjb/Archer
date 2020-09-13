@@ -144,7 +144,7 @@ ObjectType* Array_NewType(VM* vm)
     type->flags = 0x0;
     type->ToString = array_to_string;
     type->Print = array_print;
-    type->Hash = NULL;
+    type->Hash = Object_GenericHash;
     type->GetField = Object_GenericGetField;
     type->SetField = NULL;
     type->GetSubscript = array_get_subscript;
@@ -157,19 +157,10 @@ ObjectType* Array_NewType(VM* vm)
     return type;
 }
 
-static void define_array_method(ObjectType* type, VM* vm, const char* name, NativeFn function, int arity)
-{
-    vm_push(vm, OBJ_VAL(String_FromCString(vm, name)));
-    vm_push(vm, OBJ_VAL(Native_New(vm, function, arity)));
-    table_put(vm, &type->methods, VAL_AS_STRING(vm->stack[0]), vm->stack[1]);
-    vm_pop(vm);
-    vm_pop(vm);
-}
-
 void Array_PrepareType(ObjectType* type, VM* vm)
 {
-    define_array_method(type, vm, "init", method_init, 1);
-    define_array_method(type, vm, "length", method_length, 0);
+    Library_DefineTypeMethod(type, vm, "init", method_init, 1);
+    Library_DefineTypeMethod(type, vm, "length", method_length, 0);
 }
 
 ObjectArray* Array_New(VM* vm, size_t length)

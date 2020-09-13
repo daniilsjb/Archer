@@ -55,4 +55,6 @@ add_executable (clox
     "src/objlist.c"
     "src/objarray.h"
     "src/objarray.c"
+    "src/objmap.h"
+    "src/objmap.c"
 )

@@ -41,10 +41,13 @@ static void print_literal_expr(int indent, Expression* expr);
 static void print_string_interp_expr(int indent, Expression* expr);
 static void print_lambda_expr(int indent, Expression* expr);
 static void print_list_expr(int indent, Expression* expr);
+static void print_map_expr(int indent, Expression* expr);
 static void print_identifier_expr(int indent, Expression* expr);
 
 static void print_when_entry(int indent, WhenEntry* entry);
 static void print_when_entry_list(int indent, WhenEntryList* list);
+static void print_map_entry(int indent, MapEntry* entry);
+static void print_map_entry_list(int indent, MapEntryList* list);
 static void print_expression_list(int indent, ExpressionList* list);
 static void print_argument_list(int indent, ArgumentList* list);
 static void print_block(int indent, Block* block);
@@ -336,6 +339,7 @@ void print_expression(int indent, Expression* expr)
         case EXPR_STRING_INTERP: print_string_interp_expr(indent, expr); return;
         case EXPR_LAMBDA: print_lambda_expr(indent, expr); return;
         case EXPR_LIST: print_list_expr(indent, expr); return;
+        case EXPR_MAP: print_map_expr(indent, expr); return;
         case EXPR_IDENTIFIER: print_identifier_expr(indent, expr); return;
     }
 }
@@ -568,6 +572,15 @@ void print_list_expr(int indent, Expression* expr)
     print_expression_list(indent + 1, expr->as.listExpr.elements);
 }
 
+void print_map_expr(int indent, Expression* expr)
+{
+    print_header(indent, "Map");
+    indent++;
+
+    print_indented(indent, "Entries:\n");
+    print_map_entry_list(indent + 1, expr->as.mapExpr.entries);
+}
+
 void print_identifier_expr(int indent, Expression* expr)
 {
     print_header(indent, "Identifier");
@@ -582,6 +595,9 @@ void print_identifier_expr(int indent, Expression* expr)
 
 void print_when_entry(int indent, WhenEntry* entry)
 {
+    print_header(indent, "Entry");
+    indent++;
+
     print_indented(indent, "Cases:\n");
     print_expression_list(indent + 1, entry->cases);
 
@@ -598,8 +614,34 @@ void print_when_entry_list(int indent, WhenEntryList* list)
 
     WhenEntryList* current = list;
     while (current) {
-        print_header(indent, "Entry");
-        print_when_entry(indent + 1, current->entry);
+
+        print_when_entry(indent, current->entry);
+        current = current->next;
+    }
+}
+
+void print_map_entry(int indent, MapEntry* entry)
+{
+    print_header(indent, "Entry");
+    indent++;
+
+    print_indented(indent, "Key:\n");
+    print_expression(indent + 1, entry->key);
+
+    print_indented(indent, "Value:\n");
+    print_expression(indent + 1, entry->value);
+}
+
+void print_map_entry_list(int indent, MapEntryList* list)
+{
+    if (ast_map_entry_list_length(list) == 0) {
+        print_indented(indent, "<Empty>\n");
+        return;
+    }
+
+    MapEntryList* current = list;
+    while (current) {
+        print_map_entry(indent, current->entry);
         current = current->next;
     }
 }

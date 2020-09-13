@@ -148,7 +148,7 @@ ObjectType* List_NewType(VM* vm)
     type->flags = 0x0;
     type->ToString = list_to_string;
     type->Print = list_print;
-    type->Hash = NULL;
+    type->Hash = Object_GenericHash;
     type->GetField = Object_GenericGetField;
     type->SetField = NULL;
     type->GetSubscript = list_get_subscript;
@@ -161,20 +161,11 @@ ObjectType* List_NewType(VM* vm)
     return type;
 }
 
-static void define_list_method(ObjectType* type, VM* vm, const char* name, NativeFn function, int arity)
-{
-    vm_push(vm, OBJ_VAL(String_FromCString(vm, name)));
-    vm_push(vm, OBJ_VAL(Native_New(vm, function, arity)));
-    table_put(vm, &type->methods, VAL_AS_STRING(vm->stack[0]), vm->stack[1]);
-    vm_pop(vm);
-    vm_pop(vm);
-}
-
 void List_PrepareType(ObjectType* type, VM* vm)
 {
-    define_list_method(type, vm, "append", method_append, 1);
-    define_list_method(type, vm, "pop", method_pop, 0);
-    define_list_method(type, vm, "length", method_length, 0);
+    Library_DefineTypeMethod(type, vm, "append", method_append, 1);
+    Library_DefineTypeMethod(type, vm, "pop", method_pop, 0);
+    Library_DefineTypeMethod(type, vm, "length", method_length, 0);
 }
 
 ObjectList* List_New(VM* vm)

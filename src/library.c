@@ -4,11 +4,13 @@
 #include "library.h"
 #include "vm.h"
 #include "value.h"
+
 #include "object.h"
 #include "objstring.h"
 #include "objnative.h"
 #include "objfunction.h"
 #include "objlist.h"
+#include "objmap.h"
 #include "objarray.h"
 
 bool Library_Error(VM* vm, const char* message, Value* args)
@@ -60,7 +62,7 @@ static void define_native(VM* vm, const char* name, NativeFn function, int arity
 {
     vm_push(vm, OBJ_VAL(String_FromCString(vm, name)));
     vm_push(vm, OBJ_VAL(Native_New(vm, function, arity)));
-    table_put(vm, &vm->globals, VAL_AS_STRING(vm->stack[0]), vm->stack[1]);
+    table_put(vm, &vm->globals, vm->stack[0], vm->stack[1]);
     vm_pop(vm);
     vm_pop(vm);
 }
@@ -74,6 +76,7 @@ void Library_Init(VM* vm)
     vm->closureType = Closure_NewType(vm);
     vm->boundMethodType = BoundMethod_NewType(vm);
     vm->listType = List_NewType(vm);
+    vm->mapType = Map_NewType(vm);
     vm->arrayType = Array_NewType(vm);
 
     vm->initString = String_FromCString(vm, "init");
@@ -85,18 +88,28 @@ void Library_Init(VM* vm)
     Closure_PrepareType(vm->closureType, vm);
     BoundMethod_PrepareType(vm->boundMethodType, vm);
     List_PrepareType(vm->listType, vm);
+    Map_PrepareType(vm->mapType, vm);
     Array_PrepareType(vm->arrayType, vm);
 
     vm_push(vm, OBJ_VAL(String_FromCString(vm, "String")));
-    table_put(vm, &vm->globals, VAL_AS_STRING(vm->stackTop[-1]), OBJ_VAL(vm->stringType));
+    table_put(vm, &vm->globals, vm->stackTop[-1], OBJ_VAL(vm->stringType));
     vm_pop(vm);
 
     vm_push(vm, OBJ_VAL(String_FromCString(vm, "Array")));
-    table_put(vm, &vm->globals, VAL_AS_STRING(vm->stackTop[-1]), OBJ_VAL(vm->arrayType));
+    table_put(vm, &vm->globals, vm->stackTop[-1], OBJ_VAL(vm->arrayType));
     vm_pop(vm);
 
     define_native(vm, "clock", clock_native, 0);
     define_native(vm, "abs", abs_native, 1);
     define_native(vm, "pow", pow_native, 2);
     define_native(vm, "typeof", typeof_native, 1);
+}
+
+void Library_DefineTypeMethod(ObjectType* type, VM* vm, const char* name, NativeFn function, int arity)
+{
+    vm_push(vm, OBJ_VAL(String_FromCString(vm, name)));
+    vm_push(vm, OBJ_VAL(Native_New(vm, function, arity)));
+    table_put(vm, &type->methods, vm->stack[0], vm->stack[1]);
+    vm_pop(vm);
+    vm_pop(vm);
 }

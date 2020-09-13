@@ -103,7 +103,7 @@ void GC_MarkTable(GC* gc, Table* table)
 {
     for (int i = 0; i <= table->capacityMask; i++) {
         Entry* entry = &table->entries[i];
-        GC_MarkObject(gc, (Object*)entry->key);
+        GC_MarkValue(gc, entry->key);
         GC_MarkValue(gc, entry->value);
     }
 }
@@ -130,6 +130,7 @@ static void mark_roots(GC* gc)
     GC_MarkObject(gc, (Object*)vm->closureType);
     GC_MarkObject(gc, (Object*)vm->boundMethodType);
     GC_MarkObject(gc, (Object*)vm->listType);
+    GC_MarkObject(gc, (Object*)vm->mapType);
     GC_MarkObject(gc, (Object*)vm->arrayType);
 
     GC_MarkTable(gc, &vm->globals);
@@ -146,11 +147,11 @@ static void trace_references(GC* gc)
     }
 }
 
-void table_remove_white(Table* table)
+void table_remove_white_strings(Table* table)
 {
     for (int i = 0; i <= table->capacityMask; i++) {
         Entry* entry = &table->entries[i];
-        if (entry->key != NULL && !entry->key->base.marked) {
+        if (!IS_UNDEFINED(entry->key) && !VAL_AS_STRING(entry->key)->base.marked) {
             table_remove(table, entry->key);
         }
     }
@@ -190,7 +191,7 @@ static void perform_collection(GC* gc)
 
     mark_roots(gc);
     trace_references(gc);
-    table_remove_white(&gc->vm->strings);
+    table_remove_white_strings(&gc->vm->strings);
     sweep(gc);
 
     gc->threshold = gc->bytesAllocated * GC_THRESHOLD_GROW_FACTOR;

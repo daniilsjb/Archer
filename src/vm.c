@@ -3,16 +3,18 @@
 #include <math.h>
 
 #include "vm.h"
-#include "object.h"
-#include "objstring.h"
-#include "objnative.h"
-#include "objfunction.h"
-#include "objlist.h"
 #include "common.h"
 #include "memory.h"
 #include "chunk.h"
 #include "compiler.h"
 #include "library.h"
+
+#include "object.h"
+#include "objstring.h"
+#include "objnative.h"
+#include "objfunction.h"
+#include "objlist.h"
+#include "objmap.h"
 
 #if DEBUG_TRACE_EXECUTION
 #include "disassembler.h"
@@ -41,6 +43,7 @@ void vm_init(VM* vm)
     vm->closureType = NULL;
     vm->boundMethodType = NULL;
     vm->listType = NULL;
+    vm->mapType = NULL;
     vm->arrayType = NULL;
 
     GC_Init(&vm->gc);
@@ -78,7 +81,7 @@ Value vm_pop(VM* vm)
 
 static Value peek(VM* vm, int distance)
 {
-    return vm->stackTop[- 1 - distance];
+    return vm->stackTop[-1 - distance];
 }
 
 static int get_current_line(CallFrame* frame)
@@ -154,8 +157,10 @@ static bool call_value(VM* vm, Value callee, uint8_t argCount)
 
 static bool load_property(VM* vm, Object* object, ObjectString* name, Value* result)
 {
+    Value key = OBJ_VAL(name);
+
     if (object->type->GetField) {
-        if (Object_GetField(object, (Object*)name, vm, result)) {
+        if (Object_GetField(object, key, vm, result)) {
             return true;
         }
     }
@@ -165,7 +170,7 @@ static bool load_property(VM* vm, Object* object, ObjectString* name, Value* res
         return false;
     }
 
-    if (!Object_GetMethod(object, (Object*)name, vm, result)) {
+    if (!Object_GetMethod(object, key, vm, result)) {
         runtime_error(vm, "Undefined property '%s'.", name->chars);
         return false;
     }
@@ -175,8 +180,9 @@ static bool load_property(VM* vm, Object* object, ObjectString* name, Value* res
 
 static bool invoke_from_class(VM* vm, ObjectType* clazz, ObjectString* name, uint8_t argCount)
 {
+    Value key = OBJ_VAL(name);
     Value method;
-    if (!Object_GetMethodDirectly((Object*)clazz, (Object*)name, vm, &method)) {
+    if (!Object_GetMethodDirectly((Object*)clazz, key, vm, &method)) {
         runtime_error(vm, "Undefined property '%s'", name->chars);
         return false;
     }
@@ -208,8 +214,9 @@ static bool invoke(VM* vm, ObjectString* name, uint8_t argCount)
 
 static bool invoke_static_constructor(VM* vm, ObjectType* clazz)
 {
+    Value key = OBJ_VAL(vm->initString);
     Value method;
-    if (Object_GetMethod((Object*)clazz, (Object*)vm->initString, vm, &method)) {
+    if (Object_GetMethod((Object*)clazz, key, vm, &method)) {
         return call_value(vm, method, 0);
     }
 
@@ -542,10 +549,10 @@ static InterpretStatus run(VM* vm)
             }
             case OP_POP_JUMP_IF_EQUAL: {
                 uint16_t offset = READ_SHORT();
-                Value value = POP();
-                if (values_equal(value, TOP)) {
+                if (values_equal(TOP, SECOND)) {
                     ip += offset;
                 }
+                POP();
                 break;
             }
             case OP_JUMP_IF_NOT_NIL: {
@@ -599,14 +606,15 @@ static InterpretStatus run(VM* vm)
             }
             case OP_DEFINE_GLOBAL: {
                 ObjectString* identifier = READ_STRING();
-                table_put(vm, &vm->globals, identifier, TOP);
+                table_put(vm, &vm->globals, OBJ_VAL(identifier), TOP);
                 POP();
                 break;
             }
             case OP_LOAD_GLOBAL: {
                 ObjectString* identifier = READ_STRING();
+                Value key = OBJ_VAL(identifier);
                 Value value;
-                if (!table_get(&vm->globals, identifier, &value)) {
+                if (!table_get(&vm->globals, key, &value)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Undefined variable '%s'.", identifier->chars);
                 }
@@ -615,9 +623,10 @@ static InterpretStatus run(VM* vm)
             }
             case OP_STORE_GLOBAL: {
                 ObjectString* identifier = READ_STRING();
-                if (table_put(vm, &vm->globals, identifier, TOP)) {
+                Value key = OBJ_VAL(identifier);
+                if (table_put(vm, &vm->globals, key, TOP)) {
                     frame->ip = ip;
-                    table_remove(&vm->globals, identifier);
+                    table_remove(&vm->globals, key);
                     return runtime_error(vm, "Undefined variable '%s'.", identifier->chars);
                 }
                 break;
@@ -677,7 +686,7 @@ static InterpretStatus run(VM* vm)
                     return runtime_error(vm, "Properties on objects of type '%s' cannot be assigned.", object->type->name);
                 }
 
-                Object_SetField(object, (Object*)READ_STRING(), SECOND, vm);
+                Object_SetField(object, OBJ_VAL(READ_STRING()), SECOND, vm);
                 POP();
                 break;
             }
@@ -763,14 +772,14 @@ static InterpretStatus run(VM* vm)
             case OP_STATIC_METHOD: {
                 Value method = TOP;
                 ObjectType* clazz = VAL_AS_TYPE(SECOND);
-                Object_SetMethod((Object*)clazz, (Object*)READ_STRING(), method, vm);
+                Object_SetMethod((Object*)clazz, OBJ_VAL(READ_STRING()), method, vm);
                 vm_pop(vm);
                 break;
             }
             case OP_METHOD: {
                 Value method = TOP;
                 ObjectType* clazz = VAL_AS_TYPE(SECOND);
-                Object_SetMethodDirectly((Object*)clazz, (Object*)READ_STRING(), method, vm);
+                Object_SetMethodDirectly((Object*)clazz, OBJ_VAL(READ_STRING()), method, vm);
                 vm_pop(vm);
                 break;
             }
@@ -795,13 +804,14 @@ static InterpretStatus run(VM* vm)
                 ObjectString* name = READ_STRING();
                 ObjectType* superclass = VAL_AS_TYPE(POP());
 
+                Value key = OBJ_VAL(name);
                 Value method;
-                if (!Object_GetMethod((Object*)superclass, (Object*)name, vm, &method)) {
+                if (!Object_GetMethod((Object*)superclass, key, vm, &method)) {
                     frame->ip = ip;
                     return runtime_error(vm, "Undefined method '%s' of superclass.", name->chars);
                 }
 
-                TOP = method;
+                TOP = key;
                 break;
             }
             case OP_SUPER_INVOKE: {
@@ -887,13 +897,48 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_LIST: {
-                uint8_t elementCount = READ_BYTE();
-                ObjectList* list = List_New(vm);
-                for (Value* value = vm->stackTop - elementCount; value < vm->stackTop; value++) {
-                    List_Append(list, *value, vm);
+                uint8_t count = READ_BYTE();
+
+                if (count == 0) {
+                    PUSH(OBJ_VAL(List_New(vm)));
+                    break;
                 }
-                vm->stackTop -= elementCount;
-                PUSH(OBJ_VAL(list));
+
+                Value* accumulator = vm->stackTop - count;
+                PUSH(*accumulator);
+
+                *accumulator = OBJ_VAL(List_New(vm));
+                List_Append(VAL_AS_LIST(*accumulator), TOP, vm);
+                POP();
+
+                for (Value* value = accumulator + 1; value < vm->stackTop; value++) {
+                    List_Append(VAL_AS_LIST(*accumulator), *value, vm);
+                }
+
+                vm->stackTop -= count - 1;
+                break;
+            }
+            case OP_MAP: {
+                uint8_t entryCount = READ_BYTE();
+                uint16_t count = ((uint16_t)entryCount * 2);
+
+                if (entryCount == 0) {
+                    PUSH(OBJ_VAL(Map_New(vm)));
+                    break;
+                }
+
+                Value* accumulator = vm->stackTop - count;
+                PUSH(*accumulator);
+
+                *accumulator = OBJ_VAL(Map_New(vm));
+                Map_Insert(VAL_AS_MAP(*accumulator), TOP, *(accumulator + 1), vm);
+                POP();
+
+                for (Value* value = accumulator + 2; value < vm->stackTop; value += 2) {
+                    Map_Insert(VAL_AS_MAP(*accumulator), *value, *(value + 1), vm);
+                }
+
+                vm->stackTop -= count - 1;
                 break;
             }
             case OP_BUILD_STRING: {

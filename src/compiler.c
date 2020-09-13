@@ -122,10 +122,13 @@ static void compile_literal_expr(Compiler* compiler, Expression* expr);
 static void compile_string_interp_expr(Compiler* compiler, Expression* expr);
 static void compile_lambda_expr(Compiler* compiler, Expression* expr);
 static void compile_list_expr(Compiler* compiler, Expression* expr);
+static void compile_map_expr(Compiler* compiler, Expression* expr);
 static void compile_identifier_expr(Compiler* compiler, Expression* expr);
 
 static void compile_when_entry(Compiler* compiler, WhenEntry* entry);
 static size_t compile_when_entry_list(Compiler* compiler, WhenEntryList* list);
+static void compile_map_entry(Compiler* compiler, MapEntry* entry);
+static size_t compile_map_entry_list(Compiler* compiler, MapEntryList* list);
 static void compile_block(Compiler* compiler, Block* block);
 static size_t compile_parameter_list(Compiler* compiler, ParameterList* list);
 static void compile_function_body(Compiler* compiler, FunctionBody* body);
@@ -861,6 +864,7 @@ void compile_expression(Compiler* compiler, Expression* expr)
         case EXPR_STRING_INTERP: compile_string_interp_expr(compiler, expr); return;
         case EXPR_LAMBDA: compile_lambda_expr(compiler, expr); return;
         case EXPR_LIST: compile_list_expr(compiler, expr); return;
+        case EXPR_MAP: compile_map_expr(compiler, expr); return;
         case EXPR_IDENTIFIER: compile_identifier_expr(compiler, expr); return;
     }
 }
@@ -1470,11 +1474,20 @@ void compile_lambda_expr(Compiler* compiler, Expression* expr)
 
 void compile_list_expr(Compiler* compiler, Expression* expr)
 {
-    size_t elementCount = compile_expression_list(compiler, expr->as.listExpr.elements);
-    if (elementCount > 255) {
+    size_t count = compile_expression_list(compiler, expr->as.listExpr.elements);
+    if (count > 255) {
         error(compiler, "Cannot have more than 255 elements in a list expression.");
     }
-    emit_bytes(compiler, OP_LIST, (uint8_t)elementCount);
+    emit_bytes(compiler, OP_LIST, (uint8_t)count);
+}
+
+void compile_map_expr(Compiler* compiler, Expression* expr)
+{
+    size_t count = compile_map_entry_list(compiler, expr->as.mapExpr.entries);
+    if (count > 255) {
+        error(compiler, "Cannot have more than 255 entries in a map expression.");
+    }
+    emit_bytes(compiler, OP_MAP, (uint8_t)count);
 }
 
 void compile_identifier_expr(Compiler* compiler, Expression* expr)
@@ -1517,6 +1530,26 @@ size_t compile_when_entry_list(Compiler* compiler, WhenEntryList* list)
 
     while (current) {
         compile_when_entry(compiler, current->entry);
+        count++;
+        current = current->next;
+    }
+
+    return count;
+}
+
+void compile_map_entry(Compiler* compiler, MapEntry* entry)
+{
+    compile_expression(compiler, entry->key);
+    compile_expression(compiler, entry->value);
+}
+
+size_t compile_map_entry_list(Compiler* compiler, MapEntryList* list)
+{
+    MapEntryList* current = list;
+    size_t count = 0;
+
+    while (current) {
+        compile_map_entry(compiler, current->entry);
         count++;
         current = current->next;
     }

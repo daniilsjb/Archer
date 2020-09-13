@@ -34,6 +34,7 @@ typedef struct VM {
     ObjectType* nativeType;
     ObjectType* boundMethodType;
     ObjectType* listType;
+    ObjectType* mapType;
     ObjectType* arrayType;
 
     CallFrame frames[FRAMES_MAX];

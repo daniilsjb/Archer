@@ -360,16 +360,16 @@ static Token identifier(Scanner* scanner)
     return make_token(scanner, type);
 }
 
-static Token left_brace(Scanner* scanner)
+static Token left_brace(Scanner* scanner, TokenType type)
 {
     if (interpolating(scanner)) {
         open_brace(scanner);
     }
 
-    return make_token(scanner, TOKEN_L_BRACE);
+    return make_token(scanner, type);
 }
 
-static Token right_brace(Scanner* scanner)
+static Token right_brace(Scanner* scanner, TokenType type)
 {
     if (interpolating(scanner)) {
         close_brace(scanner);
@@ -379,7 +379,7 @@ static Token right_brace(Scanner* scanner)
         }
     }
 
-    return make_token(scanner, TOKEN_R_BRACE);
+    return make_token(scanner, type);
 }
 
 Token scanner_scan_token(Scanner* scanner)
@@ -402,8 +402,15 @@ Token scanner_scan_token(Scanner* scanner)
     switch (c) {
         case '(': return make_token(scanner, TOKEN_L_PAREN);
         case ')': return make_token(scanner, TOKEN_R_PAREN);
-        case '{': return left_brace(scanner);
-        case '}': return right_brace(scanner);
+        case '{': return left_brace(scanner, TOKEN_L_BRACE);
+        case '}': return right_brace(scanner, TOKEN_R_BRACE);
+        case '@': {
+            switch (peek(scanner)) {
+                case '{': advance(scanner); return left_brace(scanner, TOKEN_AT_L_BRACE);
+            }
+
+            return error_token("Unexpected characted.", scanner->line);
+        }
         case '[': return make_token(scanner, TOKEN_L_BRACKET);
         case ']': return make_token(scanner, TOKEN_R_BRACKET);
         case ';': return make_token(scanner, TOKEN_SEMICOLON);

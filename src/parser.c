@@ -67,6 +67,7 @@ static Expression* literal_expr(Parser* parser);
 static Expression* string_interp_expr(Parser* parser);
 static Expression* lambda_expr(Parser* parser);
 static Expression* list_expr(Parser* parser);
+static Expression* map_expr(Parser* parser);
 static Expression* identifier_expr(Parser* parser);
 static Expression* prefix_inc_expr(Parser* parser);
 static Expression* unary_expr(Parser* parser);
@@ -103,6 +104,7 @@ ParseRule rules[] = {
     [TOKEN_R_PAREN]             = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_L_BRACE]             = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_R_BRACE]             = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_AT_L_BRACE]          = { map_expr,           NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_L_BRACKET]           = { list_expr,          subscript_expr,           PREC_POSTFIX,        ASSOC_LEFT   },
     [TOKEN_R_BRACKET]           = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_COMMA]               = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
@@ -597,6 +599,22 @@ Expression* list_expr(Parser* parser)
     consume(parser, TOKEN_R_BRACKET, "Expected ']' after list expression.");
 
     return ast_new_list_expr(elements);
+}
+
+Expression* map_expr(Parser* parser)
+{
+    MapEntryList* entries = NULL;
+    if (!check(parser, TOKEN_R_BRACE)) {
+        do {
+            Expression* key = expression(parser);
+            consume(parser, TOKEN_COLON, "Expected ':' after map key.");
+            Expression* value = expression(parser);
+            ast_map_entry_list_append(&entries, ast_new_map_entry(key, value));
+        } while (match(parser, TOKEN_COMMA));
+    }
+    consume(parser, TOKEN_R_BRACE, "Expected '}' after map.");
+
+    return ast_new_map_expr(entries);
 }
 
 Expression* identifier_expr(Parser* parser)

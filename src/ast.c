@@ -351,6 +351,7 @@ void ast_delete_expression(Expression* expression)
         case EXPR_STRING_INTERP: ast_delete_string_interp_expr(expression); return;
         case EXPR_LAMBDA: ast_delete_lambda_expr(expression); return;
         case EXPR_LIST: ast_delete_list_expr(expression); return;
+        case EXPR_MAP: ast_delete_map_expr(expression); return;
         case EXPR_IDENTIFIER: ast_delete_identifier_expr(expression); return;
     }
 }
@@ -689,6 +690,24 @@ void ast_delete_list_expr(Expression* expression)
     raw_deallocate(expression);
 }
 
+Expression* ast_new_map_expr(MapEntryList* entries)
+{
+    Expression* expr = raw_allocate(sizeof(Expression));
+    if (!expr) {
+        return NULL;
+    }
+
+    expr->type = EXPR_MAP;
+    expr->as.mapExpr.entries = entries;
+    return expr;
+}
+
+void ast_delete_map_expr(Expression* expression)
+{
+    ast_delete_map_entry_list(expression->as.mapExpr.entries);
+    raw_deallocate(expression);
+}
+
 Expression* ast_new_identifier_expr(Token identifier, ExprContext context)
 {
     Expression* expr = raw_allocate(sizeof(Expression));
@@ -920,6 +939,76 @@ size_t ast_when_entry_list_length(WhenEntryList* list)
 {
     size_t length = 0;
     WhenEntryList* current = list;
+
+    while (current) {
+        length++;
+        current = current->next;
+    }
+
+    return length;
+}
+
+MapEntry* ast_new_map_entry(Expression* key, Expression* value)
+{
+    MapEntry* entry = raw_allocate(sizeof(MapEntry));
+    if (!entry) {
+        return NULL;
+    }
+
+    entry->key = key;
+    entry->value = value;
+    return entry;
+}
+
+void ast_delete_map_entry(MapEntry* entry)
+{
+    ast_delete_expression(entry->key);
+    ast_delete_expression(entry->value);
+    raw_deallocate(entry);
+}
+
+MapEntryList* ast_new_map_entry_node(MapEntry* entry)
+{
+    MapEntryList* list = raw_allocate(sizeof(MapEntryList));
+    if (!list) {
+        return NULL;
+    }
+
+    list->entry = entry;
+    list->next = NULL;
+    return list;
+}
+
+void ast_map_entry_list_append(MapEntryList** list, MapEntry* entry)
+{
+    if (!(*list)) {
+        *list = ast_new_map_entry_node(entry);
+        return;
+    }
+
+    MapEntryList* current = *list;
+    while (current->next) {
+        current = current->next;
+    }
+
+    current->next = ast_new_map_entry_node(entry);
+}
+
+void ast_delete_map_entry_list(MapEntryList* list)
+{
+    MapEntryList* current = list;
+    while (current != NULL) {
+        MapEntryList* next = current->next;
+        ast_delete_map_entry(current->entry);
+        raw_deallocate(current);
+        current = next;
+    }
+}
+
+size_t ast_map_entry_list_length(MapEntryList* list)
+{
+    size_t length = 0;
+    MapEntryList* current = list;
 
     while (current) {
         length++;

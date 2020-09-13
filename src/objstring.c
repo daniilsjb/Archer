@@ -121,8 +121,7 @@ static uint32_t hash_cstring(const char* chars, size_t length)
 
 static uint32_t string_hash(Object* object)
 {
-    ObjectString* string = AS_STRING(object);
-    return hash_cstring(string->chars, string->length);
+    return AS_STRING(object)->hash;
 }
 
 static ObjectString* string_to_string(Object* object, VM* vm)
@@ -159,26 +158,17 @@ ObjectType* String_NewType(VM* vm)
     return type;
 }
 
-static void define_string_method(ObjectType* type, VM* vm, const char* name, NativeFn function, int arity)
-{
-    vm_push(vm, OBJ_VAL(String_FromCString(vm, name)));
-    vm_push(vm, OBJ_VAL(Native_New(vm, function, arity)));
-    table_put(vm, &type->methods, VAL_AS_STRING(vm->stack[0]), vm->stack[1]);
-    vm_pop(vm);
-    vm_pop(vm);
-}
-
 void String_PrepareType(ObjectType* type, VM* vm)
 {
-    define_string_method(type, vm, "init", method_init, 1);
-    define_string_method(type, vm, "length", method_length, 0);
-    define_string_method(type, vm, "isEmpty", method_is_empty, 0);
-    define_string_method(type, vm, "toLower", method_to_lower, 0);
-    define_string_method(type, vm, "toUpper", method_to_upper, 0);
-    define_string_method(type, vm, "startsWith", method_starts_with, 1);
-    define_string_method(type, vm, "endsWith", method_ends_with, 1);
+    Library_DefineTypeMethod(type, vm, "init", method_init, 1);
+    Library_DefineTypeMethod(type, vm, "length", method_length, 0);
+    Library_DefineTypeMethod(type, vm, "isEmpty", method_is_empty, 0);
+    Library_DefineTypeMethod(type, vm, "toLower", method_to_lower, 0);
+    Library_DefineTypeMethod(type, vm, "toUpper", method_to_upper, 0);
+    Library_DefineTypeMethod(type, vm, "startsWith", method_starts_with, 1);
+    Library_DefineTypeMethod(type, vm, "endsWith", method_ends_with, 1);
 
-    define_string_method(type->base.type, vm, "fromNumber", method_from_number, 1);
+    Library_DefineTypeMethod(type->base.type, vm, "fromNumber", method_from_number, 1);
 }
 
 ObjectString* String_New(VM* vm, size_t length)
@@ -204,7 +194,7 @@ ObjectString* String_Copy(VM* vm, const char* chars, size_t length)
     string->hash = hash;
 
     vm_push(vm, OBJ_VAL(string));
-    table_put(vm, &vm->strings, string, NIL_VAL());
+    table_put(vm, &vm->strings, OBJ_VAL(string), NIL_VAL());
     vm_pop(vm);
 
     return string;
@@ -240,7 +230,7 @@ ObjectString* String_Concatenate(VM* vm, ObjectString* a, ObjectString* b)
     memcpy(string->chars, a->chars, a->length);
     memcpy(string->chars + a->length, b->chars, b->length);
     string->chars[length] = '\0';
-    string->hash = string_hash((Object*)string);
+    string->hash = hash_cstring(string->chars, string->length);
 
     ObjectString* interned = table_find_string(&vm->strings, string->chars, length, string->hash);
     if (interned != NULL) {
@@ -250,7 +240,7 @@ ObjectString* String_Concatenate(VM* vm, ObjectString* a, ObjectString* b)
         return interned;
     } else {
         vm_push(vm, OBJ_VAL(string));
-        table_put(vm, &vm->strings, string, NIL_VAL());
+        table_put(vm, &vm->strings, OBJ_VAL(string), NIL_VAL());
         vm_pop(vm);
 
         return string;
@@ -260,21 +250,23 @@ ObjectString* String_Concatenate(VM* vm, ObjectString* a, ObjectString* b)
 ObjectString* String_FromValue(VM* vm, Value value)
 {
 #if NAN_BOXING
-    if (IS_BOOL(value)) {
+    if IS_NIL(value) {
+        return String_FromNil(vm);
+    } else if (IS_BOOL(value)) {
         return String_FromBoolean(vm, AS_BOOL(value));
     } else if IS_NUMBER(value) {
         return String_FromNumber(vm, AS_NUMBER(value));
-    } else if IS_NIL(value) {
-        return String_FromNil(vm);
     } else {
         return Object_ToString(AS_OBJ(value), vm);
     }
 #else
     switch (value.type) {
+        case VALUE_NIL: return String_FromNil(vm);
         case VALUE_BOOL: return String_FromBoolean(vm, AS_BOOL(value));
         case VALUE_NUMBER: return String_FromNumber(vm, AS_NUMBER(value));
-        case VALUE_NIL: return String_FromNil(vm);
         case VALUE_OBJ: return Object_ToString(AS_OBJ(value), vm);
     }
+
+    return NULL;
 #endif
 }

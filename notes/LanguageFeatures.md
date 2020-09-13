@@ -6,33 +6,6 @@ This document contains various notes and thoughts regarding the set of new featu
 
 ## Features
 
-### Data Structures
-
-#### Hash Map
-
-Another really common data structure is an associative array. It has many names, but the proposed name is "hash map", taken from Java. This may arguably be a poor decision because it relies on the implementation details unlike "dictionary" or "table", but it describes the idea fairly well. Drawing inspiration from languages like JavaScript and Python, the following is the proposed syntax:
-
-```js
-var x = {
-    "A": 1,
-    "B": 2,
-    "C": 3
-}
-
-x["A"];             //Equals to 1
-x.get("A");         //Equals to 1
-
-x["D"] = 4;         //Equals to 4, x is now { "A": 1, "B": 2, "C": 3, "D": 4 }
-x.set("D", 5);      //Equals to 5, x is now { "A": 1, "B": 2, "C": 3, "D": 5 }
-
-x.containsKey("B"); //Equals true
-x.containsKey(5);   //Equals false
-
-x.remove("B");      //x is now { "A": 1, "C": 3, "D": 4 }
-```
-
-Non-homogeneous keys are allowed, as well as nested maps. Accessing a non-existent key results in a runtime error.
-
 ### General
 
 #### To String

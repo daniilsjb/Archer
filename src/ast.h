@@ -15,6 +15,9 @@ typedef struct ArgumentList ArgumentList;
 typedef struct WhenEntry WhenEntry;
 typedef struct WhenEntryList WhenEntryList;
 
+typedef struct MapEntry MapEntry;
+typedef struct MapEntryList MapEntryList;
+
 typedef struct Block Block;
 typedef struct FunctionBody FunctionBody;
 typedef struct ParameterList ParameterList;
@@ -143,6 +146,7 @@ typedef struct Expression {
         EXPR_STRING_INTERP,
         EXPR_LAMBDA,
         EXPR_LIST,
+        EXPR_MAP,
         EXPR_IDENTIFIER,
     } type;
 
@@ -237,6 +241,10 @@ typedef struct Expression {
         } listExpr;
 
         struct {
+            MapEntryList* entries;
+        } mapExpr;
+
+        struct {
             Token identifier;
             ExprContext context;
         } identifierExpr;
@@ -262,6 +270,16 @@ typedef struct WhenEntryList {
     WhenEntry* entry;
     WhenEntryList* next;
 } WhenEntryList;
+
+typedef struct MapEntry {
+    Expression* key;
+    Expression* value;
+} MapEntry;
+
+typedef struct MapEntryList {
+    MapEntry* entry;
+    MapEntryList* next;
+} MapEntryList;
 
 typedef struct Block {
     DeclarationList* body;
@@ -380,6 +398,8 @@ Expression* ast_new_lambda_expr(Function* function);
 void ast_delete_lambda_expr(Expression* expression);
 Expression* ast_new_list_expr(ExpressionList* elements);
 void ast_delete_list_expr(Expression* expression);
+Expression* ast_new_map_expr(MapEntryList* entries);
+void ast_delete_map_expr(Expression* expression);
 Expression* ast_new_identifier_expr(Token identifier, ExprContext context);
 void ast_delete_identifier_expr(Expression* expression);
 
@@ -405,6 +425,14 @@ WhenEntryList* ast_new_when_entry_node(WhenEntry* entry);
 void ast_when_entry_list_append(WhenEntryList** list, WhenEntry* entry);
 void ast_delete_when_entry_list(WhenEntryList* list);
 size_t ast_when_entry_list_length(WhenEntryList* list);
+
+MapEntry* ast_new_map_entry(Expression* key, Expression* value);
+void ast_delete_map_entry(MapEntry* entry);
+
+MapEntryList* ast_new_map_entry_node(MapEntry* entry);
+void ast_map_entry_list_append(MapEntryList** list, MapEntry* entry);
+void ast_delete_map_entry_list(MapEntryList* list);
+size_t ast_map_entry_list_length(MapEntryList* list);
 
 Block* ast_new_block(DeclarationList* body);
 void ast_delete_block(Block* block);

@@ -9,6 +9,7 @@ typedef enum {
     TOKEN_R_PAREN,
     TOKEN_L_BRACE,
     TOKEN_R_BRACE,
+    TOKEN_AT_L_BRACE,
     TOKEN_L_BRACKET,
     TOKEN_R_BRACKET,
 

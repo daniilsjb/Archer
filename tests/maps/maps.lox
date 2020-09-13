@@ -1,0 +1,48 @@
+var foo = \x -> x;
+var x = 9;
+
+var map = @{
+    "a": 0,
+    1 + 2: 99,
+    1 + 2: 1,
+    foo: 2,
+    true: 3,
+    nil: 4,
+    "$x": @{
+        "b": 5,
+        "c": 6
+    }
+};
+
+print map["a"];      //Expected: 0
+print map[3];        //Expected: 1
+print map[foo];      //Expected: 2
+print map[true];     //Expected: 3
+print map[nil];      //Expected: 4
+print map["9"];      //Expected: <map>
+print map["9"]["b"]; //Expected: 5
+print map["9"]["c"]; //Expected: 6
+
+fun show() {
+    print "Showing!";
+}
+
+fun hide() {
+    print "Hiding!";
+}
+
+fun attack() {
+    print "Attacking!";
+}
+
+var dispatch = @{
+    "show": show,
+    "hide": hide,
+    "attack": attack  
+};
+
+fun execute(cmd) = dispatch[cmd]()
+
+execute("show");   //Expected: Showing!
+execute("hide");   //Expected: Hiding!
+execute("attack"); //Expected: Attacking!

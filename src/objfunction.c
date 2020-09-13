@@ -52,7 +52,7 @@ ObjectType* Function_NewType(VM* vm)
     type->flags = 0x0;
     type->ToString = function_to_string;
     type->Print = function_print;
-    type->Hash = NULL;
+    type->Hash = Object_GenericHash;
     type->GetField = NULL;
     type->SetField = NULL;
     type->GetSubscript = NULL;
@@ -103,7 +103,7 @@ ObjectType* Upvalue_NewType(VM* vm)
     type->flags = 0x0;
     type->ToString = upvalue_to_string;
     type->Print = upvalue_print;
-    type->Hash = NULL;
+    type->Hash = Object_GenericHash;
     type->GetField = NULL;
     type->SetField = NULL;
     type->GetSubscript = NULL;
@@ -170,7 +170,7 @@ ObjectType* Closure_NewType(VM* vm)
     type->flags = 0x0;
     type->ToString = closure_to_string;
     type->Print = closure_print;
-    type->Hash = NULL;
+    type->Hash = Object_GenericHash;
     type->GetField = NULL;
     type->SetField = NULL;
     type->GetSubscript = NULL;
@@ -234,7 +234,7 @@ ObjectType* BoundMethod_NewType(VM* vm)
     type->flags = 0x0;
     type->ToString = bound_method_to_string;
     type->Print = bound_method_print;
-    type->Hash = NULL;
+    type->Hash = Object_GenericHash;
     type->GetField = NULL;
     type->SetField = NULL;
     type->GetSubscript = NULL;

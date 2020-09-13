@@ -10,6 +10,7 @@
 
 void table_init(Table* table)
 {
+    table->size = 0;
     table->count = 0;
     table->capacityMask = -1;
     table->entries = NULL;
@@ -21,21 +22,26 @@ void table_free(GC* gc, Table* table)
     table_init(table);
 }
 
-static Entry* find_entry(Entry* entries, int capacityMask, ObjectString* key)
+size_t table_size(Table* table)
 {
-    uint32_t index = key->hash & capacityMask;
+    return table->size;
+}
+
+static Entry* find_entry(Entry* entries, int capacityMask, Value key)
+{
+    uint32_t index = value_hash(key) & capacityMask;
     Entry* tombstone = NULL;
 
     while (true) {
         Entry* entry = &entries[index];
 
-        if (entry->key == NULL) {
+        if (IS_UNDEFINED(entry->key)) {
             if (IS_NIL(entry->value)) {
                 return tombstone != NULL ? tombstone : entry;
             } else if (tombstone == NULL) {
                 tombstone = entry;
             }
-        } else if (entry->key == key) {
+        } else if (values_equal(entry->key, key)) {
             return entry;
         }
 
@@ -45,16 +51,17 @@ static Entry* find_entry(Entry* entries, int capacityMask, ObjectString* key)
 
 static void adjust_capacity(VM* vm, Table* table, int capacityMask)
 {
-    Entry* entries = ALLOCATE(&vm->gc, Entry, capacityMask + 1);
+    Entry* entries = ALLOCATE(&vm->gc, Entry, (size_t)capacityMask + 1);
     for (int i = 0; i <= capacityMask; i++) {
-        entries[i].key = NULL;
+        entries[i].key = UNDEFINED_VAL();
         entries[i].value = NIL_VAL();
     }
 
     table->count = 0;
+    table->size = 0;
     for (int i = 0; i <= table->capacityMask; i++) {
         Entry* entry = &table->entries[i];
-        if (entry->key == NULL) {
+        if (IS_UNDEFINED(entry->key)) {
             continue;
         }
 
@@ -71,14 +78,14 @@ static void adjust_capacity(VM* vm, Table* table, int capacityMask)
     table->capacityMask = capacityMask;
 }
 
-bool table_get(Table* table, ObjectString* key, Value* value)
+bool table_get(Table* table, Value key, Value* value)
 {
     if (table->count == 0) {
         return false;
     }
 
     Entry* entry = find_entry(table->entries, table->capacityMask, key);
-    if (entry->key == NULL) {
+    if (IS_UNDEFINED(entry->key)) {
         return false;
     }
 
@@ -86,7 +93,7 @@ bool table_get(Table* table, ObjectString* key, Value* value)
     return true;
 }
 
-bool table_put(VM* vm, Table* table, ObjectString* key, Value value)
+bool table_put(VM* vm, Table* table, Value key, Value value)
 {
     if ((double)table->count + 1 > ((double)table->capacityMask + 1) * TABLE_MAX_LOAD) {
         int capacity = GROW_CAPACITY(table->capacityMask + 1) - 1;
@@ -95,9 +102,10 @@ bool table_put(VM* vm, Table* table, ObjectString* key, Value value)
 
     Entry* entry = find_entry(table->entries, table->capacityMask, key);
 
-    bool isNewKey = entry->key == NULL;
+    bool isNewKey = IS_UNDEFINED(entry->key);
     if (isNewKey && IS_NIL(entry->value)) {
         table->count++;
+        table->size++;
     }
 
     entry->key = key;
@@ -109,13 +117,13 @@ void table_put_from(VM* vm, Table* source, Table* destination)
 {
     for (int i = 0; i <= source->capacityMask; i++) {
         Entry* entry = &source->entries[i];
-        if (entry->key != NULL) {
+        if (!IS_UNDEFINED(entry->key)) {
             table_put(vm, destination, entry->key, entry->value);
         }
     }
 }
 
-bool table_remove(Table* table, ObjectString* key)
+bool table_remove(Table* table, Value key)
 {
     if (table->count == 0) {
         return false;
@@ -126,10 +134,16 @@ bool table_remove(Table* table, ObjectString* key)
         return false;
     }
 
-    entry->key = NULL;
+    entry->key = UNDEFINED_VAL();
     entry->value = BOOL_VAL(true);
+    table->size--;
 
     return true;
+}
+
+static bool strings_equal(const char* chars, size_t length, uint32_t hash, ObjectString* string)
+{
+    return string->length == length && string->hash == hash && memcmp(string->chars, chars, length) == 0;
 }
 
 ObjectString* table_find_string(Table* table, const char* chars, size_t length, uint32_t hash)
@@ -141,12 +155,12 @@ ObjectString* table_find_string(Table* table, const char* chars, size_t length, 
     uint32_t index = hash & table->capacityMask;
     while (true) {
         Entry* entry = &table->entries[index];
-        if (entry->key == NULL) {
+        if (IS_UNDEFINED(entry->key)) {
             if (IS_NIL(entry->value)) {
                 return NULL;
             }
-        } else if (entry->key->length == length && entry->key->hash == hash && memcmp(entry->key->chars, chars, length) == 0) {
-            return entry->key;
+        } else if (strings_equal(chars, length, hash, VAL_AS_STRING(entry->key))) {
+            return VAL_AS_STRING(entry->key);
         }
 
         index = (index + 1) & table->capacityMask;

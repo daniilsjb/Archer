@@ -1,0 +1,57 @@
+var foo = @{
+    "a": 1,
+    "b": 2,
+    "c": 3
+};
+
+print foo.length();  //Expected: 3
+print foo.isEmpty(); //Expected: false
+
+print foo.containsKey("a"); //Expected: true
+print foo.containsKey("b"); //Expected: true
+print foo.containsKey("c"); //Expected: true
+print foo.containsKey("d"); //Expected: false
+
+print foo.getOrDefault("a", 47); //Expected: 1
+print foo.getOrDefault("b", 47); //Expected: 2
+print foo.getOrDefault("c", 47); //Expected: 3
+print foo.getOrDefault("d", 47); //Expected: 47
+
+print foo.putIfAbsent("a", 47); //Expected: 1
+print foo.putIfAbsent("b", 47); //Expected: 2
+print foo.putIfAbsent("c", 47); //Expected: 3
+print foo.putIfAbsent("d", 47); //Expected: nil
+
+print foo.length();         //Expected: 4
+print foo.containsKey("d"); //Expected: true
+print foo["d"];             //Expected: 47
+
+foo.putAll(@{
+    "e": 4,
+    "f": 5
+});
+
+print foo.length();         //Expected: 6
+print foo.containsKey("e"); //Expected: true
+print foo.containsKey("f"); //Expected: true
+print foo["e"];             //Expected: 4
+print foo["f"];             //Expected: 5
+
+foo.remove("a");
+print foo.length();         //Expected: 5
+print foo.containsKey("a"); //Expected: false
+
+foo.clear();
+print foo.length();         //Expected: 0
+print foo.isEmpty();        //Expected: true
+print foo.containsKey("b"); //Expected: false
+print foo.containsKey("c"); //Expected: false
+print foo.containsKey("d"); //Expected: false
+print foo.containsKey("e"); //Expected: false
+print foo.containsKey("f"); //Expected: false
+
+foo[1] = "A";
+foo[2] = "B";
+
+print "${foo[1]}"; //Expected: A
+print "${foo[2]}"; //Expected: B

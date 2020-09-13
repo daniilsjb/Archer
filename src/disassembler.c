@@ -222,6 +222,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("END_CLASS", offset);
         case OP_LIST:
             return byte_instruction("LIST", chunk, offset);
+        case OP_MAP:
+            return byte_instruction("MAP", chunk, offset);
         case OP_LOAD_SUBSCRIPT:
             return simple_instruction("LOAD_SUBSCRIPT", offset);
         case OP_LOAD_SUBSCRIPT_SAFE:

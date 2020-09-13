@@ -296,6 +296,7 @@ Literal → BooleanLiteral
         | NumberLiteral
         | StringLiteral
         | ListLiteral
+        | MapLiteral
         | LambdaLiteral
         | "nil"
         | "this"
@@ -303,7 +304,11 @@ Literal → BooleanLiteral
 BooleanLiteral → "true"
                | "false"
 
-ListLiteral → "[" (Expression ("," Expression)?)? "]"
+ListLiteral → "[" (Expression ("," Expression)*)? "]"
+
+MapLiteral → "@{" (MapEntry ("," MapEntry)*)? "}"
+
+MapEntry → Expression ":" Expression
 
 LambdaLiteral → "\" Parameters? "->" (Expression | BlockStatement)
 ```

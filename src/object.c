@@ -70,12 +70,12 @@ uint32_t Object_Hash(Object* object)
     return object->type->Hash(object);
 }
 
-bool Object_GetField(Object* object, Object* key, VM* vm, Value* result)
+bool Object_GetField(Object* object, Value key, VM* vm, Value* result)
 {
     return object->type->GetField(object, key, vm, result);
 }
 
-bool Object_SetField(Object* object, Object* key, Value value, VM* vm)
+bool Object_SetField(Object* object, Value key, Value value, VM* vm)
 {
     return object->type->SetField(object, key, value, vm);
 }
@@ -90,7 +90,7 @@ bool Object_SetSubscript(Object* object, Value index, Value value, VM* vm)
     return object->type->SetSubscript(object, index, value, vm);
 }
 
-bool Object_GetMethod(Object* object, Object* key, VM* vm, Value* result)
+bool Object_GetMethod(Object* object, Value key, VM* vm, Value* result)
 {
     if (!object->type->GetMethod(object->type, key, vm, result)) {
         return false;
@@ -100,17 +100,17 @@ bool Object_GetMethod(Object* object, Object* key, VM* vm, Value* result)
     return true;
 }
 
-bool Object_GetMethodDirectly(Object* object, Object* key, VM* vm, Value* result)
+bool Object_GetMethodDirectly(Object* object, Value key, VM* vm, Value* result)
 {
     return AS_TYPE(object)->GetMethod(AS_TYPE(object), key, vm, result);
 }
 
-bool Object_SetMethod(Object* object, Object* key, Value value, VM* vm)
+bool Object_SetMethod(Object* object, Value key, Value value, VM* vm)
 {
     return object->type->SetMethod(object->type, key, value, vm);
 }
 
-bool Object_SetMethodDirectly(Object* object, Object* key, Value value, VM* vm)
+bool Object_SetMethodDirectly(Object* object, Value key, Value value, VM* vm)
 {
     return AS_TYPE(object)->SetMethod(AS_TYPE(object), key, value, vm);
 }
@@ -136,24 +136,29 @@ void Object_Free(Object* object, GC* gc)
     object->type->Free(object, gc);
 }
 
-bool Object_GenericGetField(Object* object, Object* key, VM* vm, Value* result)
+uint32_t Object_GenericHash(Object* object)
 {
-    return table_get(&object->fields, (ObjectString*)key, result);
+    return hash_bits((uint64_t)(uintptr_t)object);
 }
 
-bool Object_GenericSetField(Object* object, Object* key, Value value, VM* vm)
+bool Object_GenericGetField(Object* object, Value key, VM* vm, Value* result)
 {
-    return table_put(vm, &object->fields, (ObjectString*)key, value);
+    return table_get(&object->fields, key, result);
 }
 
-bool Object_GenericGetMethod(ObjectType* type, Object* key, VM* vm, Value* result)
+bool Object_GenericSetField(Object* object, Value key, Value value, VM* vm)
 {
-    return table_get(&type->methods, (ObjectString*)key, result);
+    return table_put(vm, &object->fields, key, value);
 }
 
-bool Object_GenericSetMethod(ObjectType* type, Object* key, Value value, VM* vm)
+bool Object_GenericGetMethod(ObjectType* type, Value key, VM* vm, Value* result)
 {
-    return table_put(vm, &type->methods, (ObjectString*)key, value);
+    return table_get(&type->methods, key, result);
+}
+
+bool Object_GenericSetMethod(ObjectType* type, Value key, Value value, VM* vm)
+{
+    return table_put(vm, &type->methods, key, value);
 }
 
 void Object_GenericTraverse(Object* object, GC* gc)
@@ -198,7 +203,7 @@ static bool type_call(Object* callee, uint8_t argCount, VM* vm)
     vm->stackTop[-argCount - 1] = OBJ_VAL(Object_New(vm, type));
 
     Value initializer;
-    if (table_get(&type->methods, vm->initString, &initializer)) {
+    if (table_get(&type->methods, OBJ_VAL(vm->initString), &initializer)) {
         return Object_Call(AS_OBJ(initializer), argCount, vm);
     }
 
@@ -218,7 +223,7 @@ static ObjectType* new_meta_type(VM* vm)
     meta->flags = 0x0,
     meta->ToString = type_to_string;
     meta->Print = type_print;
-    meta->Hash = NULL;
+    meta->Hash = Object_GenericHash;
     meta->GetField = Object_GenericGetField;
     meta->SetField = NULL;
     meta->GetMethod = Object_GenericGetMethod;
@@ -269,7 +274,7 @@ ObjectType* Type_NewClass(VM* vm, const char* name)
     type->flags = TF_DEFAULT,
     type->ToString = instance_to_string;
     type->Print = instance_print;
-    type->Hash = NULL;
+    type->Hash = Object_GenericHash;
     type->GetField = Object_GenericGetField;
     type->SetField = Object_GenericSetField;
     type->GetMethod = Object_GenericGetMethod;
