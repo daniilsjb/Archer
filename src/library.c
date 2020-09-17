@@ -9,6 +9,7 @@
 #include "objstring.h"
 #include "objnative.h"
 #include "objfunction.h"
+#include "objcoroutine.h"
 #include "objlist.h"
 #include "objmap.h"
 #include "objarray.h"
@@ -75,6 +76,8 @@ void Library_Init(VM* vm)
     vm->upvalueType = Upvalue_NewType(vm);
     vm->closureType = Closure_NewType(vm);
     vm->boundMethodType = BoundMethod_NewType(vm);
+    vm->coroutineType = Coroutine_NewType(vm);
+    vm->coroutineInstanceType = CoroutineInstance_NewType(vm);
     vm->listType = List_NewType(vm);
     vm->mapType = Map_NewType(vm);
     vm->arrayType = Array_NewType(vm);
@@ -87,6 +90,8 @@ void Library_Init(VM* vm)
     Upvalue_PrepareType(vm->upvalueType, vm);
     Closure_PrepareType(vm->closureType, vm);
     BoundMethod_PrepareType(vm->boundMethodType, vm);
+    Coroutine_PrepareType(vm->coroutineType, vm);
+    CoroutineInstance_PrepareType(vm->coroutineInstanceType, vm);
     List_PrepareType(vm->listType, vm);
     Map_PrepareType(vm->mapType, vm);
     Array_PrepareType(vm->arrayType, vm);

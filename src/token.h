@@ -89,6 +89,7 @@ typedef enum {
     TOKEN_VAR,
     TOKEN_WHEN,
     TOKEN_WHILE,
+    TOKEN_YIELD,
 
     /* Literals */
     TOKEN_IDENTIFIER,

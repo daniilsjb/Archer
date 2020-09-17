@@ -33,6 +33,8 @@ typedef struct VM {
     ObjectType* closureType;
     ObjectType* nativeType;
     ObjectType* boundMethodType;
+    ObjectType* coroutineType;
+    ObjectType* coroutineInstanceType;
     ObjectType* listType;
     ObjectType* mapType;
     ObjectType* arrayType;

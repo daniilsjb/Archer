@@ -152,23 +152,23 @@ ExpressionStatement → Expression ";"
 
 ### Expressions
 
-| Precedence | Title           | Operators                                                                 | Associativity |
-|:----------:| --------------- | ------------------------------------------------------------------------- | ------------- |
-| 1          | Postfix         | `++`, `--`,  `.`, `?.`, `[]`, `?[]`, `()`                                 | Left-to-right |
-| 2          | Prefix          | `++`, `--`, `-`, `~`, `!`                                                 | Right-to-left |
-| 3          | Exponentiation  | `**`                                                                      | Left-to-right |
-| 4          | Multiplicative  | `*`, `/`, `%`                                                             | Left-to-right |
-| 5          | Additive        | `+`, `-`                                                                  | Left-to-right |
-| 6          | Bitwise Shift   | `>>`, `<<`                                                                | Left-to-right |
-| 7          | Relational      | `>`, `>=`, `<`, `<=`                                                      | Left-to-right |
-| 8          | Equality        | `==`, `!=`                                                                | Left-to-right |
-| 9          | Bitwise AND     | `&`                                                                       | Left-to-right |
-| 10         | Bitwise XOR     | `^`                                                                       | Left-to-right |
-| 11         | Bitwise OR      | `\|`                                                                      | Left-to-right |
-| 12         | Logical AND     | `&&`                                                                      | Left-to-right |
-| 13         | Logical OR      | `\|\|`                                                                    | Left-to-right |
-| 14         | Conditional     | `? :`, `?:`                                                               | Right-to-left |
-| 15         | Assignment      | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `\|=`, `>>=`, `<<=` | Right-to-left |
+| Precedence | Title           | Operators                                                                          | Associativity |
+|:----------:| --------------- | ---------------------------------------------------------------------------------- | ------------- |
+| 1          | Postfix         | `++`, `--`,  `.`, `?.`, `[]`, `?[]`, `()`                                          | Left-to-right |
+| 2          | Prefix          | `++`, `--`, `-`, `~`, `!`                                                          | Right-to-left |
+| 3          | Exponentiation  | `**`                                                                               | Left-to-right |
+| 4          | Multiplicative  | `*`, `/`, `%`                                                                      | Left-to-right |
+| 5          | Additive        | `+`, `-`                                                                           | Left-to-right |
+| 6          | Bitwise Shift   | `>>`, `<<`                                                                         | Left-to-right |
+| 7          | Relational      | `>`, `>=`, `<`, `<=`                                                               | Left-to-right |
+| 8          | Equality        | `==`, `!=`                                                                         | Left-to-right |
+| 9          | Bitwise AND     | `&`                                                                                | Left-to-right |
+| 10         | Bitwise XOR     | `^`                                                                                | Left-to-right |
+| 11         | Bitwise OR      | `\|`                                                                               | Left-to-right |
+| 12         | Logical AND     | `&&`                                                                               | Left-to-right |
+| 13         | Logical OR      | `\|\|`                                                                             | Left-to-right |
+| 14         | Conditional     | `? :`, `?:`                                                                        | Right-to-left |
+| 15         | Assignment      | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `\|=`, `>>=`, `<<=`, `yield` | Right-to-left |
 
 ```
 Expression → AssignmentExpression
@@ -178,7 +178,14 @@ Expression → AssignmentExpression
 
 ```
 AssignmentExpression → PostfixExpression AssignmentOperator AssignmentExpression
+                     | YieldExpression
                      | ConditionalExpression
+```
+
+#### Yield
+
+```
+YieldExpression → "yield" Expression?
 ```
 
 #### Conditional

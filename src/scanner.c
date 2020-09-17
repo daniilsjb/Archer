@@ -275,14 +275,24 @@ static TokenType check_keyword(Scanner* scanner, size_t start, size_t length, co
     return TOKEN_IDENTIFIER;
 }
 
+static size_t current_length(Scanner* scanner)
+{
+    return scanner->current - scanner->start;
+}
+
+static char peek_start(Scanner* scanner, int depth)
+{
+    return scanner->start[depth];
+}
+
 static TokenType identifier_type(Scanner* scanner)
 {
     switch (*scanner->start) {
         case 'a': return check_keyword(scanner, 1, 2, "nd", TOKEN_AND);
         case 'b': return check_keyword(scanner, 1, 4, "reak", TOKEN_BREAK);
         case 'c': {
-            if (scanner->current - scanner->start > 1) {
-                switch (*(scanner->start + 1)) {
+            if (current_length(scanner) > 1) {
+                switch (peek_start(scanner, 1)) {
                     case 'a': return check_keyword(scanner, 2, 2, "se", TOKEN_CASE);
                     case 'l': return check_keyword(scanner, 2, 3, "ass", TOKEN_CLASS);
                     case 'o': return check_keyword(scanner, 2, 6, "ntinue", TOKEN_CONTINUE);
@@ -290,8 +300,8 @@ static TokenType identifier_type(Scanner* scanner)
             }
         }
         case 'd': {
-            if (scanner->current - scanner->start > 1) {
-                switch (*(scanner->start + 1)) {
+            if (current_length(scanner) > 1) {
+                switch (peek_start(scanner, 1)) {
                     case 'e': return check_keyword(scanner, 2, 5, "fault", TOKEN_DEFAULT);
                     case 'o': return check_keyword(scanner, 2, 0, "", TOKEN_DO);
                 }
@@ -299,8 +309,8 @@ static TokenType identifier_type(Scanner* scanner)
         }
         case 'e': return check_keyword(scanner, 1, 3, "lse", TOKEN_ELSE);
         case 'f': {
-            if (scanner->current - scanner->start > 1) {
-                switch (*(scanner->start + 1)) {
+            if (current_length(scanner) > 1) {
+                switch (peek_start(scanner, 1)) {
                     case 'a': return check_keyword(scanner, 2, 3, "lse", TOKEN_FALSE);
                     case 'o': return check_keyword(scanner, 2, 1, "r", TOKEN_FOR);
                     case 'u': return check_keyword(scanner, 2, 1, "n", TOKEN_FUN);
@@ -313,8 +323,8 @@ static TokenType identifier_type(Scanner* scanner)
         case 'p': return check_keyword(scanner, 1, 4, "rint", TOKEN_PRINT);
         case 'r': return check_keyword(scanner, 1, 5, "eturn", TOKEN_RETURN);
         case 's': {
-            if (scanner->current - scanner->start > 1) {
-                switch (*(scanner->start + 1)) {
+            if (current_length(scanner) > 1) {
+                switch (peek_start(scanner, 1)) {
                     case 'w': return check_keyword(scanner, 2, 4, "itch", TOKEN_SWITCH);
                     case 'u': return check_keyword(scanner, 2, 3, "per", TOKEN_SUPER);
                     case 't': return check_keyword(scanner, 2, 4, "atic", TOKEN_STATIC);
@@ -322,8 +332,8 @@ static TokenType identifier_type(Scanner* scanner)
             }
         }
         case 't': {
-            if (scanner->current - scanner->start > 1) {
-                switch (*(scanner->start + 1)) {
+            if (current_length(scanner) > 1) {
+                switch (peek_start(scanner, 1)) {
                     case 'h': return check_keyword(scanner, 2, 2, "is", TOKEN_THIS);
                     case 'r': return check_keyword(scanner, 2, 2, "ue", TOKEN_TRUE);
                 }
@@ -331,11 +341,11 @@ static TokenType identifier_type(Scanner* scanner)
         }
         case 'v': return check_keyword(scanner, 1, 2, "ar", TOKEN_VAR);
         case 'w': {
-            if (scanner->current - scanner->start > 1) {
-                switch (*(scanner->start + 1)) {
+            if (current_length(scanner) > 1) {
+                switch (peek_start(scanner, 1)) {
                     case 'h': {
-                        if (scanner->current - scanner->start > 2) {
-                            switch (*(scanner->start + 2)) {
+                        if (current_length(scanner) > 2) {
+                            switch (peek_start(scanner, 2)) {
                                 case 'e': return check_keyword(scanner, 3, 1, "n", TOKEN_WHEN);
                                 case 'i': return check_keyword(scanner, 3, 2, "le", TOKEN_WHILE);
                             }
@@ -344,6 +354,7 @@ static TokenType identifier_type(Scanner* scanner)
                 }
             }
         }
+        case 'y': return check_keyword(scanner, 1, 4, "ield", TOKEN_YIELD);
     }
 
     return TOKEN_IDENTIFIER;

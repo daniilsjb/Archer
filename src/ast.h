@@ -141,6 +141,7 @@ typedef struct Expression {
         EXPR_SUPER,
         EXPR_ASSIGNMENT,
         EXPR_COMPOUND_ASSIGNMNET,
+        EXPR_YIELD,
         EXPR_LOGICAL,
         EXPR_CONDITIONAL,
         EXPR_ELVIS,
@@ -191,6 +192,11 @@ typedef struct Expression {
             Token op;
             Expression* value;
         } compoundAssignmentExpr;
+
+        struct {
+            Token keyword;
+            Expression* expression;
+        } yieldExpr;
 
         struct {
             Expression* left;
@@ -384,6 +390,8 @@ Expression* ast_new_assignment_expr(Expression* target, Expression* value);
 void ast_delete_assignment_expr(Expression* expression);
 Expression* ast_new_compound_assignment_expr(Expression*, Token op, Expression* value);
 void ast_delete_compound_assignment_expr(Expression* expression);
+Expression* ast_new_yield_expr(Token keyword, Expression* expression);
+void ast_delete_yield_expr(Expression* expression);
 Expression* ast_new_logical_expr(Expression* left, Token op, Expression* right);
 void ast_delete_logical_expr(Expression* expression);
 Expression* ast_new_conditional_expr(Expression* condition, Expression* thenBranch, Expression* elseBranch);

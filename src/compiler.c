@@ -74,6 +74,8 @@ typedef struct Compiler {
 
     Token token;
 
+    bool isCoroutine;
+
     bool error;
     bool panic;
 } Compiler;
@@ -112,6 +114,7 @@ static void compile_subscript_expr(Compiler* compiler, Expression* expr);
 static void compile_super_expr(Compiler* compiler, Expression* expr);
 static void compile_assignment_expr(Compiler* compiler, Expression* expr);
 static void compile_compound_assignment_expr(Compiler* compiler, Expression* expr);
+static void compile_yield_expr(Compiler* compiler, Expression* expr);
 static void compile_postfix_inc_expr(Compiler* compiler, Expression* expr);
 static void compile_prefix_inc_expr(Compiler* compiler, Expression* expr);
 static void compile_logical_expr(Compiler* compiler, Expression* expr);
@@ -178,6 +181,8 @@ static void compiler_init(Compiler* compiler, VM* vm, CompilerType type, Token i
         local->identifier.start = "";
         local->identifier.length = 0;
     }
+
+    compiler->isCoroutine = false;
 
     compiler->error = false;
     compiler->panic = false;
@@ -892,6 +897,7 @@ void compile_expression(Compiler* compiler, Expression* expr)
         case EXPR_SUPER: compile_super_expr(compiler, expr); return;
         case EXPR_ASSIGNMENT: compile_assignment_expr(compiler, expr); return;
         case EXPR_COMPOUND_ASSIGNMNET: compile_compound_assignment_expr(compiler, expr); return;
+        case EXPR_YIELD: compile_yield_expr(compiler, expr); return;
         case EXPR_POSTFIX_INC: compile_postfix_inc_expr(compiler, expr); return;
         case EXPR_PREFIX_INC: compile_prefix_inc_expr(compiler, expr); return;
         case EXPR_LOGICAL: compile_logical_expr(compiler, expr); return;
@@ -1130,6 +1136,26 @@ void compile_compound_assignment_expr(Compiler* compiler, Expression* expr)
             error(compiler, "Invalid compund assignment target.");
         }
     }
+}
+
+void compile_yield_expr(Compiler* compiler, Expression* expr)
+{
+    compiler->token = expr->as.yieldExpr.keyword;
+
+    if (compiler->type == TYPE_SCRIPT || compiler->type == TYPE_INITIALIZER || compiler->type == TYPE_STATIC_INITIALIZER) {
+        error(compiler, "Can only yield from non-initializer functions.");
+    }
+
+    compiler->isCoroutine = true;
+
+    Expression* value = expr->as.yieldExpr.expression;
+    if (value) {
+        compile_expression(compiler, value);
+    } else {
+        emit_byte(compiler, OP_LOAD_NIL);
+    }
+
+    emit_byte(compiler, OP_YIELD);
 }
 
 static OpCode increment_operation(Token token)
@@ -1698,6 +1724,10 @@ void compile_function(Compiler* compiler, Function* function, CompilerType type,
     for (size_t i = 0; i < compiled->upvalueCount; i++) {
         emit_byte(compiler, newCompiler.upvalues[i].isLocal ? 1 : 0);
         emit_byte(compiler, newCompiler.upvalues[i].index);
+    }
+
+    if (newCompiler.isCoroutine) {
+        emit_byte(compiler, OP_COROUTINE);
     }
 }
 

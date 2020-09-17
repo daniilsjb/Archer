@@ -74,6 +74,7 @@ static Expression* prefix_inc_expr(Parser* parser);
 static Expression* unary_expr(Parser* parser);
 static Expression* grouping_expr(Parser* parser);
 static Expression* super_expr(Parser* parser);
+static Expression* yield_expr(Parser* parser);
 static Expression* call_expr(Parser* parser, Expression* prefix);
 static Expression* property_expr(Parser* parser, Expression* prefix);
 static Expression* subscript_expr(Parser* parser, Expression* prefix);
@@ -173,6 +174,7 @@ ParseRule rules[] = {
     [TOKEN_VAR]                 = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_VAR]                 = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_WHILE]               = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_YIELD]               = { yield_expr,         NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_IDENTIFIER]          = { identifier_expr,    NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_STRING]              = { literal_expr,       NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_STRING_INTERP_BEGIN] = { string_interp_expr, NULL,                     PREC_NONE,           ASSOC_NONE   },
@@ -293,6 +295,7 @@ static void synchronize(Parser* parser)
             case TOKEN_BREAK: return;
             case TOKEN_CONTINUE: return;
             case TOKEN_RETURN: return;
+            case TOKEN_YIELD: return;
         }
 
         next_token(parser);
@@ -681,6 +684,17 @@ Expression* super_expr(Parser* parser)
     consume(parser, TOKEN_IDENTIFIER, "Expected superclass method name in 'super'.");
     Token method = parser->previous;
     return ast_new_super_expr(keyword, method);
+}
+
+Expression* yield_expr(Parser* parser)
+{
+    Token keyword = parser->previous;
+    Expression* expr = NULL;
+    if (!check(parser, TOKEN_SEMICOLON)) {
+        expr = expression(parser);
+    }
+
+    return ast_new_yield_expr(keyword, expr);
 }
 
 Expression* call_expr(Parser* parser, Expression* prefix)

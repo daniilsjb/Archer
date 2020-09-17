@@ -13,6 +13,7 @@
 #include "objstring.h"
 #include "objnative.h"
 #include "objfunction.h"
+#include "objcoroutine.h"
 #include "objlist.h"
 #include "objmap.h"
 
@@ -42,6 +43,8 @@ void vm_init(VM* vm)
     vm->upvalueType = NULL;
     vm->closureType = NULL;
     vm->boundMethodType = NULL;
+    vm->coroutineType = NULL;
+    vm->coroutineInstanceType = NULL;
     vm->listType = NULL;
     vm->mapType = NULL;
     vm->arrayType = NULL;
@@ -759,6 +762,10 @@ static InterpretStatus run(VM* vm)
 
                 close_upvalues(vm, frame->slots);
 
+                if (VAL_IS_COROUTINE_INSTANCE(*frame->slots, vm)) {
+                    VAL_AS_COROUTINE_INSTANCE(*frame->slots)->done = true;
+                }
+
                 vm->frameCount--;
                 if (vm->frameCount == 0) {
                     POP();
@@ -960,6 +967,32 @@ static InterpretStatus run(VM* vm)
                 }
 
                 vm->stackTop -= count - 1;
+                break;
+            }
+            case OP_COROUTINE: {
+                TOP = OBJ_VAL(Coroutine_New(vm, VAL_AS_CLOSURE(TOP)));
+                break;
+            }
+            case OP_YIELD: {
+                Value result = POP();
+
+                close_upvalues(vm, frame->slots);
+
+                ObjectCoroutineInstance* coroutine = VAL_AS_COROUTINE_INSTANCE(*frame->slots);
+                coroutine->ip = ip;
+
+                size_t stackSize = (size_t)(uintptr_t)(vm->stackTop - (frame->slots + 1));
+                coroutine->stackCopy = GROW_ARRAY(&vm->gc, Value, coroutine->stackCopy, coroutine->stackSize, stackSize);
+                memcpy(coroutine->stackCopy, frame->slots + 1, sizeof(Value) * stackSize);
+                coroutine->stackSize = stackSize;
+
+                vm->stackTop = frame->slots;
+                PUSH(result);
+
+                vm->frameCount--;
+                frame = &vm->frames[vm->frameCount - 1];
+
+                ip = frame->ip;
                 break;
             }
         }
