@@ -21,19 +21,12 @@
 #include "disassembler.h"
 #endif
 
-static void reset_stack(VM* vm)
-{
-    vm->stackTop = vm->stack;
-    vm->frameCount = 0;
-    vm->openUpvalues = NULL;
-}
-
 void vm_init(VM* vm)
 {
     vm->compiler = NULL;
     vm->classCompiler = NULL;
 
-    reset_stack(vm);
+    vm->coroutine = NULL;
 
     vm->initString = NULL;
 
@@ -44,7 +37,6 @@ void vm_init(VM* vm)
     vm->closureType = NULL;
     vm->boundMethodType = NULL;
     vm->coroutineType = NULL;
-    vm->coroutineInstanceType = NULL;
     vm->listType = NULL;
     vm->mapType = NULL;
     vm->arrayType = NULL;
@@ -54,6 +46,8 @@ void vm_init(VM* vm)
 
     table_init(&vm->globals);
     table_init(&vm->strings);
+
+    vm->temporaryCount = 0;
 
     Library_Init(vm);
 }
@@ -66,25 +60,39 @@ void vm_free(VM* vm)
     table_free(&vm->gc, &vm->strings);
 
     GC_Free(&vm->gc);
-
-    reset_stack(vm);
 }
 
 void vm_push(VM* vm, Value value)
 {
-    *vm->stackTop = value;
-    vm->stackTop++;
+    *vm->coroutine->stackTop = value;
+    vm->coroutine->stackTop++;
 }
 
 Value vm_pop(VM* vm)
 {
-    vm->stackTop--;
-    return *vm->stackTop;
+    vm->coroutine->stackTop--;
+    return *vm->coroutine->stackTop;
 }
 
-static Value peek(VM* vm, int distance)
+Value vm_peek(VM* vm, int distance)
 {
-    return vm->stackTop[-1 - distance];
+    return vm->coroutine->stackTop[-1 - distance];
+}
+
+void vm_push_temporary(VM* vm, Value value)
+{
+    vm->temporaries[vm->temporaryCount++] = value;
+}
+
+Value vm_pop_temporary(VM* vm)
+{
+    vm->temporaryCount--;
+    return vm->temporaries[vm->temporaryCount];
+}
+
+Value vm_peek_temporary(VM* vm, int distance)
+{
+    return vm->temporaries[vm->temporaryCount - 1 - distance];
 }
 
 static int get_current_line(CallFrame* frame)
@@ -103,8 +111,8 @@ static void print_call_frame(CallFrame* frame)
 
 static void print_stack_trace(VM* vm)
 {
-    for (size_t i = vm->frameCount - 1; i != (size_t)-1; i--) {
-        print_call_frame(&vm->frames[i]);
+    for (size_t i = vm->coroutine->frameCount - 1; i != (size_t)-1; i--) {
+        print_call_frame(&vm->coroutine->frames[i]);
     }
 }
 
@@ -112,14 +120,14 @@ InterpretStatus runtime_error(VM* vm, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    fprintf(stderr, "[Line %d] ", get_current_line(&vm->frames[vm->frameCount - 1]));
+    fprintf(stderr, "[Line %d] ", get_current_line(&vm->coroutine->frames[vm->coroutine->frameCount - 1]));
     vfprintf(stderr, format, args);
     fputs("\n", stderr);
     va_end(args);
 
     print_stack_trace(vm);
 
-    reset_stack(vm);
+    //reset_stack(vm);
     return INTERPRET_RUNTIME_ERROR;
 }
 
@@ -130,15 +138,15 @@ bool call(VM* vm, ObjectClosure* closure, uint8_t argCount)
         return false;
     }
 
-    if (vm->frameCount == FRAMES_MAX) {
+    if (vm->coroutine->frameCount == FRAMES_MAX) {
         runtime_error(vm, "Stack overflow.");
         return false;
     }
 
-    CallFrame* frame = &vm->frames[vm->frameCount++];
+    CallFrame* frame = &vm->coroutine->frames[vm->coroutine->frameCount++];
     frame->closure = closure;
     frame->ip = closure->function->chunk.code;
-    frame->slots = vm->stackTop - argCount - 1;
+    frame->slots = vm->coroutine->stackTop - argCount - 1;
     return true;
 }
 
@@ -195,7 +203,7 @@ static bool invoke_from_class(VM* vm, ObjectType* clazz, ObjectString* name, uin
 
 static bool invoke(VM* vm, ObjectString* name, uint8_t argCount)
 {
-    Value value = peek(vm, argCount);
+    Value value = vm_peek(vm, argCount);
     if (!IS_OBJ(value)) {
         runtime_error(vm, "Can only invoke methods on objects.");
         return false;
@@ -210,7 +218,7 @@ static bool invoke(VM* vm, ObjectString* name, uint8_t argCount)
     if (VAL_IS_BOUND_METHOD(method, vm)) {
         return Object_Call(AS_OBJ(method), argCount, vm);
     } else {
-        vm->stackTop[-argCount - 1] = method;
+        vm->coroutine->stackTop[-argCount - 1] = method;
         return call_value(vm, method, argCount);
     }
 }
@@ -229,7 +237,7 @@ static bool invoke_static_constructor(VM* vm, ObjectType* clazz)
 static ObjectUpvalue* capture_upvalue(VM* vm, Value* local)
 {
     ObjectUpvalue* prevUpvalue = NULL;
-    ObjectUpvalue* upvalue = vm->openUpvalues;
+    ObjectUpvalue* upvalue = vm->coroutine->openUpvalues;
 
     while (upvalue && upvalue->location > local) {
         prevUpvalue = upvalue;
@@ -244,7 +252,7 @@ static ObjectUpvalue* capture_upvalue(VM* vm, Value* local)
     createdUpvalue->next = upvalue;
 
     if (!prevUpvalue) {
-        vm->openUpvalues = createdUpvalue;
+        vm->coroutine->openUpvalues = createdUpvalue;
     } else {
         prevUpvalue->next = createdUpvalue;
     }
@@ -254,17 +262,18 @@ static ObjectUpvalue* capture_upvalue(VM* vm, Value* local)
 
 static void close_upvalues(VM* vm, Value* last)
 {
-    while (vm->openUpvalues && vm->openUpvalues->location >= last) {
-        ObjectUpvalue* upvalue = vm->openUpvalues;
+    while (vm->coroutine->openUpvalues && vm->coroutine->openUpvalues->location >= last) {
+        ObjectUpvalue* upvalue = vm->coroutine->openUpvalues;
         upvalue->closed = *upvalue->location;
         upvalue->location = &upvalue->closed;
-        vm->openUpvalues = upvalue->next;
+        vm->coroutine->openUpvalues = upvalue->next;
     }
 }
 
 static InterpretStatus run(VM* vm)
 {
-    register CallFrame* frame = &vm->frames[vm->frameCount - 1];
+    register ObjectCoroutine* coroutine = vm->coroutine;
+    register CallFrame* frame = &coroutine->frames[coroutine->frameCount - 1];
     register uint8_t* ip = frame->ip;
 
 #define READ_BYTE() (*ip++)
@@ -280,18 +289,19 @@ static InterpretStatus run(VM* vm)
 
 #define AS_COMPLEMENT(value) ((int64_t)AS_NUMBER(value))
 
-#define TOP vm->stackTop[-1]
-#define SECOND vm->stackTop[-2]
-#define THIRD vm->stackTop[-3]
-#define FOURTH vm->stackTop[-4]
+#define TOP    coroutine->stackTop[-1]
+#define SECOND coroutine->stackTop[-2]
+#define THIRD  coroutine->stackTop[-3]
+#define FOURTH coroutine->stackTop[-4]
 
 #define PUSH(value) vm_push(vm, (value))
 #define POP() vm_pop(vm)
+#define PEEK(distance) vm_peek(vm, distance)
 
     while (true) {
 #if DEBUG_TRACE_EXECUTION
         printf("\t");
-        for (Value* slot = vm->stack; slot < vm->stackTop; slot++) {
+        for (Value* slot = coroutine->stack; slot < coroutine->stackTop; slot++) {
             printf("[ ");
             print_value(*slot);
             printf(" ]");
@@ -721,7 +731,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_CLOSE_UPVALUE: {
-                close_upvalues(vm, vm->stackTop - 1);
+                close_upvalues(vm, coroutine->stackTop - 1);
                 POP();
                 break;
             }
@@ -729,18 +739,19 @@ static InterpretStatus run(VM* vm)
                 uint8_t argCount = READ_BYTE();
 
                 frame->ip = ip;
-                if (!call_value(vm, peek(vm, argCount), argCount)) {
+                if (!call_value(vm, PEEK(argCount), argCount)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                frame = &vm->frames[vm->frameCount - 1];
+                coroutine = vm->coroutine;
+                frame = &coroutine->frames[coroutine->frameCount - 1];
                 ip = frame->ip;
                 break;
             }
             case OP_INVOKE_SAFE: {
-                if (IS_NIL(peek(vm, PEEK_NEXT_BYTE()))) {
+                if (IS_NIL(PEEK(PEEK_NEXT_BYTE()))) {
                     SKIP_BYTE();
-                    vm->stackTop -= READ_BYTE();
+                    coroutine->stackTop -= READ_BYTE();
                     break;
                 }
             }
@@ -753,7 +764,8 @@ static InterpretStatus run(VM* vm)
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                frame = &vm->frames[vm->frameCount - 1];
+                coroutine = vm->coroutine;
+                frame = &coroutine->frames[coroutine->frameCount - 1];
                 ip = frame->ip;
                 break;
             }
@@ -762,20 +774,19 @@ static InterpretStatus run(VM* vm)
 
                 close_upvalues(vm, frame->slots);
 
-                if (VAL_IS_COROUTINE_INSTANCE(*frame->slots, vm)) {
-                    VAL_AS_COROUTINE_INSTANCE(*frame->slots)->done = true;
-                }
-
-                vm->frameCount--;
-                if (vm->frameCount == 0) {
+                coroutine->frameCount--;
+                if (coroutine->frameCount == 0) {
+                    coroutine->done = true;
                     POP();
+
                     return INTERPRET_OK;
                 }
 
-                vm->stackTop = frame->slots;
+                coroutine->stackTop = frame->slots;
                 PUSH(result);
 
-                frame = &vm->frames[vm->frameCount - 1];
+                coroutine = vm->coroutine;
+                frame = &coroutine->frames[coroutine->frameCount - 1];
                 ip = frame->ip;
                 break;
             }
@@ -838,7 +849,8 @@ static InterpretStatus run(VM* vm)
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                frame = &vm->frames[vm->frameCount - 1];
+                coroutine = vm->coroutine;
+                frame = &coroutine->frames[coroutine->frameCount - 1];
                 ip = frame->ip;
                 break;
             }
@@ -847,7 +859,9 @@ static InterpretStatus run(VM* vm)
                 if (!invoke_static_constructor(vm, VAL_AS_TYPE(TOP))) {
                     POP();
                 }
-                frame = &vm->frames[vm->frameCount - 1];
+
+                coroutine = vm->coroutine;
+                frame = &coroutine->frames[coroutine->frameCount - 1];
                 ip = frame->ip;
                 break;
             }
@@ -918,18 +932,18 @@ static InterpretStatus run(VM* vm)
                     break;
                 }
 
-                Value* accumulator = vm->stackTop - count;
+                Value* accumulator = coroutine->stackTop - count;
                 PUSH(*accumulator);
 
                 *accumulator = OBJ_VAL(List_New(vm));
                 List_Append(VAL_AS_LIST(*accumulator), TOP, vm);
                 POP();
 
-                for (Value* value = accumulator + 1; value < vm->stackTop; value++) {
+                for (Value* value = accumulator + 1; value < coroutine->stackTop; value++) {
                     List_Append(VAL_AS_LIST(*accumulator), *value, vm);
                 }
 
-                vm->stackTop -= count - 1;
+                coroutine->stackTop -= count - 1;
                 break;
             }
             case OP_MAP: {
@@ -941,57 +955,44 @@ static InterpretStatus run(VM* vm)
                     break;
                 }
 
-                Value* accumulator = vm->stackTop - count;
+                Value* accumulator = coroutine->stackTop - count;
                 PUSH(*accumulator);
 
                 *accumulator = OBJ_VAL(Map_New(vm));
                 Map_Insert(VAL_AS_MAP(*accumulator), TOP, *(accumulator + 1), vm);
                 POP();
 
-                for (Value* value = accumulator + 2; value < vm->stackTop; value += 2) {
+                for (Value* value = accumulator + 2; value < coroutine->stackTop; value += 2) {
                     Map_Insert(VAL_AS_MAP(*accumulator), *value, *(value + 1), vm);
                 }
 
-                vm->stackTop -= count - 1;
+                coroutine->stackTop -= count - 1;
                 break;
             }
             case OP_BUILD_STRING: {
                 uint8_t count = READ_BYTE();
                 
-                Value* accumulator = vm->stackTop - count;
+                Value* accumulator = coroutine->stackTop - count;
                 *accumulator = OBJ_VAL(String_FromValue(vm, *accumulator));
 
-                for (Value* current = vm->stackTop - count + 1; current < vm->stackTop; current++) {
+                for (Value* current = coroutine->stackTop - count + 1; current < coroutine->stackTop; current++) {
                     *current = OBJ_VAL(String_FromValue(vm, *current));
                     *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(*current)));
                 }
 
-                vm->stackTop -= count - 1;
-                break;
-            }
-            case OP_COROUTINE: {
-                TOP = OBJ_VAL(Coroutine_New(vm, VAL_AS_CLOSURE(TOP)));
+                coroutine->stackTop -= count - 1;
                 break;
             }
             case OP_YIELD: {
                 Value result = POP();
-
                 close_upvalues(vm, frame->slots);
 
-                ObjectCoroutineInstance* coroutine = VAL_AS_COROUTINE_INSTANCE(*frame->slots);
-                coroutine->ip = ip;
-
-                size_t stackSize = (size_t)(uintptr_t)(vm->stackTop - (frame->slots + 1));
-                coroutine->stackCopy = GROW_ARRAY(&vm->gc, Value, coroutine->stackCopy, coroutine->stackSize, stackSize);
-                memcpy(coroutine->stackCopy, frame->slots + 1, sizeof(Value) * stackSize);
-                coroutine->stackSize = stackSize;
-
-                vm->stackTop = frame->slots;
+                coroutine->frames[coroutine->frameCount - 1].ip = ip;
+                vm->coroutine = coroutine->transfer;
                 PUSH(result);
 
-                vm->frameCount--;
-                frame = &vm->frames[vm->frameCount - 1];
-
+                coroutine = vm->coroutine;
+                frame = &coroutine->frames[coroutine->frameCount - 1];
                 ip = frame->ip;
                 break;
             }
@@ -1026,12 +1027,14 @@ InterpretStatus vm_interpret(VM* vm, const char* source)
     if (function == NULL) {
         return INTERPRET_COMPILE_ERROR;
     }
-
-    vm_push(vm, OBJ_VAL(function));
+    
+    vm_push_temporary(vm, OBJ_VAL(function));
     ObjectClosure* closure = Closure_New(vm, function);
-    vm_pop(vm);
-    vm_push(vm, OBJ_VAL(closure));
-    call_value(vm, OBJ_VAL(closure), 0);
+    vm_pop_temporary(vm);
+
+    vm_push_temporary(vm, OBJ_VAL(closure));
+    Object_Call((Object*)Coroutine_New(vm, closure), 0, vm);
+    vm_pop_temporary(vm);
 
     return run(vm);
 }

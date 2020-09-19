@@ -2,6 +2,7 @@
 
 #include "objnative.h"
 #include "objstring.h"
+#include "objcoroutine.h"
 #include "vm.h"
 #include "memory.h"
 #include "gc.h"
@@ -24,11 +25,11 @@ static bool native_call(Object* callee, uint8_t argCount, VM* vm)
         return false;
     }
 
-    if (native->function(vm, vm->stackTop - argCount)) {
-        vm->stackTop -= (uint64_t)argCount;
+    if (native->function(vm, vm->coroutine->stackTop - argCount)) {
+        vm->coroutine->stackTop -= (uint64_t)argCount;
         return true;
     } else {
-        runtime_error(vm, VAL_AS_CSTRING(vm->stackTop[-argCount - 1]));
+        runtime_error(vm, VAL_AS_CSTRING(vm_peek(vm, argCount)));
         return false;
     }
 }

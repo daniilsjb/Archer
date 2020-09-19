@@ -13,40 +13,38 @@ typedef struct ObjectClosure ObjectClosure;
 
 #define ALLOCATE_COROUTINE(vm) (AS_COROUTINE(ALLOCATE_OBJ(vm, vm->coroutineType)))
 
+#define STACK_MAX 512
+#define FRAMES_MAX 64
+
+typedef struct ObjectUpvalue ObjectUpvalue;
+
+typedef struct {
+    ObjectClosure* closure;
+    uint8_t* ip;
+    Value* slots;
+} CallFrame;
+
 typedef struct ObjectCoroutine {
     Object base;
     ObjectClosure* closure;
+
+    CallFrame frames[FRAMES_MAX];
+    size_t frameCount;
+
+    Value stack[STACK_MAX];
+    Value* stackTop;
+
+    ObjectUpvalue* openUpvalues;
+
+    struct ObjectCoroutine* transfer;
+    bool started;
+    bool done;
 } ObjectCoroutine;
 
 ObjectType* Coroutine_NewType(VM* vm);
 void Coroutine_PrepareType(ObjectType* type, VM* vm);
 
 ObjectCoroutine* Coroutine_New(VM* vm, ObjectClosure* closure);
-
-#define AS_COROUTINE_INSTANCE(object) ((ObjectCoroutineInstance*)object)
-#define IS_COROUTINE_INSTANCE(object, vm) (OBJ_TYPE(object) == vm->coroutineInstanceType)
-
-#define VAL_AS_COROUTINE_INSTANCE(value) (AS_COROUTINE_INSTANCE(AS_OBJ(value)))
-#define VAL_IS_COROUTINE_INSTANCE(value, vm) (Object_ValueHasType(value, vm->coroutineInstanceType))
-
-#define ALLOCATE_COROUTINE_INSTANCE(vm) (AS_COROUTINE_INSTANCE(ALLOCATE_OBJ(vm, vm->coroutineInstanceType)))
-
-typedef struct ObjectCoroutineInstance {
-    Object base;
-
-    ObjectClosure* closure;
-    uint8_t* ip;
-
-    Value* stackCopy;
-    size_t stackSize;
-
-    bool started;
-    bool done;
-} ObjectCoroutineInstance;
-
-ObjectType* CoroutineInstance_NewType(VM* vm);
-void CoroutineInstance_PrepareType(ObjectType* type, VM* vm);
-
-ObjectCoroutineInstance* CoroutineInstance_New(VM* vm, ObjectClosure* closure);
+ObjectCoroutine* Coroutine_NewWithArguments(VM* vm, ObjectClosure* closure, Value* args, size_t argCount);
 
 #endif

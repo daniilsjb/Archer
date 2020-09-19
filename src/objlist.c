@@ -5,6 +5,7 @@
 #include "vm.h"
 #include "objstring.h"
 #include "objnative.h"
+#include "objcoroutine.h"
 #include "library.h"
 
 static bool method_append(VM* vm, Value* args)
@@ -36,24 +37,24 @@ static bool method_length(VM* vm, Value* args)
 static ObjectString* list_to_string(Object* object, VM* vm)
 {
     vm_push(vm, OBJ_VAL(String_FromCString(vm, "[")));
-    Value* accumulator = vm->stackTop - 1;
+    Value* accumulator = vm->coroutine->stackTop - 1;
 
     ObjectList* list = AS_LIST(object);
     size_t count = list->elements.count;
 
     for (size_t i = 0; i < count; i++) {
         vm_push(vm, OBJ_VAL(String_FromValue(vm, list->elements.data[i])));
-        *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(vm->stackTop[-1])));
+        *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(vm_peek(vm, 0))));
         vm_pop(vm);
 
         if (i != count - 1) {
             vm_push(vm, OBJ_VAL(String_FromCString(vm, ", ")));
-            *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(vm->stackTop[-1])));
+            *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(vm_peek(vm, 0))));
             vm_pop(vm);
         }
     }
     vm_push(vm, OBJ_VAL(String_FromCString(vm, "]")));
-    *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(vm->stackTop[-1])));
+    *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(vm_peek(vm, 0))));
     vm_pop(vm);
 
     return VAL_AS_STRING(vm_pop(vm));

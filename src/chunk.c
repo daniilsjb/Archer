@@ -51,9 +51,9 @@ void chunk_write(VM* vm, Chunk* chunk, uint8_t byte, int line)
 
 uint8_t chunk_add_constant(VM* vm, Chunk* chunk, Value constant)
 {
-    vm_push(vm, constant);
+    vm_push_temporary(vm, constant);
     VECTOR_PUSH(&vm->gc, ValueArray, &chunk->constants, Value, constant);
-    vm_pop(vm);
+    vm_pop_temporary(vm);
     return (uint8_t)(chunk->constants.count - 1);
 }
 

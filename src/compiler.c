@@ -74,8 +74,6 @@ typedef struct Compiler {
 
     Token token;
 
-    bool isCoroutine;
-
     bool error;
     bool panic;
 } Compiler;
@@ -181,8 +179,6 @@ static void compiler_init(Compiler* compiler, VM* vm, CompilerType type, Token i
         local->identifier.start = "";
         local->identifier.length = 0;
     }
-
-    compiler->isCoroutine = false;
 
     compiler->error = false;
     compiler->panic = false;
@@ -1146,8 +1142,6 @@ void compile_yield_expr(Compiler* compiler, Expression* expr)
         error(compiler, "Can only yield from non-initializer functions.");
     }
 
-    compiler->isCoroutine = true;
-
     Expression* value = expr->as.yieldExpr.expression;
     if (value) {
         compile_expression(compiler, value);
@@ -1724,10 +1718,6 @@ void compile_function(Compiler* compiler, Function* function, CompilerType type,
     for (size_t i = 0; i < compiled->upvalueCount; i++) {
         emit_byte(compiler, newCompiler.upvalues[i].isLocal ? 1 : 0);
         emit_byte(compiler, newCompiler.upvalues[i].index);
-    }
-
-    if (newCompiler.isCoroutine) {
-        emit_byte(compiler, OP_COROUTINE);
     }
 }
 

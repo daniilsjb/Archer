@@ -193,9 +193,9 @@ ObjectString* String_Copy(VM* vm, const char* chars, size_t length)
     string->chars[length] = '\0';
     string->hash = hash;
 
-    vm_push(vm, OBJ_VAL(string));
+    vm_push_temporary(vm, OBJ_VAL(string));
     table_put(vm, &vm->strings, OBJ_VAL(string), NIL_VAL());
-    vm_pop(vm);
+    vm_pop_temporary(vm);
 
     return string;
 }
@@ -239,9 +239,9 @@ ObjectString* String_Concatenate(VM* vm, ObjectString* a, ObjectString* b)
 
         return interned;
     } else {
-        vm_push(vm, OBJ_VAL(string));
+        vm_push_temporary(vm, OBJ_VAL(string));
         table_put(vm, &vm->strings, OBJ_VAL(string), NIL_VAL());
-        vm_pop(vm);
+        vm_pop_temporary(vm);
 
         return string;
     }

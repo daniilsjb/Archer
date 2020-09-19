@@ -4,6 +4,7 @@
 #include "objfunction.h"
 #include "objnative.h"
 #include "objstring.h"
+#include "objcoroutine.h"
 #include "vm.h"
 #include "gc.h"
 #include "memory.h"
@@ -32,10 +33,10 @@ void Object_Deallocate(GC* gc, Object* object)
 
 Object* Object_New(VM* vm, ObjectType* type)
 {
-    vm_push(vm, OBJ_VAL(type));
+    vm_push_temporary(vm, OBJ_VAL(type));
     Object* object = Object_Allocate(vm, type->size);
     object->type = type;
-    vm_pop(vm);
+    vm_pop_temporary(vm);
     return object;
 }
 
@@ -200,7 +201,7 @@ static void type_print(Object* object)
 static bool type_call(Object* callee, uint8_t argCount, VM* vm)
 {
     ObjectType* type = AS_TYPE(callee);
-    vm->stackTop[-argCount - 1] = OBJ_VAL(Object_New(vm, type));
+    vm->coroutine->stackTop[-argCount - 1] = OBJ_VAL(Object_New(vm, type));
 
     Value initializer;
     if (table_get(&type->methods, OBJ_VAL(vm->initString), &initializer)) {

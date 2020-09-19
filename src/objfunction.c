@@ -2,6 +2,7 @@
 
 #include "objfunction.h"
 #include "objstring.h"
+#include "objcoroutine.h"
 #include "vm.h"
 #include "memory.h"
 #include "gc.h"
@@ -214,7 +215,7 @@ static void bound_method_print(Object* object)
 static bool bound_method_call(Object* callee, uint8_t argCount, VM* vm)
 {
     ObjectBoundMethod* bound = AS_BOUND_METHOD(callee);
-    vm->stackTop[-argCount - 1] = bound->receiver;
+    vm->coroutine->stackTop[-argCount - 1] = bound->receiver;
     return Object_Call(bound->method, argCount, vm);
 }
 

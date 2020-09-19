@@ -61,11 +61,18 @@ static bool typeof_native(VM* vm, Value* args)
 
 static void define_native(VM* vm, const char* name, NativeFn function, int arity)
 {
-    vm_push(vm, OBJ_VAL(String_FromCString(vm, name)));
-    vm_push(vm, OBJ_VAL(Native_New(vm, function, arity)));
-    table_put(vm, &vm->globals, vm->stack[0], vm->stack[1]);
-    vm_pop(vm);
-    vm_pop(vm);
+    vm_push_temporary(vm, OBJ_VAL(String_FromCString(vm, name)));
+    vm_push_temporary(vm, OBJ_VAL(Native_New(vm, function, arity)));
+    table_put(vm, &vm->globals, vm_peek_temporary(vm, 1), vm_peek_temporary(vm, 0));
+    vm_pop_temporary(vm);
+    vm_pop_temporary(vm);
+}
+
+static void define_type(VM* vm, const char* name, ObjectType* type)
+{
+    vm_push_temporary(vm, OBJ_VAL(String_FromCString(vm, name)));
+    table_put(vm, &vm->globals, vm_peek_temporary(vm, 0), OBJ_VAL(type));
+    vm_pop_temporary(vm);
 }
 
 void Library_Init(VM* vm)
@@ -77,7 +84,6 @@ void Library_Init(VM* vm)
     vm->closureType = Closure_NewType(vm);
     vm->boundMethodType = BoundMethod_NewType(vm);
     vm->coroutineType = Coroutine_NewType(vm);
-    vm->coroutineInstanceType = CoroutineInstance_NewType(vm);
     vm->listType = List_NewType(vm);
     vm->mapType = Map_NewType(vm);
     vm->arrayType = Array_NewType(vm);
@@ -91,18 +97,13 @@ void Library_Init(VM* vm)
     Closure_PrepareType(vm->closureType, vm);
     BoundMethod_PrepareType(vm->boundMethodType, vm);
     Coroutine_PrepareType(vm->coroutineType, vm);
-    CoroutineInstance_PrepareType(vm->coroutineInstanceType, vm);
     List_PrepareType(vm->listType, vm);
     Map_PrepareType(vm->mapType, vm);
     Array_PrepareType(vm->arrayType, vm);
 
-    vm_push(vm, OBJ_VAL(String_FromCString(vm, "String")));
-    table_put(vm, &vm->globals, vm->stackTop[-1], OBJ_VAL(vm->stringType));
-    vm_pop(vm);
-
-    vm_push(vm, OBJ_VAL(String_FromCString(vm, "Array")));
-    table_put(vm, &vm->globals, vm->stackTop[-1], OBJ_VAL(vm->arrayType));
-    vm_pop(vm);
+    define_type(vm, "String", vm->stringType);
+    define_type(vm, "Array", vm->arrayType);
+    define_type(vm, "Coroutine", vm->coroutineType);
 
     define_native(vm, "clock", clock_native, 0);
     define_native(vm, "abs", abs_native, 1);
@@ -112,9 +113,9 @@ void Library_Init(VM* vm)
 
 void Library_DefineTypeMethod(ObjectType* type, VM* vm, const char* name, NativeFn function, int arity)
 {
-    vm_push(vm, OBJ_VAL(String_FromCString(vm, name)));
-    vm_push(vm, OBJ_VAL(Native_New(vm, function, arity)));
-    table_put(vm, &type->methods, vm->stack[0], vm->stack[1]);
-    vm_pop(vm);
-    vm_pop(vm);
+    vm_push_temporary(vm, OBJ_VAL(String_FromCString(vm, name)));
+    vm_push_temporary(vm, OBJ_VAL(Native_New(vm, function, arity)));
+    table_put(vm, &type->methods, vm_peek_temporary(vm, 1), vm_peek_temporary(vm, 0));
+    vm_pop_temporary(vm);
+    vm_pop_temporary(vm);
 }

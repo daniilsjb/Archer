@@ -5,21 +5,14 @@
 #include "value.h"
 #include "table.h"
 
-#define STACK_MAX 512
-#define FRAMES_MAX 64
+#define TEMP_MAX 64
 
 typedef struct ObjectClosure ObjectClosure;
-typedef struct ObjectUpvalue ObjectUpvalue;
 typedef struct Compiler Compiler;
 typedef struct ClassCompiler ClassCompiler;
+typedef struct ObjectCoroutine ObjectCoroutine;
 
 typedef struct ObjectType ObjectType;
-
-typedef struct {
-    ObjectClosure* closure;
-    uint8_t* ip;
-    Value* slots;
-} CallFrame;
 
 typedef struct VM {
     GC gc;
@@ -34,21 +27,18 @@ typedef struct VM {
     ObjectType* nativeType;
     ObjectType* boundMethodType;
     ObjectType* coroutineType;
-    ObjectType* coroutineInstanceType;
     ObjectType* listType;
     ObjectType* mapType;
     ObjectType* arrayType;
 
-    CallFrame frames[FRAMES_MAX];
-    size_t frameCount;
-    ObjectUpvalue* openUpvalues;
-
-    Value stack[STACK_MAX];
-    Value* stackTop;
+    ObjectCoroutine* coroutine;
 
     Table globals;
     Table strings;
     ObjectString* initString;
+
+    Value temporaries[TEMP_MAX];
+    size_t temporaryCount;
 } VM;
 
 typedef enum {
@@ -62,6 +52,11 @@ void vm_free(VM* vm);
 
 void vm_push(VM* vm, Value value);
 Value vm_pop(VM* vm);
+Value vm_peek(VM* vm, int distance);
+
+void vm_push_temporary(VM* vm, Value value);
+Value vm_pop_temporary(VM* vm);
+Value vm_peek_temporary(VM* vm, int distance);
 
 InterpretStatus vm_interpret(VM* vm, const char* source);
 

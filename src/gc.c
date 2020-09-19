@@ -111,17 +111,12 @@ void GC_MarkTable(GC* gc, Table* table)
 static void mark_roots(GC* gc)
 {
     VM* vm = gc->vm;
-    for (Value* slot = vm->stack; slot < vm->stackTop; slot++) {
-        GC_MarkValue(gc, *slot);
+    
+    for (size_t i = 0; i < vm->temporaryCount; i++) {
+        GC_MarkValue(gc, vm->temporaries[i]);
     }
 
-    for (size_t i = 0; i < vm->frameCount; i++) {
-        GC_MarkObject(gc, (Object*)vm->frames[i].closure);
-    }
-
-    for (ObjectUpvalue* upvalue = vm->openUpvalues; upvalue != NULL; upvalue = upvalue->next) {
-        GC_MarkObject(gc, (Object*)upvalue);
-    }
+    GC_MarkObject(gc, (Object*)vm->coroutine);
 
     GC_MarkObject(gc, (Object*)vm->stringType);
     GC_MarkObject(gc, (Object*)vm->nativeType);
@@ -130,7 +125,6 @@ static void mark_roots(GC* gc)
     GC_MarkObject(gc, (Object*)vm->closureType);
     GC_MarkObject(gc, (Object*)vm->boundMethodType);
     GC_MarkObject(gc, (Object*)vm->coroutineType);
-    GC_MarkObject(gc, (Object*)vm->coroutineInstanceType);
     GC_MarkObject(gc, (Object*)vm->listType);
     GC_MarkObject(gc, (Object*)vm->mapType);
     GC_MarkObject(gc, (Object*)vm->arrayType);
