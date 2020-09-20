@@ -40,9 +40,9 @@ static uint32_t invoke_instruction(const char* name, Chunk* chunk, uint32_t offs
 {
     uint8_t constant = chunk->code[offset + 1];
     uint8_t argCount = chunk->code[offset + 2];
-    printf("%-22s %4d (%d args) '", name, constant, argCount);
+    printf("%-22s %4d '", name, constant);
     print_value(chunk->constants.data[constant]);
-    printf("'\n");
+    printf("' (%d args)\n", argCount);
     return offset + 3;
 }
 

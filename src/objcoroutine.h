@@ -38,13 +38,16 @@ typedef struct ObjectCoroutine {
 
     struct ObjectCoroutine* transfer;
     bool started;
-    bool done;
 } ObjectCoroutine;
 
 ObjectType* Coroutine_NewType(VM* vm);
 void Coroutine_PrepareType(ObjectType* type, VM* vm);
 
+void _Coroutine_CallMain(VM* vm, ObjectCoroutine* coroutine);
+
 ObjectCoroutine* Coroutine_New(VM* vm, ObjectClosure* closure);
 ObjectCoroutine* Coroutine_NewWithArguments(VM* vm, ObjectClosure* closure, Value* args, size_t argCount);
+
+bool Coroutine_IsDone(ObjectCoroutine* coroutine);
 
 #endif

@@ -20,7 +20,7 @@ static bool method_init(VM* vm, Value* args)
 
 static bool method_done(VM* vm, Value* args)
 {
-    args[-1] = BOOL_VAL(VAL_AS_COROUTINE(args[-1])->done);
+    args[-1] = BOOL_VAL(Coroutine_IsDone(VAL_AS_COROUTINE(args[-1])));
     return true;
 }
 
@@ -92,12 +92,13 @@ static bool coroutine_call(Object* callee, uint8_t argCount, VM* vm)
     }
 
     ObjectCoroutine* coroutine = AS_COROUTINE(callee);
-    if (coroutine->done) {
+    if (Coroutine_IsDone(coroutine)) {
         runtime_error(vm, "Cannot resume coroutine that has already finished.");
         return false;
     }
 
     Value value = argCount == 1 ? vm_pop(vm) : NIL_VAL();
+    vm_pop(vm);
 
     coroutine->transfer = vm->coroutine;
     vm->coroutine = coroutine;
@@ -158,6 +159,13 @@ void Coroutine_PrepareType(ObjectType* type, VM* vm)
     Library_DefineTypeMethod(type, vm, "done", method_done, 0);
 }
 
+void _Coroutine_CallMain(VM* vm, ObjectCoroutine* coroutine)
+{
+    coroutine->transfer = NULL;
+    coroutine->started = true;
+    vm->coroutine = coroutine;
+}
+
 static void reset_stack(ObjectCoroutine* coroutine)
 {
     coroutine->stackTop = coroutine->stack;
@@ -175,7 +183,6 @@ ObjectCoroutine* Coroutine_New(VM* vm, ObjectClosure* closure)
     push_call_frame(coroutine, closure, 0);
 
     coroutine->started = false;
-    coroutine->done = false;
     return coroutine;
 }
 
@@ -186,4 +193,9 @@ ObjectCoroutine* Coroutine_NewWithArguments(VM* vm, ObjectClosure* closure, Valu
         coroutine_push(coroutine, args[i]);
     }
     return coroutine;
+}
+
+bool Coroutine_IsDone(ObjectCoroutine* coroutine)
+{
+    return coroutine->frameCount == 0;
 }

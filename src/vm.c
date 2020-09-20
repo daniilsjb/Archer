@@ -276,6 +276,13 @@ static InterpretStatus run(VM* vm)
     register CallFrame* frame = &coroutine->frames[coroutine->frameCount - 1];
     register uint8_t* ip = frame->ip;
 
+#define UPDATE_POINTERS()                                       \
+    do {                                                        \
+        coroutine = vm->coroutine;                              \
+        frame = &coroutine->frames[coroutine->frameCount - 1];  \
+        ip = frame->ip;                                         \
+    } while (0)                                                 \
+
 #define READ_BYTE() (*ip++)
 #define READ_SHORT() (ip += 2, (uint16_t)(ip[-2] << 0 | ip[-1] << 8))
 #define READ_CONSTANT() frame->closure->function->chunk.constants.data[READ_BYTE()]
@@ -297,6 +304,8 @@ static InterpretStatus run(VM* vm)
 #define PUSH(value) vm_push(vm, (value))
 #define POP() vm_pop(vm)
 #define PEEK(distance) vm_peek(vm, distance)
+
+#define POP_N(n) coroutine->stackTop -= (n);
 
     while (true) {
 #if DEBUG_TRACE_EXECUTION
@@ -743,15 +752,13 @@ static InterpretStatus run(VM* vm)
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                coroutine = vm->coroutine;
-                frame = &coroutine->frames[coroutine->frameCount - 1];
-                ip = frame->ip;
+                UPDATE_POINTERS();
                 break;
             }
             case OP_INVOKE_SAFE: {
                 if (IS_NIL(PEEK(PEEK_NEXT_BYTE()))) {
                     SKIP_BYTE();
-                    coroutine->stackTop -= READ_BYTE();
+                    POP_N(READ_BYTE());
                     break;
                 }
             }
@@ -764,30 +771,25 @@ static InterpretStatus run(VM* vm)
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                coroutine = vm->coroutine;
-                frame = &coroutine->frames[coroutine->frameCount - 1];
-                ip = frame->ip;
+                UPDATE_POINTERS();
                 break;
             }
             case OP_RETURN: {
                 Value result = POP();
 
                 close_upvalues(vm, frame->slots);
+                coroutine->stackTop = frame->slots;
 
                 coroutine->frameCount--;
                 if (coroutine->frameCount == 0) {
-                    coroutine->done = true;
-                    POP();
-
-                    return INTERPRET_OK;
+                    vm->coroutine = coroutine->transfer;
+                    if (!vm->coroutine) {
+                        return INTERPRET_OK;
+                    }
                 }
 
-                coroutine->stackTop = frame->slots;
+                UPDATE_POINTERS();
                 PUSH(result);
-
-                coroutine = vm->coroutine;
-                frame = &coroutine->frames[coroutine->frameCount - 1];
-                ip = frame->ip;
                 break;
             }
             case OP_CLASS: {
@@ -849,9 +851,7 @@ static InterpretStatus run(VM* vm)
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                coroutine = vm->coroutine;
-                frame = &coroutine->frames[coroutine->frameCount - 1];
-                ip = frame->ip;
+                UPDATE_POINTERS();
                 break;
             }
             case OP_END_CLASS: {
@@ -860,9 +860,7 @@ static InterpretStatus run(VM* vm)
                     POP();
                 }
 
-                coroutine = vm->coroutine;
-                frame = &coroutine->frames[coroutine->frameCount - 1];
-                ip = frame->ip;
+                UPDATE_POINTERS();
                 break;
             }
             case OP_LOAD_SUBSCRIPT_SAFE: {
@@ -920,8 +918,7 @@ static InterpretStatus run(VM* vm)
                     return false;
                 }
 
-                POP();
-                POP();
+                POP_N(2);
                 break;
             }
             case OP_LIST: {
@@ -943,7 +940,7 @@ static InterpretStatus run(VM* vm)
                     List_Append(VAL_AS_LIST(*accumulator), *value, vm);
                 }
 
-                coroutine->stackTop -= count - 1;
+                POP_N((size_t)count - 1);
                 break;
             }
             case OP_MAP: {
@@ -966,7 +963,7 @@ static InterpretStatus run(VM* vm)
                     Map_Insert(VAL_AS_MAP(*accumulator), *value, *(value + 1), vm);
                 }
 
-                coroutine->stackTop -= count - 1;
+                POP_N((size_t)count - 1);
                 break;
             }
             case OP_BUILD_STRING: {
@@ -980,20 +977,23 @@ static InterpretStatus run(VM* vm)
                     *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(*current)));
                 }
 
-                coroutine->stackTop -= count - 1;
+                POP_N((size_t)count - 1);
                 break;
             }
             case OP_YIELD: {
                 Value result = POP();
                 close_upvalues(vm, frame->slots);
 
+                if (!coroutine->transfer) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Cannot yield outside a coroutine.");
+                }
+
                 coroutine->frames[coroutine->frameCount - 1].ip = ip;
                 vm->coroutine = coroutine->transfer;
-                PUSH(result);
 
-                coroutine = vm->coroutine;
-                frame = &coroutine->frames[coroutine->frameCount - 1];
-                ip = frame->ip;
+                UPDATE_POINTERS();
+                PUSH(result);
                 break;
             }
         }
@@ -1033,7 +1033,7 @@ InterpretStatus vm_interpret(VM* vm, const char* source)
     vm_pop_temporary(vm);
 
     vm_push_temporary(vm, OBJ_VAL(closure));
-    Object_Call((Object*)Coroutine_New(vm, closure), 0, vm);
+    _Coroutine_CallMain(vm, Coroutine_New(vm, closure));
     vm_pop_temporary(vm);
 
     return run(vm);
