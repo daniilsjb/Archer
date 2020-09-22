@@ -1,0 +1,15 @@
+coroutine fun makeGenerator(begin, step) {
+    for (var i = begin;; i += step) {
+        yield i;
+    }
+}
+
+var generatorA = makeGenerator(0, 1);
+print generatorA(); //Expected: 0
+print generatorA(); //Expected: 1
+print generatorA(); //Expected: 2
+
+var generatorB = makeGenerator(10, -3);
+print generatorB(); //Expected: 10
+print generatorB(); //Expected: 7
+print generatorB(); //Expected: 4

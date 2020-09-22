@@ -124,6 +124,7 @@ static void mark_roots(GC* gc)
     GC_MarkObject(gc, (Object*)vm->upvalueType);
     GC_MarkObject(gc, (Object*)vm->closureType);
     GC_MarkObject(gc, (Object*)vm->boundMethodType);
+    GC_MarkObject(gc, (Object*)vm->coroutineFunctionType);
     GC_MarkObject(gc, (Object*)vm->coroutineType);
     GC_MarkObject(gc, (Object*)vm->listType);
     GC_MarkObject(gc, (Object*)vm->mapType);

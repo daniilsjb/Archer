@@ -236,6 +236,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("STORE_SUBSCRIPT_SAFE", offset);
         case OP_BUILD_STRING:
             return byte_instruction("BUILD_STRING", chunk, offset);
+        case OP_COROUTINE:
+            return simple_instruction("COROUTINE", offset);
         case OP_YIELD:
             return simple_instruction("YIELD", offset);
         default:

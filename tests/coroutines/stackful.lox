@@ -1,0 +1,22 @@
+fun forEach(arr, f) {
+    for (var i = 0; i < arr.length(); i++) {
+        f(arr[i]);
+    }
+}
+
+coroutine fun foo(arr) {
+    forEach(arr, \item -> yield item);
+}
+
+var coro = foo(["spooky", "scary", "skeletons"]);
+while (!coro.done()) {
+    print coro();
+}
+
+//Expected: spooky
+//Expected: scary
+//Expected: skeletons
+
+//Remember that the coroutine yields the last item, meaning we can still call
+//it once more after it has finished the `forEach` loop.
+//Expected: nil

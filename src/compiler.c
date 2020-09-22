@@ -112,6 +112,7 @@ static void compile_subscript_expr(Compiler* compiler, Expression* expr);
 static void compile_super_expr(Compiler* compiler, Expression* expr);
 static void compile_assignment_expr(Compiler* compiler, Expression* expr);
 static void compile_compound_assignment_expr(Compiler* compiler, Expression* expr);
+static void compile_coroutine_expr(Compiler* compiler, Expression* expr);
 static void compile_yield_expr(Compiler* compiler, Expression* expr);
 static void compile_postfix_inc_expr(Compiler* compiler, Expression* expr);
 static void compile_prefix_inc_expr(Compiler* compiler, Expression* expr);
@@ -134,7 +135,7 @@ static size_t compile_map_entry_list(Compiler* compiler, MapEntryList* list);
 static void compile_block(Compiler* compiler, Block* block);
 static size_t compile_parameter_list(Compiler* compiler, ParameterList* list);
 static void compile_function_body(Compiler* compiler, FunctionBody* body);
-static void compile_function(Compiler* compiler, Function* function, CompilerType type, Token identifier);
+static void compile_function(Compiler* compiler, Function* function, CompilerType type, Token identifier, bool coroutine);
 static void compile_named_function(Compiler* compiler, NamedFunction* function, CompilerType type);
 static size_t compile_method_list(Compiler* compiler, MethodList* list);
 static size_t compile_argument_list(Compiler* compiler, ArgumentList* list);
@@ -893,6 +894,7 @@ void compile_expression(Compiler* compiler, Expression* expr)
         case EXPR_SUPER: compile_super_expr(compiler, expr); return;
         case EXPR_ASSIGNMENT: compile_assignment_expr(compiler, expr); return;
         case EXPR_COMPOUND_ASSIGNMNET: compile_compound_assignment_expr(compiler, expr); return;
+        case EXPR_COROUTINE: compile_coroutine_expr(compiler, expr); return;
         case EXPR_YIELD: compile_yield_expr(compiler, expr); return;
         case EXPR_POSTFIX_INC: compile_postfix_inc_expr(compiler, expr); return;
         case EXPR_PREFIX_INC: compile_prefix_inc_expr(compiler, expr); return;
@@ -1132,6 +1134,14 @@ void compile_compound_assignment_expr(Compiler* compiler, Expression* expr)
             error(compiler, "Invalid compund assignment target.");
         }
     }
+}
+
+void compile_coroutine_expr(Compiler* compiler, Expression* expr)
+{
+    compiler->token = expr->as.coroutineExpr.keyword;
+
+    compile_expression(compiler, expr->as.coroutineExpr.expression);
+    emit_byte(compiler, OP_COROUTINE);
 }
 
 void compile_yield_expr(Compiler* compiler, Expression* expr)
@@ -1528,7 +1538,7 @@ void compile_string_interp_expr(Compiler* compiler, Expression* expr)
 
 void compile_lambda_expr(Compiler* compiler, Expression* expr)
 {
-    compile_function(compiler, expr->as.lambdaExpr.function, TYPE_LAMBDA, empty_token());
+    compile_function(compiler, expr->as.lambdaExpr.function, TYPE_LAMBDA, empty_token(), false);
 }
 
 void compile_list_expr(Compiler* compiler, Expression* expr)
@@ -1699,7 +1709,7 @@ void compile_function_body(Compiler* compiler, FunctionBody* body)
     }
 }
 
-void compile_function(Compiler* compiler, Function* function, CompilerType type, Token identifier)
+void compile_function(Compiler* compiler, Function* function, CompilerType type, Token identifier, bool coroutine)
 {
     Compiler newCompiler;
     compiler_init(&newCompiler, compiler->vm, type, identifier);
@@ -1708,6 +1718,10 @@ void compile_function(Compiler* compiler, Function* function, CompilerType type,
     newCompiler.function->arity = (int)compile_parameter_list(&newCompiler, function->parameters);
     if (type == TYPE_STATIC_INITIALIZER && newCompiler.function->arity > 0) {
         error(compiler, "Static initializer cannot accept parameters.");
+    }
+
+    if (coroutine && (type == TYPE_INITIALIZER || type == TYPE_STATIC_INITIALIZER)) {
+        error(compiler, "Initializer cannot be a coroutine.");
     }
 
     compile_function_body(&newCompiler, function->body);
@@ -1719,11 +1733,15 @@ void compile_function(Compiler* compiler, Function* function, CompilerType type,
         emit_byte(compiler, newCompiler.upvalues[i].isLocal ? 1 : 0);
         emit_byte(compiler, newCompiler.upvalues[i].index);
     }
+
+    if (coroutine) {
+        emit_byte(compiler, OP_COROUTINE);
+    }
 }
 
 void compile_named_function(Compiler* compiler, NamedFunction* namedFunction, CompilerType type)
 {
-    compile_function(compiler, namedFunction->function, type, namedFunction->identifier);
+    compile_function(compiler, namedFunction->function, type, namedFunction->identifier, namedFunction->coroutine);
 }
 
 size_t compile_method_list(Compiler* compiler, MethodList* list)

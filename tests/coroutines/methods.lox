@@ -1,0 +1,38 @@
+class Generator {
+    
+    init(begin, step) {
+        this.begin = begin;
+        this.step = step;
+    }
+    
+    coroutine make() {
+        for (var i = this.begin;; i += this.step) {
+            yield i;
+        }
+    }
+    
+    static coroutine make(begin, step) {
+        for (var i = begin;; i += step) {
+            yield i;
+        }
+    }
+    
+}
+
+var generatorObject = Generator(0, 1);
+var generatorA = generatorObject.make();
+
+print generatorA(); //Expected: 0
+print generatorA(); //Expected: 1
+print generatorA(); //Expected: 2
+
+generatorObject.step = 5;
+
+print generatorA(); //Expected: 7
+print generatorA(); //Expected: 12
+print generatorA(); //Expected: 17
+
+var generatorB = Generator.make(3, 4);
+print generatorB(); //Expected: 3
+print generatorB(); //Expected: 7
+print generatorB(); //Expected: 11

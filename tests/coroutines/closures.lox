@@ -1,0 +1,15 @@
+coroutine fun foo() {
+    var x = 10;
+    return coroutine \ -> yield x;
+}
+
+var coroA = foo();
+print coroA()()(); //Expected: 10
+
+fun bar() {
+    var y = 20;
+    return coroutine \ -> yield y;
+}
+
+var coroB = bar();
+print coroB()(); //Expected: 20

@@ -1,0 +1,21 @@
+coroutine fun foo() {
+    print "Second!";
+    yield;
+    print "Fourth!";
+}
+
+var coro = foo();
+
+print "First!";
+coro();
+print "Third!";
+coro();
+print "Fifth!";
+
+//Expected: First!
+//Expected: Second!
+//Expected: Third!
+//Expected: Fourth!
+//Expected: Fifth!
+
+print coro.done(); //Expected: true

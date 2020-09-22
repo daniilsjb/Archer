@@ -83,6 +83,7 @@ void Library_Init(VM* vm)
     vm->upvalueType = Upvalue_NewType(vm);
     vm->closureType = Closure_NewType(vm);
     vm->boundMethodType = BoundMethod_NewType(vm);
+    vm->coroutineFunctionType = CoroutineFunction_NewType(vm);
     vm->coroutineType = Coroutine_NewType(vm);
     vm->listType = List_NewType(vm);
     vm->mapType = Map_NewType(vm);
@@ -96,6 +97,7 @@ void Library_Init(VM* vm)
     Upvalue_PrepareType(vm->upvalueType, vm);
     Closure_PrepareType(vm->closureType, vm);
     BoundMethod_PrepareType(vm->boundMethodType, vm);
+    CoroutineFunction_PrepareType(vm->coroutineFunctionType, vm);
     Coroutine_PrepareType(vm->coroutineType, vm);
     List_PrepareType(vm->listType, vm);
     Map_PrepareType(vm->mapType, vm);

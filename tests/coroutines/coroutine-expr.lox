@@ -1,0 +1,37 @@
+fun foo() {
+    print "First!";
+    yield;
+    print "Second!";
+}
+
+var fooCoroutine = coroutine foo;
+var coroA = fooCoroutine();
+coroA();            //Expected: First!
+print coroA.done(); //Expected: false
+coroA();            //Expected: Second!
+print coroA.done(); //Expected: true
+
+fun sum(a, b) {
+    print "The value of a is $a";
+    yield;
+    print "The value of b is $b";
+    yield a + b;
+}
+
+var sumCoroutine = coroutine sum;
+var coroB = sumCoroutine(2, 3);
+
+coroB();              //Expected: The value of a is 2
+print coroB.done();   //Expected: false
+
+var result = coroB(); //Expected: The value of b is 3
+print coroB.done();   //Expected: false
+
+print result;         //Expected: 5
+
+coroB();
+print coroB.done();   //Expected: true
+
+//Ensure that writing a coroutine expression in a context where both declarations and expressions are valid
+//will not result in an error
+coroutine \x -> yield x;

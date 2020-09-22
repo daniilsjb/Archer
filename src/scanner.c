@@ -295,7 +295,14 @@ static TokenType identifier_type(Scanner* scanner)
                 switch (peek_start(scanner, 1)) {
                     case 'a': return check_keyword(scanner, 2, 2, "se", TOKEN_CASE);
                     case 'l': return check_keyword(scanner, 2, 3, "ass", TOKEN_CLASS);
-                    case 'o': return check_keyword(scanner, 2, 6, "ntinue", TOKEN_CONTINUE);
+                    case 'o': {
+                        if (current_length(scanner) > 2) {
+                            switch (peek_start(scanner, 2)) {
+                                case 'n': return check_keyword(scanner, 3, 5, "tinue", TOKEN_CONTINUE);
+                                case 'r': return check_keyword(scanner, 3, 6, "outine", TOKEN_COROUTINE);
+                            }
+                        }
+                    }
                 }
             }
         }

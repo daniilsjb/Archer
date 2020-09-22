@@ -70,6 +70,7 @@ typedef enum {
     TOKEN_CASE,
     TOKEN_CLASS,
     TOKEN_CONTINUE,
+    TOKEN_COROUTINE,
     TOKEN_DEFAULT,
     TOKEN_DO,
     TOKEN_ELSE,

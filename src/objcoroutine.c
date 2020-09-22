@@ -8,14 +8,79 @@
 #include "gc.h"
 #include "library.h"
 
-static bool method_init(VM* vm, Value* args)
+static ObjectString* coroutine_function_to_string(Object* object, VM* vm)
 {
-    if (!VAL_IS_CLOSURE(args[0], vm)) {
-        return Library_Error(vm, "Expected a function.", args);
+    ObjectFunction* function = AS_COROUTINE(object)->closure->function;
+
+    if (!function->name) {
+        return String_FromCString(vm, "<coroutine function>");
+    } else {
+        char cstring[100];
+        snprintf(cstring, 100, "<coroutine '%s' function>", function->name->chars);
+        return String_FromCString(vm, cstring);
+    }
+}
+
+static void coroutine_function_print(Object* object)
+{
+    ObjectFunction* function = AS_COROUTINE(object)->closure->function;
+
+    if (!function->name) {
+        printf("<coroutine function>");
+    } else {
+        printf("<coroutine '%s' function>", function->name->chars);
+    }
+}
+
+static bool coroutine_function_call(Object* callee, uint8_t argCount, VM* vm)
+{
+    ObjectClosure* closure = AS_COROUTINE_FUNCTION(callee)->closure;
+    if (argCount != closure->function->arity) {
+        runtime_error(vm, "Expected %d arguments but got %d.", closure->function->arity, argCount);
+        return false;
     }
 
-    args[-1] = OBJ_VAL(Coroutine_New(vm, VAL_AS_CLOSURE(args[0])));
+    vm->coroutine->stackTop[-argCount - 1] = OBJ_VAL(Coroutine_NewFromStack(vm, closure, vm->coroutine->stackTop - argCount - 1, argCount));
+    vm->coroutine->stackTop -= argCount;
     return true;
+}
+
+static void coroutine_function_traverse(Object* object, GC* gc)
+{
+    GC_MarkObject(gc, (Object*)AS_COROUTINE_FUNCTION(object)->closure);
+    Object_GenericTraverse(object, gc);
+}
+
+ObjectType* CoroutineFunction_NewType(VM* vm)
+{
+    ObjectType* type = Type_New(vm);
+    type->name = "CoroutineFunction";
+    type->size = sizeof(ObjectCoroutineFunction);
+    type->flags = 0x0;
+    type->ToString = coroutine_function_to_string;
+    type->Print = coroutine_function_print;
+    type->Hash = Object_GenericHash;
+    type->GetField = NULL;
+    type->SetField = NULL;
+    type->GetSubscript = NULL;
+    type->SetSubscript = NULL;
+    type->GetMethod = NULL;
+    type->SetMethod = NULL;
+    type->Call = coroutine_function_call;
+    type->Traverse = coroutine_function_traverse;
+    type->Free = Object_GenericFree;
+    return type;
+}
+
+void CoroutineFunction_PrepareType(ObjectType* type, VM* vm)
+{
+}
+
+ObjectCoroutineFunction* CoroutineFunction_New(VM* vm, ObjectClosure* closure)
+{
+    ObjectCoroutineFunction* coroutine = ALLOCATE_COROUTINE_FUNCTION(vm);
+    coroutine->closure = closure;
+    return coroutine;
 }
 
 static bool method_done(VM* vm, Value* args)
@@ -65,10 +130,10 @@ static ObjectString* coroutine_to_string(Object* object, VM* vm)
     ObjectFunction* function = AS_COROUTINE(object)->closure->function;
 
     if (!function->name) {
-        return String_FromCString(vm, "<coroutine instance>");
+        return String_FromCString(vm, "<coroutine>");
     } else {
         char cstring[100];
-        snprintf(cstring, 100, "<coroutine '%s' instance>", function->name->chars);
+        snprintf(cstring, 100, "<coroutine '%s'>", function->name->chars);
         return String_FromCString(vm, cstring);
     }
 }
@@ -141,7 +206,7 @@ ObjectType* Coroutine_NewType(VM* vm)
     type->ToString = coroutine_to_string;
     type->Print = coroutine_print;
     type->Hash = Object_GenericHash;
-    type->GetField = Object_GenericGetField;
+    type->GetField = NULL;
     type->SetField = NULL;
     type->GetSubscript = NULL;
     type->SetSubscript = NULL;
@@ -155,15 +220,7 @@ ObjectType* Coroutine_NewType(VM* vm)
 
 void Coroutine_PrepareType(ObjectType* type, VM* vm)
 {
-    Library_DefineTypeMethod(type, vm, "init", method_init, 1);
     Library_DefineTypeMethod(type, vm, "done", method_done, 0);
-}
-
-void _Coroutine_CallMain(VM* vm, ObjectCoroutine* coroutine)
-{
-    coroutine->transfer = NULL;
-    coroutine->started = true;
-    vm->coroutine = coroutine;
 }
 
 static void reset_stack(ObjectCoroutine* coroutine)
@@ -173,29 +230,42 @@ static void reset_stack(ObjectCoroutine* coroutine)
     coroutine->openUpvalues = NULL;
 }
 
-ObjectCoroutine* Coroutine_New(VM* vm, ObjectClosure* closure)
+static ObjectCoroutine* coroutine_new(VM* vm, ObjectClosure* closure)
 {
     ObjectCoroutine* coroutine = ALLOCATE_COROUTINE(vm);
     coroutine->closure = closure;
-
-    reset_stack(coroutine);
-    coroutine_push(coroutine, OBJ_VAL(coroutine));
-    push_call_frame(coroutine, closure, 0);
-
+    coroutine->transfer = NULL;
     coroutine->started = false;
+    reset_stack(coroutine);
     return coroutine;
 }
 
-ObjectCoroutine* Coroutine_NewWithArguments(VM* vm, ObjectClosure* closure, Value* args, size_t argCount)
+ObjectCoroutine* Coroutine_New(VM* vm, ObjectClosure* closure)
 {
-    ObjectCoroutine* coroutine = Coroutine_New(vm, closure);
-    for (size_t i = 0; i < argCount; i++) {
-        coroutine_push(coroutine, args[i]);
+    ObjectCoroutine* coroutine = coroutine_new(vm, closure);
+    coroutine_push(coroutine, OBJ_VAL(coroutine));
+    push_call_frame(coroutine, closure, 0);
+    return coroutine;
+}
+
+ObjectCoroutine* Coroutine_NewFromStack(VM* vm, ObjectClosure* closure, Value* slot, uint8_t argCount)
+{
+    ObjectCoroutine* coroutine = coroutine_new(vm, closure);
+    for (Value* value = slot; value < vm->coroutine->stackTop; value++) {
+        coroutine_push(coroutine, *value);
     }
+    push_call_frame(coroutine, closure, argCount);
     return coroutine;
 }
 
 bool Coroutine_IsDone(ObjectCoroutine* coroutine)
 {
     return coroutine->frameCount == 0;
+}
+
+void _Coroutine_CallMain(VM* vm, ObjectCoroutine* coroutine)
+{
+    coroutine->transfer = NULL;
+    coroutine->started = true;
+    vm->coroutine = coroutine;
 }

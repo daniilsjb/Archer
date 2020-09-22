@@ -46,7 +46,7 @@ typedef Expression* (*InfixParselet)(Parser* parser, Expression* prefix);
 
 static Declaration* declaration(Parser* parser);
 static Declaration* class_decl(Parser* parser);
-static Declaration* function_decl(Parser* parser);
+static Declaration* function_decl(Parser* parser, bool coroutine);
 static Declaration* variable_decl(Parser* parser);
 static Declaration* statement_decl(Parser* parser);
 
@@ -74,6 +74,7 @@ static Expression* prefix_inc_expr(Parser* parser);
 static Expression* unary_expr(Parser* parser);
 static Expression* grouping_expr(Parser* parser);
 static Expression* super_expr(Parser* parser);
+static Expression* coroutine_expr(Parser* parser);
 static Expression* yield_expr(Parser* parser);
 static Expression* call_expr(Parser* parser, Expression* prefix);
 static Expression* property_expr(Parser* parser, Expression* prefix);
@@ -90,7 +91,7 @@ static WhenEntry* when_entry_rule(Parser* parser);
 static WhenEntryList* when_entries_rule(Parser* parser);
 static Block* block_rule(Parser* parser);
 static ParameterList* parameters_rule(Parser* parser);
-static NamedFunction* named_function_rule(Parser* parser);
+static NamedFunction* named_function_rule(Parser* parser, bool coroutine);
 static Method* method_rule(Parser* parser);
 static ArgumentList* arguments_rule(Parser* parser);
 
@@ -156,6 +157,7 @@ ParseRule rules[] = {
     [TOKEN_BREAK]               = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_CLASS]               = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_CONTINUE]            = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_COROUTINE]           = { coroutine_expr,     NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_DEFAULT]             = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_DO]                  = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_ELSE]                = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
@@ -328,6 +330,17 @@ static Expression* parse_precedence(Parser* parser, Precedence precedence)
     return expr;
 }
 
+static Declaration* finish_coroutine(Parser* parser)
+{
+    if (match(parser, TOKEN_FUN)) {
+        return function_decl(parser, true);
+    }
+
+    Declaration* coroutine = ast_new_statement_decl(ast_new_expression_stmt(coroutine_expr(parser)));
+    consume(parser, TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
+    return coroutine;
+}
+
 Declaration* declaration(Parser* parser)
 {
     if (parser->panic) {
@@ -335,8 +348,9 @@ Declaration* declaration(Parser* parser)
     }
 
     switch (parser->current.type) {
+        case TOKEN_COROUTINE: advance(parser); return finish_coroutine(parser);
         case TOKEN_CLASS: advance(parser); return class_decl(parser);
-        case TOKEN_FUN: advance(parser); return function_decl(parser);
+        case TOKEN_FUN: advance(parser); return function_decl(parser, false);
         case TOKEN_VAR: advance(parser); return variable_decl(parser);
         default: return statement_decl(parser);
     }
@@ -363,9 +377,9 @@ Declaration* class_decl(Parser* parser)
     return ast_new_class_decl(identifier, superclass, body);
 }
 
-Declaration* function_decl(Parser* parser)
+Declaration* function_decl(Parser* parser, bool coroutine)
 {
-    return ast_new_function_decl(named_function_rule(parser));
+    return ast_new_function_decl(named_function_rule(parser, coroutine));
 }
 
 Declaration* variable_decl(Parser* parser)
@@ -686,6 +700,13 @@ Expression* super_expr(Parser* parser)
     return ast_new_super_expr(keyword, method);
 }
 
+Expression* coroutine_expr(Parser* parser)
+{
+    Token keyword = parser->previous;
+    Expression* expr = expression(parser);
+    return ast_new_coroutine_expr(keyword, expr);
+}
+
 Expression* yield_expr(Parser* parser)
 {
     Token keyword = parser->previous;
@@ -824,7 +845,7 @@ ArgumentList* arguments_rule(Parser* parser)
     return arguments;
 }
 
-NamedFunction* named_function_rule(Parser* parser)
+NamedFunction* named_function_rule(Parser* parser, bool coroutine)
 {
     consume(parser, TOKEN_IDENTIFIER, "Expected function name in declaration.");
     Token identifier = parser->previous;
@@ -842,13 +863,14 @@ NamedFunction* named_function_rule(Parser* parser)
     }
 
     Function* function = ast_new_function(parameters, body);
-    return ast_new_named_function(identifier, function);
+    return ast_new_named_function(identifier, function, coroutine);
 }
 
 Method* method_rule(Parser* parser)
 {
     bool isStatic = match(parser, TOKEN_STATIC);
-    NamedFunction* namedFunction = named_function_rule(parser);
+    bool isCoroutine = match(parser, TOKEN_COROUTINE);
+    NamedFunction* namedFunction = named_function_rule(parser, isCoroutine);
     return ast_new_method(isStatic, namedFunction);
 }
 

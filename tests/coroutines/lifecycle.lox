@@ -1,0 +1,21 @@
+coroutine fun foo() {
+    print "Before!";
+    yield;
+    print "After!";
+}
+
+var coroA = foo();
+coroA();            //Expected: Before!
+print coroA.done(); //Expected: false
+coroA();            //Expected: After!
+print coroA.done(); //Expected: true
+
+coroutine fun bar() {
+    print "Before!";
+    return;
+    print "After!";
+}
+
+var coroB = bar();
+coroB();            //Expected: Before!
+print coroB.done(); //Expected: true

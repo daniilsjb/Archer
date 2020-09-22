@@ -1,0 +1,16 @@
+var foo = coroutine \ -> {
+    print "Before!";
+    yield;
+    print "After!";  
+};
+
+var coro = foo();
+while (!coro.done()) {
+    coro();
+    print "Finishing iteration...";
+}
+
+//Expected: Before!
+//Expected: Finishing iteration...
+//Expected: After!
+//Expected: Finishing iteration...

@@ -141,6 +141,7 @@ typedef struct Expression {
         EXPR_SUPER,
         EXPR_ASSIGNMENT,
         EXPR_COMPOUND_ASSIGNMNET,
+        EXPR_COROUTINE,
         EXPR_YIELD,
         EXPR_LOGICAL,
         EXPR_CONDITIONAL,
@@ -192,6 +193,11 @@ typedef struct Expression {
             Token op;
             Expression* value;
         } compoundAssignmentExpr;
+
+        struct {
+            Token keyword;
+            Expression* expression;
+        } coroutineExpr;
 
         struct {
             Token keyword;
@@ -318,6 +324,7 @@ typedef struct Function {
 typedef struct NamedFunction {
     Token identifier;
     Function* function;
+    bool coroutine;
 } NamedFunction;
 
 typedef struct NamedFunctionList {
@@ -390,6 +397,8 @@ Expression* ast_new_assignment_expr(Expression* target, Expression* value);
 void ast_delete_assignment_expr(Expression* expression);
 Expression* ast_new_compound_assignment_expr(Expression*, Token op, Expression* value);
 void ast_delete_compound_assignment_expr(Expression* expression);
+Expression* ast_new_coroutine_expr(Token keyword, Expression* expression);
+void ast_delete_coroutine_expr(Expression* expression);
 Expression* ast_new_yield_expr(Token keyword, Expression* expression);
 void ast_delete_yield_expr(Expression* expression);
 Expression* ast_new_logical_expr(Expression* left, Token op, Expression* right);
@@ -462,7 +471,7 @@ void ast_delete_block_function_body(FunctionBody* body);
 Function* ast_new_function(ParameterList* parameters, FunctionBody* body);
 void ast_delete_function(Function* function);
 
-NamedFunction* ast_new_named_function(Token identifier, Function* function);
+NamedFunction* ast_new_named_function(Token identifier, Function* function, bool coroutine);
 void ast_delete_named_function(NamedFunction* function);
 
 NamedFunctionList* ast_new_named_function_node(NamedFunction* function);

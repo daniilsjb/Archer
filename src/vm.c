@@ -36,6 +36,7 @@ void vm_init(VM* vm)
     vm->upvalueType = NULL;
     vm->closureType = NULL;
     vm->boundMethodType = NULL;
+    vm->coroutineFunctionType = NULL;
     vm->coroutineType = NULL;
     vm->listType = NULL;
     vm->mapType = NULL;
@@ -978,6 +979,15 @@ static InterpretStatus run(VM* vm)
                 }
 
                 POP_N((size_t)count - 1);
+                break;
+            }
+            case OP_COROUTINE: {
+                if (!VAL_IS_CLOSURE(TOP, vm)) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Expected a function in coroutine expression.");
+                }
+
+                TOP = OBJ_VAL(CoroutineFunction_New(vm, VAL_AS_CLOSURE(TOP)));
                 break;
             }
             case OP_YIELD: {

@@ -1,0 +1,29 @@
+coroutine fun outer() {
+    
+    coroutine fun inner() {
+        yield 2;
+        yield 3;
+    }
+    
+    var coro = inner();
+    
+    print "First!";
+    var a = coro();
+    yield a;
+    
+    print "Second!";
+    var b = coro();
+    yield b;
+    
+    print "Third!";
+    return a + b;
+}
+
+var coro = outer();
+
+var a = coro();   //Expected: First!
+print a;          //Expected: 2
+var b = coro();   //Expected: Second!
+print b;          //Expected: 3
+var sum = coro(); //Expected: Third!
+print sum;        //Expected: 5

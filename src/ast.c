@@ -361,6 +361,7 @@ void ast_delete_expression(Expression* expression)
         case EXPR_SUPER: ast_delete_super_expr(expression); return;
         case EXPR_ASSIGNMENT: ast_delete_assignment_expr(expression); return;
         case EXPR_COMPOUND_ASSIGNMNET: ast_delete_compound_assignment_expr(expression); return;
+        case EXPR_COROUTINE: ast_delete_coroutine_expr(expression); return;
         case EXPR_YIELD: ast_delete_yield_expr(expression); return;
         case EXPR_POSTFIX_INC: ast_delete_postfix_inc_expr(expression); return;
         case EXPR_PREFIX_INC: ast_delete_prefix_inc_expr(expression); return;
@@ -497,6 +498,25 @@ void ast_delete_compound_assignment_expr(Expression* expression)
 {
     ast_delete_expression(expression->as.compoundAssignmentExpr.target);
     ast_delete_expression(expression->as.compoundAssignmentExpr.value);
+    raw_deallocate(expression);
+}
+
+Expression* ast_new_coroutine_expr(Token keyword, Expression* expression)
+{
+    Expression* expr = raw_allocate(sizeof(Expression));
+    if (!expr) {
+        return NULL;
+    }
+
+    expr->type = EXPR_COROUTINE;
+    expr->as.coroutineExpr.keyword = keyword;
+    expr->as.coroutineExpr.expression = expression;
+    return expr;
+}
+
+void ast_delete_coroutine_expr(Expression* expression)
+{
+    ast_delete_expression(expression->as.coroutineExpr.expression);
     raw_deallocate(expression);
 }
 
@@ -1139,7 +1159,7 @@ void ast_delete_function(Function* function)
     raw_deallocate(function);
 }
 
-NamedFunction* ast_new_named_function(Token identifier, Function* function)
+NamedFunction* ast_new_named_function(Token identifier, Function* function, bool coroutine)
 {
     NamedFunction* namedFunction = raw_allocate(sizeof(NamedFunction));
     if (!function) {
@@ -1148,6 +1168,7 @@ NamedFunction* ast_new_named_function(Token identifier, Function* function)
 
     namedFunction->identifier = identifier;
     namedFunction->function = function;
+    namedFunction->coroutine = coroutine;
     return namedFunction;
 }
 

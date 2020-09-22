@@ -49,13 +49,13 @@ Declaration → ClassDeclaration
 ```
 ClassDeclaration → "class" Identifier ("<" Identifier)? "{" Method* "}"
 
-Method → "static"? NamedFunction
+Method → "static"? "coroutine"? NamedFunction
 ```
 
 #### Function
 
 ```
-FunctionDeclaration → "fun" NamedFunction
+FunctionDeclaration → "coroutine"? "fun" NamedFunction
 ```
 
 #### Variable
@@ -297,10 +297,13 @@ PrimaryExpression → Literal
                   | Identifier
                   | GroupingExpression
                   | SuperExpression
+                  | CoroutineExpression
 
 GroupingExpression → "(" Expression ")"
 
 SuperExpression → "super" "." Identifier
+
+CoroutineExpression → "coroutine" Expression
 ```
 
 ### Literals

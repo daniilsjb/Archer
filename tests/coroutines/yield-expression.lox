@@ -1,0 +1,28 @@
+coroutine fun makeGreeting() {
+    print "Hello! What is your first name?";
+    var firstName = yield;
+    print "Interesting, what is your last name?";
+    var lastName = yield;
+    print "Ah, so you're $firstName $lastName!";
+}
+
+var greeting = makeGreeting();
+greeting();       //Expected: Hello! What is your first name?
+greeting("John"); //Expected: Interesting, what is your last name?
+greeting("Doe");  //Expected: Ah, so you're John Doe!
+
+print greeting.done(); //Expected: true
+
+coroutine fun communicate(data) {
+    print yield data;
+}
+
+var coroA = communicate("Something");
+print coroA();        //Expected: Something
+coroA("Fascinating"); //Expected: Fascinating
+
+//Ensure that the first value passed into the coroutine instance is ignored
+//as it doesn't match a single 'yield'.
+var coroB = communicate("Something else");
+print coroB("abc");   //Expected: Something else
+coroB("Beautiful");   //Expected: Beautiful
