@@ -104,8 +104,8 @@ static Value coroutine_pop(ObjectCoroutine* coroutine)
 static void push_call_frame(ObjectCoroutine* coroutine, ObjectClosure* closure, uint8_t argCount)
 {
     CallFrame* frame = &coroutine->frames[coroutine->frameCount++];
-    frame->closure = coroutine->closure;
-    frame->ip = coroutine->closure->function->chunk.code;
+    frame->closure = closure;
+    frame->ip = closure->function->chunk.code;
     frame->slots = coroutine->stackTop - argCount - 1;
 }
 
@@ -256,6 +256,43 @@ ObjectCoroutine* Coroutine_NewFromStack(VM* vm, ObjectClosure* closure, Value* s
     }
     push_call_frame(coroutine, closure, argCount);
     return coroutine;
+}
+
+void Coroutine_Error(ObjectCoroutine* coroutine)
+{
+    reset_stack(coroutine);
+}
+
+bool Coroutine_Call(VM* vm, ObjectCoroutine* coroutine, ObjectClosure* callee, uint8_t argCount)
+{
+    if (argCount != callee->function->arity) {
+        runtime_error(vm, "Expected %d arguments but got %d", callee->function->arity, argCount);
+        return false;
+    }
+
+    if (coroutine->frameCount == FRAMES_MAX) {
+        runtime_error(vm, "Stack overflow.");
+        return false;
+    }
+
+    push_call_frame(coroutine, callee, argCount);
+    return true;
+}
+
+bool Coroutine_CallValue(VM* vm, ObjectCoroutine* coroutine, Value callee, uint8_t argCount)
+{
+    if (!IS_OBJ(callee)) {
+        runtime_error(vm, "Can only call objects.");
+        return false;
+    }
+
+    Object* object = AS_OBJ(callee);
+    if (!OBJ_TYPE(object)->Call) {
+        runtime_error(vm, "Objects of type '%s' are not callable.", OBJ_TYPE(object)->name);
+        return false;
+    }
+
+    return Object_Call(object, argCount, vm);
 }
 
 bool Coroutine_IsDone(ObjectCoroutine* coroutine)

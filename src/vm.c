@@ -128,43 +128,18 @@ InterpretStatus runtime_error(VM* vm, const char* format, ...)
 
     print_stack_trace(vm);
 
-    //reset_stack(vm);
+    Coroutine_Error(vm->coroutine);
     return INTERPRET_RUNTIME_ERROR;
 }
 
 bool call(VM* vm, ObjectClosure* closure, uint8_t argCount)
 {
-    if (argCount != closure->function->arity) {
-        runtime_error(vm, "Expected %d arguments but got %d", closure->function->arity, argCount);
-        return false;
-    }
-
-    if (vm->coroutine->frameCount == FRAMES_MAX) {
-        runtime_error(vm, "Stack overflow.");
-        return false;
-    }
-
-    CallFrame* frame = &vm->coroutine->frames[vm->coroutine->frameCount++];
-    frame->closure = closure;
-    frame->ip = closure->function->chunk.code;
-    frame->slots = vm->coroutine->stackTop - argCount - 1;
-    return true;
+    return Coroutine_Call(vm, vm->coroutine, closure, argCount);
 }
 
 static bool call_value(VM* vm, Value callee, uint8_t argCount)
 {
-    if (!IS_OBJ(callee)) {
-        runtime_error(vm, "Can only call objects.");
-        return false;
-    }
-
-    Object* object = AS_OBJ(callee);
-    if (!OBJ_TYPE(object)->Call) {
-        runtime_error(vm, "Objects of type '%s' are not callable.", OBJ_TYPE(object)->name);
-        return false;
-    }
-
-    return Object_Call(object, argCount, vm);
+    return Coroutine_CallValue(vm, vm->coroutine, callee, argCount);
 }
 
 static bool load_property(VM* vm, Object* object, ObjectString* name, Value* result)

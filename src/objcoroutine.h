@@ -65,6 +65,11 @@ void _Coroutine_CallMain(VM* vm, ObjectCoroutine* coroutine);
 ObjectCoroutine* Coroutine_New(VM* vm, ObjectClosure* closure);
 ObjectCoroutine* Coroutine_NewFromStack(VM* vm, ObjectClosure* closure, Value* slot, uint8_t argCount);
 
+void Coroutine_Error(ObjectCoroutine* coroutine);
+
+bool Coroutine_Call(VM* vm, ObjectCoroutine* coroutine, ObjectClosure* callee, uint8_t argCount);
+bool Coroutine_CallValue(VM* vm, ObjectCoroutine* coroutine, Value callee, uint8_t argCount);
+
 bool Coroutine_IsDone(ObjectCoroutine* coroutine);
 
 #endif
