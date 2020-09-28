@@ -6,44 +6,15 @@
 #include "errcode.h"
 #include "parser.h"
 #include "vm.h"
-
-static char* read_file(const char* fileName)
-{
-    FILE* file = fopen(fileName, "rb");
-    if (file == NULL) {
-        fprintf(stderr, "Could not open file '%s'.\n", fileName);
-        exit(ERR_IO);
-    }
-
-    fseek(file, 0L, SEEK_END);
-    size_t fileSize = ftell(file);
-    rewind(file);
-
-    char* buffer = malloc(fileSize + 1);
-    if (buffer == NULL) {
-        fprintf(stderr, "Not enough memory to read '%s'.\n", fileName);
-        exit(ERR_IO);
-    }
-
-    size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
-    if (bytesRead < fileSize) {
-        fprintf(stderr, "Could not read file '%s'.\n", fileName);
-        exit(ERR_IO);
-    }
-
-    buffer[bytesRead] = '\0';
-
-    fclose(file);
-    return buffer;
-}
+#include "filereader.h"
 
 void run_file(const char* fileName)
 {
     VM vm;
     vm_init(&vm);
 
-    char* source = read_file(fileName);
-    InterpretStatus status = vm_interpret(&vm, source);
+    char* source = Reader_ReadFile(fileName);
+    InterpretStatus status = vm_interpret(&vm, source, fileName);
     free(source);
 
     if (status == INTERPRET_COMPILE_ERROR) {
@@ -70,7 +41,7 @@ void run_prompt()
             break;
         }
 
-        vm_interpret(&vm, line);
+        vm_interpret(&vm, line, "main.lox");
     }
 
     vm_free(&vm);

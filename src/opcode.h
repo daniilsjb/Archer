@@ -39,6 +39,9 @@ typedef enum {
 
     /* Stack */
     OP_POP, OP_DUP, OP_DUP_TWO, OP_SWAP, OP_SWAP_THREE, OP_SWAP_FOUR,
+
+    /* Modules */
+    OP_IMPORT_MODULE, OP_IMPORT_ALL, OP_SAVE_MODULE, OP_IMPORT_BY_NAME,
     
     /* Miscellaneous */
     OP_PRINT, OP_BUILD_STRING

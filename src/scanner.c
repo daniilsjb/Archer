@@ -288,7 +288,14 @@ static char peek_start(Scanner* scanner, int depth)
 static TokenType identifier_type(Scanner* scanner)
 {
     switch (*scanner->start) {
-        case 'a': return check_keyword(scanner, 1, 2, "nd", TOKEN_AND);
+        case 'a': {
+            if (current_length(scanner) > 1) {
+                switch (peek_start(scanner, 1)) {
+                    case 's': return check_keyword(scanner, 2, 0, "", TOKEN_AS);
+                    case 'n': return check_keyword(scanner, 2, 1, "d", TOKEN_AND);
+                }
+            }
+        }
         case 'b': return check_keyword(scanner, 1, 4, "reak", TOKEN_BREAK);
         case 'c': {
             if (current_length(scanner) > 1) {
@@ -324,7 +331,14 @@ static TokenType identifier_type(Scanner* scanner)
                 }
             }
         }
-        case 'i': return check_keyword(scanner, 1, 1, "f", TOKEN_IF);
+        case 'i': {
+            if (current_length(scanner) > 1) {
+                switch (peek_start(scanner, 1)) {
+                    case 'f': return check_keyword(scanner, 2, 0, "", TOKEN_IF);
+                    case 'm': return check_keyword(scanner, 2, 4, "port", TOKEN_IMPORT);
+                }
+            }
+        }
         case 'n': return check_keyword(scanner, 1, 2, "il", TOKEN_NIL);
         case 'o': return check_keyword(scanner, 1, 1, "r", TOKEN_OR);
         case 'p': return check_keyword(scanner, 1, 4, "rint", TOKEN_PRINT);

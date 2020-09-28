@@ -54,27 +54,6 @@ try {
 
 The specifics are not yet recognized, but this approach would require a formal definition of an `Exception` and an ability to handle specific exceptions.
 
-#### Modules
-
-Modularity is a fairly important concept for any programming language. It is useful both for breaking down a program into various files that are responsible for providing different capabilities, functions, and data types, as well as to let the standard library provide native implementations that can be imported from elsewhere. The proposed solution is to go with Python's modularity model, which is well-suited for dynamic scripting languages. Whenever an `import` statement is encountered, it executes a specified path. To avoid circular dependency loops, the program is only allowed to import each file once. Consider the following setup:
-
-```js
-/* File TestA.lox */
-print "Hello from A";
-```
-
-```js
-/* TestB.lox */
-import TestA
-
-print "Hello from B";
-
-/* Output:
-   Hello from A
-   Hello from B
-*/
-```
-
 ## Applications
 
 ### Interactive

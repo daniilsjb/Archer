@@ -1,0 +1,12 @@
+print "Before Main!";
+import "DirectoryA/moduleA";
+print "After Main!";
+
+//This module should have been included by A already, so it shouldn't execute twice
+import "DirectoryA/DirectoryB/moduleB";
+
+//Expected: Before Main!
+//Expected: Before A!
+//Expected: Hello from B!
+//Expected: After A!
+//Expected: After Main!

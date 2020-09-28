@@ -45,6 +45,7 @@ typedef Expression* (*PrefixParselet)(Parser* parser);
 typedef Expression* (*InfixParselet)(Parser* parser, Expression* prefix);
 
 static Declaration* declaration(Parser* parser);
+static Declaration* import_decl(Parser* parser);
 static Declaration* class_decl(Parser* parser);
 static Declaration* function_decl(Parser* parser, bool coroutine);
 static Declaration* variable_decl(Parser* parser);
@@ -284,6 +285,7 @@ static void synchronize(Parser* parser)
         }
 
         switch (parser->current.type) {
+            case TOKEN_IMPORT: return;
             case TOKEN_CLASS: return;
             case TOKEN_STATIC: return;
             case TOKEN_FUN: return;
@@ -349,11 +351,33 @@ Declaration* declaration(Parser* parser)
 
     switch (parser->current.type) {
         case TOKEN_COROUTINE: advance(parser); return finish_coroutine(parser);
+        case TOKEN_IMPORT: advance(parser); return import_decl(parser);
         case TOKEN_CLASS: advance(parser); return class_decl(parser);
         case TOKEN_FUN: advance(parser); return function_decl(parser, false);
         case TOKEN_VAR: advance(parser); return variable_decl(parser);
         default: return statement_decl(parser);
     }
+}
+
+Declaration* import_decl(Parser* parser)
+{
+    Expression* moduleName = expression(parser);
+
+    if (match(parser, TOKEN_AS)) {
+        consume(parser, TOKEN_IDENTIFIER, "Expected alias in import.");
+        Token alias = parser->previous;
+
+        consume(parser, TOKEN_SEMICOLON, "Expected ';' after import.");
+        return ast_new_import_as_decl(moduleName, alias);
+    } else if (match(parser, TOKEN_FOR)) {
+        ParameterList* names = parameters_rule(parser);
+
+        consume(parser, TOKEN_SEMICOLON, "Expected ';' after import.");
+        return ast_new_import_for_decl(moduleName, names);
+    }
+
+    consume(parser, TOKEN_SEMICOLON, "Expected ';' after import.");
+    return ast_new_import_all_decl(moduleName);
 }
 
 Declaration* class_decl(Parser* parser)

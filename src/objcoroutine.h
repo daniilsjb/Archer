@@ -35,6 +35,8 @@ ObjectCoroutineFunction* CoroutineFunction_New(VM* vm, ObjectClosure* closure);
 #define STACK_MAX 512
 #define FRAMES_MAX 64
 
+typedef struct ObjectModule ObjectModule;
+
 typedef struct {
     ObjectClosure* closure;
     uint8_t* ip;
@@ -60,7 +62,7 @@ typedef struct ObjectCoroutine {
 ObjectType* Coroutine_NewType(VM* vm);
 void Coroutine_PrepareType(ObjectType* type, VM* vm);
 
-void _Coroutine_CallMain(VM* vm, ObjectCoroutine* coroutine);
+void Coroutine_Run(VM* vm, ObjectCoroutine* coroutine);
 
 ObjectCoroutine* Coroutine_New(VM* vm, ObjectClosure* closure);
 ObjectCoroutine* Coroutine_NewFromStack(VM* vm, ObjectClosure* closure, Value* slot, uint8_t argCount);

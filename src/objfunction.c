@@ -15,7 +15,7 @@ static ObjectString* function_to_string(Object* object, VM* vm)
         return String_FromCString(vm, "<lambda fn>");
     } else {
         char cstring[100];
-        snprintf(cstring, 100, "<fn '%s'>", function->name->chars);
+        snprintf(cstring, 100, "<fn '%s'>", AS_CSTRING(function->name));
         return String_FromCString(vm, cstring);
     }
 }
@@ -27,13 +27,14 @@ static void function_print(Object* object)
     if (!function->name) {
         printf("<lambda fn>");
     } else {
-        printf("<fn '%s'>", function->name->chars);
+        printf("<fn '%s'>", AS_CSTRING(function->name));
     }
 }
 
 static void function_traverse(Object* object, GC* gc)
 {
     ObjectFunction* function = AS_FUNCTION(object);
+    GC_MarkObject(gc, (Object*)function->mod);
     GC_MarkObject(gc, (Object*)function->name);
     GC_MarkArray(gc, &function->chunk.constants);
     Object_GenericTraverse(object, gc);

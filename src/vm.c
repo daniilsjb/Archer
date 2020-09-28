@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <math.h>
+#include <string.h>
 
 #include "vm.h"
 #include "common.h"
 #include "memory.h"
 #include "chunk.h"
 #include "compiler.h"
+#include "filereader.h"
 #include "library.h"
 
 #include "object.h"
@@ -16,16 +18,22 @@
 #include "objcoroutine.h"
 #include "objlist.h"
 #include "objmap.h"
+#include "objmodule.h"
 
 #if DEBUG_TRACE_EXECUTION
 #include "disassembler.h"
 #endif
+
+#define FILE_EXTENSION ".lox"
 
 void vm_init(VM* vm)
 {
     vm->compiler = NULL;
     vm->classCompiler = NULL;
 
+    vm->mainModule = NULL;
+
+    vm->moduleRegister = NULL;
     vm->coroutine = NULL;
 
     vm->initString = NULL;
@@ -41,11 +49,13 @@ void vm_init(VM* vm)
     vm->listType = NULL;
     vm->mapType = NULL;
     vm->arrayType = NULL;
+    vm->moduleType = NULL;
 
     GC_Init(&vm->gc);
     vm->gc.vm = vm;
 
-    table_init(&vm->globals);
+    table_init(&vm->modules);
+    table_init(&vm->builtins);
     table_init(&vm->strings);
 
     vm->temporaryCount = 0;
@@ -57,7 +67,6 @@ void vm_free(VM* vm)
 {
     vm->initString = NULL;
 
-    table_free(&vm->gc, &vm->globals);
     table_free(&vm->gc, &vm->strings);
 
     GC_Free(&vm->gc);
@@ -244,6 +253,77 @@ static void close_upvalues(VM* vm, Value* last)
         upvalue->location = &upvalue->closed;
         vm->coroutine->openUpvalues = upvalue->next;
     }
+}
+
+static char* obtain_source(VM* vm, ObjectModule* mod)
+{
+    size_t pathLength = strlen(AS_CSTRING(mod->path));
+    size_t nameLength = strlen(AS_CSTRING(mod->name));
+    size_t extensionLength = strlen(FILE_EXTENSION);
+    size_t length = pathLength + nameLength + extensionLength + 1;
+
+    char* fullName = (char*)raw_allocate(length);
+    memcpy(fullName,                           AS_CSTRING(mod->path), pathLength);
+    memcpy(fullName + pathLength,              AS_CSTRING(mod->name), nameLength);
+    memcpy(fullName + pathLength + nameLength, FILE_EXTENSION,        extensionLength);
+    fullName[length - 1] = '\0';
+
+    char* source = Reader_ReadFile(fullName);
+    raw_deallocate(fullName);
+
+    return source;
+}
+
+static CallFrame* get_current_frame(VM* vm)
+{
+    return &vm->coroutine->frames[vm->coroutine->frameCount - 1];
+}
+
+static ObjectModule* get_current_module(VM* vm)
+{
+    return get_current_frame(vm)->closure->function->mod;
+}
+
+static ObjectModule* create_module(VM* vm, ObjectString* relativePath)
+{
+    ObjectString* fullPath = String_Concatenate(vm, get_current_module(vm)->path, relativePath);
+    vm_push_temporary(vm, OBJ_VAL(fullPath));
+
+    Value cached;
+    if (table_get(&vm->modules, OBJ_VAL(fullPath), &cached)) {
+        vm_pop_temporary(vm);
+        return VAL_AS_MODULE(cached);
+    }
+
+    ObjectModule* mod = Module_FromFullPath(vm, AS_CSTRING(fullPath));
+    vm_pop_temporary(vm);
+
+    vm_push_temporary(vm, OBJ_VAL(mod));
+    table_put(vm, &vm->modules, OBJ_VAL(fullPath), OBJ_VAL(mod));
+    vm_pop_temporary(vm);
+
+    return mod;
+}
+
+static bool import_module(VM* vm, ObjectModule* mod)
+{
+    char* source = obtain_source(vm, mod);
+    ObjectFunction* function = compile(vm, source, mod);
+    if (function == NULL) {
+        runtime_error(vm, "Could not compile module '%s'.", AS_CSTRING(mod->name));
+        return false;
+    }
+
+    vm_push_temporary(vm, OBJ_VAL(function));
+    ObjectClosure* closure = Closure_New(vm, function);
+    vm_pop_temporary(vm);
+
+    vm_push_temporary(vm, OBJ_VAL(closure));
+    Coroutine_Run(vm, Coroutine_New(vm, closure));
+    vm_pop_temporary(vm);
+
+    mod->imported = true;
+    return true;
 }
 
 static InterpretStatus run(VM* vm)
@@ -611,7 +691,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_DEFINE_GLOBAL: {
                 ObjectString* identifier = READ_STRING();
-                table_put(vm, &vm->globals, OBJ_VAL(identifier), TOP);
+                table_put(vm, &get_current_module(vm)->base.fields, OBJ_VAL(identifier), TOP);
                 POP();
                 break;
             }
@@ -619,19 +699,24 @@ static InterpretStatus run(VM* vm)
                 ObjectString* identifier = READ_STRING();
                 Value key = OBJ_VAL(identifier);
                 Value value;
-                if (!table_get(&vm->globals, key, &value)) {
-                    frame->ip = ip;
-                    return runtime_error(vm, "Undefined variable '%s'.", identifier->chars);
+                if (table_get(&get_current_module(vm)->base.fields, key, &value)) {
+                    PUSH(value);
+                    break;
                 }
-                PUSH(value);
-                break;
+                if (table_get(&vm->builtins, key, &value)) {
+                    PUSH(value);
+                    break;
+                }
+                frame->ip = ip;
+                return runtime_error(vm, "Undefined variable '%s'.", identifier->chars);
             }
             case OP_STORE_GLOBAL: {
                 ObjectString* identifier = READ_STRING();
                 Value key = OBJ_VAL(identifier);
-                if (table_put(vm, &vm->globals, key, TOP)) {
+                ObjectModule* mod = get_current_module(vm);
+                if (table_put(vm, &mod->base.fields, key, TOP)) {
                     frame->ip = ip;
-                    table_remove(&vm->globals, key);
+                    table_remove(&mod->base.fields, key);
                     return runtime_error(vm, "Undefined variable '%s'.", identifier->chars);
                 }
                 break;
@@ -981,6 +1066,44 @@ static InterpretStatus run(VM* vm)
                 PUSH(result);
                 break;
             }
+            case OP_IMPORT_MODULE: {
+                frame->ip = ip;
+                if (!VAL_IS_STRING(TOP, vm)) {
+                    return runtime_error(vm, "Module name must be a string.");
+                }
+
+                TOP = OBJ_VAL(create_module(vm, VAL_AS_STRING(TOP)));
+                ObjectModule* mod = VAL_AS_MODULE(TOP);
+                if (mod->imported) {
+                    PUSH(NIL_VAL());
+                } else if (!import_module(vm, mod)) {
+                    return runtime_error(vm, "Could not import module.");
+                }
+
+                UPDATE_POINTERS();
+                break;
+            }
+            case OP_IMPORT_ALL: {
+                Table* source = &VAL_AS_MODULE(TOP)->base.fields;
+                Table* destination = &get_current_module(vm)->base.fields;
+                table_put_from(vm, source, destination);
+                POP();
+                break;
+            }
+            case OP_SAVE_MODULE: {
+                vm->moduleRegister = VAL_AS_MODULE(POP());
+                break;
+            }
+            case OP_IMPORT_BY_NAME: {
+                ObjectString* name = READ_STRING();
+                Value value;
+                if (!table_get(&vm->moduleRegister->base.fields, OBJ_VAL(name), &value)) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Identifier '%s' not found in module '%s'.", AS_CSTRING(name), AS_CSTRING(vm->moduleRegister->name));
+                }
+                PUSH(value);
+                break;
+            }
         }
     }
 
@@ -1006,19 +1129,55 @@ static InterpretStatus run(VM* vm)
 #undef POP
 }
 
-InterpretStatus vm_interpret(VM* vm, const char* source)
+static char* convert_path(const char* path)
 {
-    ObjectFunction* function = compile(vm, source);
+    char* correctPath = raw_allocate(strlen(path) + 1);
+    strcpy(correctPath, path);
+    for (char* c = correctPath; *c; c++) {
+        if (*c == '\\') {
+            *c = '/';
+        }
+    }
+
+    return correctPath;
+}
+
+static void create_main_module(VM* vm, const char* path)
+{
+    char* correctPath = convert_path(path);
+
+    ObjectString* fullPath = String_Copy(vm, correctPath, strlen(correctPath) - 4);
+    raw_deallocate(correctPath);
+    vm_push_temporary(vm, OBJ_VAL(fullPath));
+
+    ObjectModule* mainModule = Module_FromFullPath(vm, AS_CSTRING(fullPath));
+    mainModule->imported = true;
+
+    vm_push_temporary(vm, OBJ_VAL(mainModule));
+    table_put(vm, &vm->modules, OBJ_VAL(fullPath), OBJ_VAL(mainModule));
+    vm_pop_temporary(vm);
+    vm_pop_temporary(vm);
+
+    vm->mainModule = mainModule;
+}
+
+InterpretStatus vm_interpret(VM* vm, const char* source, const char* path)
+{
+    if (!vm->mainModule) {
+        create_main_module(vm, path);
+    }
+
+    ObjectFunction* function = compile(vm, source, vm->mainModule);
     if (function == NULL) {
         return INTERPRET_COMPILE_ERROR;
     }
-    
+
     vm_push_temporary(vm, OBJ_VAL(function));
     ObjectClosure* closure = Closure_New(vm, function);
     vm_pop_temporary(vm);
 
     vm_push_temporary(vm, OBJ_VAL(closure));
-    _Coroutine_CallMain(vm, Coroutine_New(vm, closure));
+    Coroutine_Run(vm, Coroutine_New(vm, closure));
     vm_pop_temporary(vm);
 
     return run(vm);

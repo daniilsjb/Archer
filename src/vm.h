@@ -11,6 +11,7 @@ typedef struct ObjectClosure ObjectClosure;
 typedef struct Compiler Compiler;
 typedef struct ClassCompiler ClassCompiler;
 typedef struct ObjectCoroutine ObjectCoroutine;
+typedef struct ObjectModule ObjectModule;
 
 typedef struct ObjectType ObjectType;
 
@@ -31,10 +32,15 @@ typedef struct VM {
     ObjectType* listType;
     ObjectType* mapType;
     ObjectType* arrayType;
+    ObjectType* moduleType;
 
+    ObjectModule* mainModule;
+
+    ObjectModule* moduleRegister;
     ObjectCoroutine* coroutine;
 
-    Table globals;
+    Table modules;
+    Table builtins;
     Table strings;
     ObjectString* initString;
 
@@ -59,7 +65,7 @@ void vm_push_temporary(VM* vm, Value value);
 Value vm_pop_temporary(VM* vm);
 Value vm_peek_temporary(VM* vm, int distance);
 
-InterpretStatus vm_interpret(VM* vm, const char* source);
+InterpretStatus vm_interpret(VM* vm, const char* source, const char* path);
 
 bool call(VM* vm, ObjectClosure* closure, uint8_t argCount);
 

@@ -240,6 +240,14 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("COROUTINE", offset);
         case OP_YIELD:
             return simple_instruction("YIELD", offset);
+        case OP_IMPORT_MODULE:
+            return simple_instruction("IMPORT_MODULE", offset);
+        case OP_IMPORT_ALL:
+            return simple_instruction("IMPORT_ALL", offset);
+        case OP_SAVE_MODULE:
+            return simple_instruction("SAVE_MODULE", offset);
+        case OP_IMPORT_BY_NAME:
+            return constant_instruction("IMPORT_BY_NAME", chunk, offset);
         default:
             return unknown_instruction(instruction, offset);
     }

@@ -31,11 +31,66 @@ void ast_delete_declaration(Declaration* declaration)
     }
 
     switch (declaration->type) {
+        case DECL_IMPORT: ast_delete_import_decl(declaration); return;
         case DECL_CLASS: ast_delete_class_decl(declaration); return;
         case DECL_FUNCTION: ast_delete_function_decl(declaration); return;
         case DECL_VARIABLE: ast_delete_variable_decl(declaration); return;
         case DECL_STATEMENT: ast_delete_statement_decl(declaration); return;
     }
+}
+
+Declaration* ast_new_import_all_decl(Expression* moduleName)
+{
+    Declaration* decl = raw_allocate(sizeof(Declaration));
+    if (!decl) {
+        return NULL;
+    }
+
+    decl->type = DECL_IMPORT;
+    decl->as.importDecl.moduleName = moduleName;
+    decl->as.importDecl.type = IMPORT_ALL;
+    return decl;
+}
+
+Declaration* ast_new_import_as_decl(Expression* moduleName, Token alias)
+{
+    Declaration* decl = raw_allocate(sizeof(Declaration));
+    if (!decl) {
+        return NULL;
+    }
+
+    decl->type = DECL_IMPORT;
+    decl->as.importDecl.moduleName = moduleName;
+    decl->as.importDecl.type = IMPORT_AS;
+    decl->as.importDecl.with.alias = alias;
+    return decl;
+}
+
+Declaration* ast_new_import_for_decl(Expression* moduleName, ParameterList* names)
+{
+    Declaration* decl = raw_allocate(sizeof(Declaration));
+    if (!decl) {
+        return NULL;
+    }
+
+    decl->type = DECL_IMPORT;
+    decl->as.importDecl.moduleName = moduleName;
+    decl->as.importDecl.type = IMPORT_FOR;
+    decl->as.importDecl.with.names = names;
+    return decl;
+}
+
+void ast_delete_import_decl(Declaration* declaration)
+{
+    ast_delete_expression(declaration->as.importDecl.moduleName);
+
+    switch (declaration->as.importDecl.type) {
+        case IMPORT_ALL: break;
+        case IMPORT_AS: break;
+        case IMPORT_FOR: ast_delete_parameter_list(declaration->as.importDecl.with.names);
+    }
+
+    raw_deallocate(declaration);
 }
 
 Declaration* ast_new_class_decl(Token identifier, Token superclass, MethodList* body)

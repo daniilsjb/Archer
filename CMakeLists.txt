@@ -57,4 +57,10 @@ add_executable (clox
     "src/objarray.c"
     "src/objmap.h"
     "src/objmap.c"
- "src/objcoroutine.h" "src/objcoroutine.c")
+    "src/objcoroutine.h"
+    "src/objcoroutine.c"
+    "src/filereader.h"
+    "src/filereader.c"
+    "src/objmodule.h"
+    "src/objmodule.c"
+)

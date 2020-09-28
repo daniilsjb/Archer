@@ -66,6 +66,7 @@ typedef enum {
 
     /* Keywords */
     TOKEN_AND,
+    TOKEN_AS,
     TOKEN_BREAK,
     TOKEN_CASE,
     TOKEN_CLASS,
@@ -78,6 +79,7 @@ typedef enum {
     TOKEN_FUN,
     TOKEN_FOR,
     TOKEN_IF,
+    TOKEN_IMPORT,
     TOKEN_NIL,
     TOKEN_OR,
     TOKEN_PRINT,

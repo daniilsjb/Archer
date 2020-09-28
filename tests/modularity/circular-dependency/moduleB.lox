@@ -1,0 +1,5 @@
+import "moduleA";
+print "Hello from B!";
+
+//Expected: Hello from A!
+//Expected: Hello from B!

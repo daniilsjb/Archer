@@ -14,13 +14,16 @@
 #define ALLOCATE_FUNCTION(vm) (AS_FUNCTION(ALLOCATE_OBJ(vm, vm->functionType)))
 
 typedef struct ObjectString ObjectString;
+typedef struct ObjectModule ObjectModule;
 
 typedef struct ObjectFunction {
     Object base;
+    ObjectString* name;
+    ObjectModule* mod;
+
+    size_t upvalueCount;
     Chunk chunk;
     int arity;
-    size_t upvalueCount;
-    ObjectString* name;
 } ObjectFunction;
 
 ObjectType* Function_NewType(VM* vm);

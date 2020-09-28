@@ -31,12 +31,15 @@ typedef enum ExprContext { LOAD, STORE } ExprContext;
 
 typedef enum FunctionNotation { FUNC_EXPRESSION, FUNC_BLOCK } FunctionNotation;
 
+typedef enum ImportType { IMPORT_ALL, IMPORT_AS, IMPORT_FOR } ImportType;
+
 typedef struct AST {
     DeclarationList* body;
 } AST;
 
 typedef struct Declaration {
     enum {
+        DECL_IMPORT,
         DECL_CLASS,
         DECL_FUNCTION,
         DECL_VARIABLE,
@@ -44,6 +47,15 @@ typedef struct Declaration {
     } type;
 
     union {
+        struct {
+            Expression* moduleName;
+            ImportType type;
+            union {
+                Token alias;
+                ParameterList* names;
+            } with;
+        } importDecl;
+
         struct {
             Token identifier;
             Token superclass;
@@ -351,6 +363,10 @@ AST* ast_new_tree(DeclarationList* body);
 void ast_delete_tree(AST* ast);
 
 void ast_delete_declaration(Declaration* declaration);
+Declaration* ast_new_import_all_decl(Expression* moduleName);
+Declaration* ast_new_import_as_decl(Expression* moduleName, Token alias);
+Declaration* ast_new_import_for_decl(Expression* moduleName, ParameterList* names);
+void ast_delete_import_decl(Declaration* declaration);
 Declaration* ast_new_class_decl(Token identifier, Token superclass, MethodList* body);
 void ast_delete_class_decl(Declaration* declaration);
 Declaration* ast_new_function_decl(NamedFunction* function);

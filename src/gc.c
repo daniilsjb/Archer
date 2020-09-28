@@ -116,6 +116,8 @@ static void mark_roots(GC* gc)
         GC_MarkValue(gc, vm->temporaries[i]);
     }
 
+    GC_MarkTable(gc, &vm->modules);
+    GC_MarkTable(gc, &vm->builtins);
     GC_MarkObject(gc, (Object*)vm->coroutine);
 
     GC_MarkObject(gc, (Object*)vm->stringType);
@@ -129,8 +131,8 @@ static void mark_roots(GC* gc)
     GC_MarkObject(gc, (Object*)vm->listType);
     GC_MarkObject(gc, (Object*)vm->mapType);
     GC_MarkObject(gc, (Object*)vm->arrayType);
+    GC_MarkObject(gc, (Object*)vm->moduleType);
 
-    GC_MarkTable(gc, &vm->globals);
     GC_MarkObject(gc, (Object*)vm->initString);
     mark_compiler_roots(gc->vm);
 }

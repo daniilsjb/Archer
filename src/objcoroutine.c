@@ -3,6 +3,7 @@
 #include "objcoroutine.h"
 #include "objfunction.h"
 #include "objstring.h"
+#include "objmodule.h"
 #include "vm.h"
 #include "memory.h"
 #include "gc.h"
@@ -300,9 +301,9 @@ bool Coroutine_IsDone(ObjectCoroutine* coroutine)
     return coroutine->frameCount == 0;
 }
 
-void _Coroutine_CallMain(VM* vm, ObjectCoroutine* coroutine)
+void Coroutine_Run(VM* vm, ObjectCoroutine* coroutine)
 {
-    coroutine->transfer = NULL;
+    coroutine->transfer = vm->coroutine;
     coroutine->started = true;
     vm->coroutine = coroutine;
 }

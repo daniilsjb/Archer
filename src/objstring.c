@@ -200,6 +200,11 @@ ObjectString* String_Copy(VM* vm, const char* chars, size_t length)
     return string;
 }
 
+ObjectString* String_MakeEmpty(VM* vm)
+{
+    return String_FromCString(vm, "");
+}
+
 ObjectString* String_FromCString(VM* vm, const char* chars)
 {
     return String_Copy(vm, chars, strlen(chars));

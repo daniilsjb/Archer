@@ -1,0 +1,25 @@
+import "moduleA";
+
+print x; //Expected: 10
+
+import "moduleA" as A1;
+print A1.x; //Expected: 10
+
+import "moduleA" as A2;
+print A2.x; //Expected: 10
+
+{
+   import "moduleA" for x;
+   print x; //Expected: 10 
+}
+
+A1.x += 3;
+
+print x;    //Expected: 10
+print A1.x; //Expected: 13
+print A2.x; //Expected: 13
+
+{
+   import "moduleA" for x;
+   print x; //Expected: 13 
+}

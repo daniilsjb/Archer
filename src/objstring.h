@@ -26,6 +26,7 @@ void String_PrepareType(ObjectType* type, VM* vm);
 
 ObjectString* String_New(VM* vm, size_t length);
 ObjectString* String_Copy(VM* vm, const char* chars, size_t length);
+ObjectString* String_MakeEmpty(VM* vm);
 ObjectString* String_FromCString(VM* vm, const char* chars);
 ObjectString* String_FromNil(VM* vm);
 ObjectString* String_FromBoolean(VM* vm, bool boolean);

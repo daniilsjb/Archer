@@ -1,0 +1,18 @@
+var pi = 3.141592653589;
+
+class Circle {
+    
+    init(x, y, r) {
+        this.x = x;
+        this.y = y;
+        this.r = r;
+    }
+    
+    area() = pi * this.r ** 2
+    
+    toString() = "Circle { Position: (${this.x}, ${this.y}), Radius: ${this.r} }"
+    
+}
+
+fun add(a, b) = a + b
+fun sub(a, b) = a - b

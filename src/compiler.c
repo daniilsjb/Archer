@@ -6,6 +6,7 @@
 #include "vm.h"
 #include "objfunction.h"
 #include "objstring.h"
+#include "objmodule.h"
 #include "common.h"
 #include "chunk.h"
 #include "parser.h"
@@ -61,6 +62,8 @@ typedef struct Compiler {
 
     struct Compiler* enclosing;
 
+    ObjectModule* mod;
+
     ObjectFunction* function;
     CompilerType type;
 
@@ -87,6 +90,7 @@ typedef struct ClassCompiler {
 static void compile_tree(Compiler* compiler, AST* ast);
 
 static void compile_declaration(Compiler* compiler, Declaration* decl);
+static void compile_import_decl(Compiler* compiler, Declaration* decl);
 static void compile_class_decl(Compiler* compiler, Declaration* decl);
 static void compile_function_decl(Compiler* compiler, Declaration* decl);
 static void compile_variable_decl(Compiler* compiler, Declaration* decl);
@@ -142,7 +146,7 @@ static size_t compile_argument_list(Compiler* compiler, ArgumentList* list);
 static size_t compile_expression_list(Compiler* compiler, ExpressionList* list);
 static size_t compile_declaration_list(Compiler* compiler, DeclarationList* list);
 
-static void compiler_init(Compiler* compiler, VM* vm, CompilerType type, Token identifier)
+static void compiler_init(Compiler* compiler, VM* vm, CompilerType type, Token identifier, ObjectModule* mod)
 {
     compiler->enclosing = vm->compiler;
     vm->compiler = compiler;
@@ -160,6 +164,9 @@ static void compiler_init(Compiler* compiler, VM* vm, CompilerType type, Token i
     compiler->scopeDepth = 0;
 
     compiler->token = identifier;
+
+    compiler->mod = mod;
+    compiler->function->mod = mod;
 
     if (type == TYPE_LAMBDA) {
         compiler->function->name = String_FromCString(vm, "lambda");
@@ -555,10 +562,41 @@ void compile_declaration(Compiler* compiler, Declaration* decl)
     compiler->panic = false;
 
     switch (decl->type) {
+        case DECL_IMPORT: compile_import_decl(compiler, decl); return;
         case DECL_CLASS: compile_class_decl(compiler, decl); return;
         case DECL_FUNCTION: compile_function_decl(compiler, decl); return;
         case DECL_VARIABLE: compile_variable_decl(compiler, decl); return;
         case DECL_STATEMENT: compile_statement_decl(compiler, decl); return;
+    }
+}
+
+void compile_import_decl(Compiler* compiler, Declaration* decl)
+{
+    compile_expression(compiler, decl->as.importDecl.moduleName);
+    emit_byte(compiler, OP_IMPORT_MODULE);
+    emit_byte(compiler, OP_POP);
+
+    switch (decl->as.importDecl.type) {
+        case IMPORT_ALL: {
+            emit_byte(compiler, OP_IMPORT_ALL);
+            break;
+        }
+        case IMPORT_AS: {
+            uint8_t global = declare_variable(compiler, decl->as.importDecl.with.alias);
+            define_variable(compiler, global);
+            break;
+        }
+        case IMPORT_FOR: {
+            emit_byte(compiler, OP_SAVE_MODULE);
+            for (ParameterList* current = decl->as.importDecl.with.names; current != NULL; current = current->next) {
+                emit_byte(compiler, OP_IMPORT_BY_NAME);
+                emit_byte(compiler, make_identifier_constant(compiler, current->parameter));
+
+                uint8_t global = declare_variable(compiler, current->parameter);
+                define_variable(compiler, global);
+            }
+            break;
+        }
     }
 }
 
@@ -1712,7 +1750,7 @@ void compile_function_body(Compiler* compiler, FunctionBody* body)
 void compile_function(Compiler* compiler, Function* function, CompilerType type, Token identifier, bool coroutine)
 {
     Compiler newCompiler;
-    compiler_init(&newCompiler, compiler->vm, type, identifier);
+    compiler_init(&newCompiler, compiler->vm, type, identifier, compiler->mod);
     begin_scope(&newCompiler);
 
     newCompiler.function->arity = (int)compile_parameter_list(&newCompiler, function->parameters);
@@ -1767,7 +1805,7 @@ size_t compile_declaration_list(Compiler* compiler, DeclarationList* list)
     return count;
 }
 
-ObjectFunction* compile(VM* vm, const char* source)
+ObjectFunction* compile(VM* vm, const char* source, ObjectModule* mod)
 {
     vm->compiler = NULL;
     vm->classCompiler = NULL;
@@ -1783,7 +1821,7 @@ ObjectFunction* compile(VM* vm, const char* source)
 
     Compiler compiler;
     compiler.vm = vm;
-    compiler_init(&compiler, vm, TYPE_SCRIPT, empty_token());
+    compiler_init(&compiler, vm, TYPE_SCRIPT, empty_token(), mod);
 
     compile_tree(&compiler, ast);
     ObjectFunction* function = finish_compilation(vm);

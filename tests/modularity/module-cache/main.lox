@@ -1,0 +1,5 @@
+import "moduleA";
+import "moduleA";
+import "moduleA";
+
+//Expected: Hello from A!

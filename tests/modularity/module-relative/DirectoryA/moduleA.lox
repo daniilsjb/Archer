@@ -1,0 +1,7 @@
+print "Before A!";
+import "DirectoryB/moduleB";
+print "After A!";
+
+//Expected: Before A!
+//Expected: Hello from B!
+//Expected: After A!

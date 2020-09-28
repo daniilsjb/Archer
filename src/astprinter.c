@@ -6,6 +6,7 @@
 static void print_tree(int indent, AST* ast);
 
 static void print_declaration(int indent, Declaration* decl);
+static void print_import_decl(int indent, Declaration* decl);
 static void print_class_decl(int indent, Declaration* decl);
 static void print_function_decl(int indent, Declaration* decl);
 static void print_variable_decl(int indent, Declaration* decl);
@@ -145,10 +146,38 @@ void print_tree(int indent, AST* ast)
 void print_declaration(int indent, Declaration* decl)
 {
     switch (decl->type) {
+        case DECL_IMPORT: print_import_decl(indent, decl); return;
         case DECL_CLASS: print_class_decl(indent, decl); return;
         case DECL_FUNCTION: print_function_decl(indent, decl); return;
         case DECL_VARIABLE: print_variable_decl(indent, decl); return;
         case DECL_STATEMENT: print_statement_decl(indent, decl); return;
+    }
+}
+
+void print_import_decl(int indent, Declaration* decl)
+{
+    print_header(indent, "Import");
+    indent++;
+
+    print_indented(indent, "Module Name:\n");
+    print_expression(indent + 1, decl->as.importDecl.moduleName);
+
+    switch (decl->as.importDecl.type) {
+        case IMPORT_ALL: {
+            break;
+        }
+        case IMPORT_AS: {
+            Token alias = decl->as.importDecl.with.alias;
+            print_token_field(indent, "Alias", alias);
+            break;
+        }
+        case IMPORT_FOR: {
+            ParameterList* names = decl->as.importDecl.with.names;
+            print_indented(indent, "Names: ");
+            print_parameter_list_inline(names);
+            printf("\n");
+            break;
+        }
     }
 }
 

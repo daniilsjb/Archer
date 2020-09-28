@@ -13,6 +13,7 @@
 #include "objlist.h"
 #include "objmap.h"
 #include "objarray.h"
+#include "objmodule.h"
 
 bool Library_Error(VM* vm, const char* message, Value* args)
 {
@@ -63,7 +64,7 @@ static void define_native(VM* vm, const char* name, NativeFn function, int arity
 {
     vm_push_temporary(vm, OBJ_VAL(String_FromCString(vm, name)));
     vm_push_temporary(vm, OBJ_VAL(Native_New(vm, function, arity)));
-    table_put(vm, &vm->globals, vm_peek_temporary(vm, 1), vm_peek_temporary(vm, 0));
+    table_put(vm, &vm->builtins, vm_peek_temporary(vm, 1), vm_peek_temporary(vm, 0));
     vm_pop_temporary(vm);
     vm_pop_temporary(vm);
 }
@@ -71,7 +72,7 @@ static void define_native(VM* vm, const char* name, NativeFn function, int arity
 static void define_type(VM* vm, const char* name, ObjectType* type)
 {
     vm_push_temporary(vm, OBJ_VAL(String_FromCString(vm, name)));
-    table_put(vm, &vm->globals, vm_peek_temporary(vm, 0), OBJ_VAL(type));
+    table_put(vm, &vm->builtins, vm_peek_temporary(vm, 0), OBJ_VAL(type));
     vm_pop_temporary(vm);
 }
 
@@ -88,6 +89,7 @@ void Library_Init(VM* vm)
     vm->listType = List_NewType(vm);
     vm->mapType = Map_NewType(vm);
     vm->arrayType = Array_NewType(vm);
+    vm->moduleType = Module_NewType(vm);
 
     vm->initString = String_FromCString(vm, "init");
 
@@ -102,6 +104,7 @@ void Library_Init(VM* vm)
     List_PrepareType(vm->listType, vm);
     Map_PrepareType(vm->mapType, vm);
     Array_PrepareType(vm->arrayType, vm);
+    Module_PrepareType(vm->moduleType, vm);
 
     define_type(vm, "String", vm->stringType);
     define_type(vm, "Array", vm->arrayType);

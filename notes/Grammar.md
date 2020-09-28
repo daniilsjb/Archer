@@ -38,10 +38,21 @@ Script → Declaration* EOF
 ### Declarations
 
 ```
-Declaration → ClassDeclaration
+Declaration → ImportDeclaration
+            | ClassDeclaration
             | FunctionDeclaration
             | VariableDeclaration
             | Statement
+```
+
+#### Import
+
+```
+ImportDeclaration → "import" Expression (ImportAs | ImportFor)? ";"
+
+ImportAs → "as" Identifier
+
+ImportFor → "for" Parameters
 ```
 
 #### Class

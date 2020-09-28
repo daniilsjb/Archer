@@ -1,0 +1,12 @@
+var pi = "Outer pi";
+var add = "Outer add";
+
+{
+    import "math" for pi, add;
+
+    print pi;         //Expected: 3.14159
+    print add(2, 3);  //Expected: 5
+}
+
+print pi;  //Expected: Outer pi
+print add; //Expected: Outer add

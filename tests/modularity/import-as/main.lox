@@ -1,0 +1,9 @@
+import "math";
+
+print pi;         //Expected: 3.14159
+print add(2, 3);  //Expected: 5
+print sub(10, 1); //Expected: 9
+
+var circle = Circle(2, 10, 5);
+print circle.area();      //Expected: 78.5398
+print circle.toString();  //Expected: Circle { Position: (2, 10), Radius: 5 }
