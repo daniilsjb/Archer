@@ -19,6 +19,7 @@
 #include "objlist.h"
 #include "objmap.h"
 #include "objmodule.h"
+#include "objiterator.h"
 
 #if DEBUG_TRACE_EXECUTION
 #include "disassembler.h"
@@ -50,6 +51,7 @@ void vm_init(VM* vm)
     vm->mapType = NULL;
     vm->arrayType = NULL;
     vm->moduleType = NULL;
+    vm->iteratorType = NULL;
 
     GC_Init(&vm->gc);
     vm->gc.vm = vm;
@@ -137,7 +139,7 @@ InterpretStatus runtime_error(VM* vm, const char* format, ...)
 
     print_stack_trace(vm);
 
-    Coroutine_Error(vm->coroutine);
+    vm->coroutine = NULL;
     return INTERPRET_RUNTIME_ERROR;
 }
 
@@ -1102,6 +1104,33 @@ static InterpretStatus run(VM* vm)
                     return runtime_error(vm, "Identifier '%s' not found in module '%s'.", AS_CSTRING(name), AS_CSTRING(vm->moduleRegister->name));
                 }
                 PUSH(value);
+                break;
+            }
+            case OP_ITERATOR: {
+                if (!IS_OBJ(TOP)) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Primitive values are not iterable.");
+                }
+
+                Object* obj = AS_OBJ(TOP);
+                if (!obj->type->MakeIterator) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Objects of type '%s' are not iterable.", obj->type->name);
+                }
+
+                TOP = OBJ_VAL(obj->type->MakeIterator(obj, vm));
+                break;
+            }
+            case OP_FOR_ITERATOR: {
+                uint16_t offset = READ_SHORT();
+
+                ObjectIterator* iterator = VAL_AS_ITERATOR(TOP);
+                if (Iterator_ReachedEnd(iterator)) {
+                    ip += offset;
+                } else {
+                    PUSH(Iterator_GetValue(vm, iterator));
+                    Iterator_Advance(iterator);
+                }
                 break;
             }
         }

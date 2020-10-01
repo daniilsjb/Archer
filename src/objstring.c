@@ -3,10 +3,39 @@
 
 #include "objstring.h"
 #include "objnative.h"
+#include "objiterator.h"
+
 #include "vm.h"
 #include "memory.h"
 #include "gc.h"
 #include "library.h"
+
+static bool iterator_reached_end(ObjectIterator* iterator)
+{
+    ObjectString* string = AS_STRING(iterator->container);
+    return (uintptr_t)((char*)iterator->ptr - string->chars) >= string->length;
+}
+
+static void iterator_advance(ObjectIterator* iterator)
+{
+    ((char*)iterator->ptr)++;
+}
+
+static Value iterator_get_value(VM* vm, ObjectIterator* iterator)
+{
+    return OBJ_VAL(String_Copy(vm, (char*)iterator->ptr, 1));
+}
+
+static ObjectIterator* make_iterator(VM* vm, ObjectString* string)
+{
+    ObjectIterator* iterator = Iterator_New(vm);
+    iterator->container = (Object*)string;
+    iterator->ptr = string->chars;
+    iterator->ReachedEnd = iterator_reached_end;
+    iterator->Advance = iterator_advance;
+    iterator->GetValue = iterator_get_value;
+    return iterator;
+}
 
 static bool method_init(VM* vm, Value* args)
 {
@@ -102,11 +131,6 @@ static bool method_from_number(VM* vm, Value* args)
     return true;
 }
 
-static void string_print(Object* object)
-{
-    printf("%s", AS_CSTRING(object));
-}
-
 static uint32_t hash_cstring(const char* chars, size_t length)
 {
     uint32_t hash = 2166136261U;
@@ -130,6 +154,16 @@ static ObjectString* string_to_string(Object* object, VM* vm)
     return AS_STRING(object);
 }
 
+static void string_print(Object* object)
+{
+    printf("%s", AS_CSTRING(object));
+}
+
+static ObjectIterator* string_make_iterator(Object* object, VM* vm)
+{
+    return make_iterator(vm, AS_STRING(object));
+}
+
 static void string_free(Object* object, GC* gc)
 {
     ObjectString* string = AS_STRING(object);
@@ -146,12 +180,13 @@ ObjectType* String_NewType(VM* vm)
     type->ToString = string_to_string;
     type->Print = string_print;
     type->Hash = string_hash;
-    type->GetField = NULL;
+    type->GetField = Object_GenericGetField;
     type->SetField = NULL;
     type->GetSubscript = NULL;
     type->SetSubscript = NULL;
     type->GetMethod = Object_GenericGetMethod;
     type->SetMethod = NULL;
+    type->MakeIterator = string_make_iterator;
     type->Call = NULL;
     type->Traverse = Object_GenericTraverse;
     type->Free = string_free;

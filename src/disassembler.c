@@ -248,6 +248,10 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("SAVE_MODULE", offset);
         case OP_IMPORT_BY_NAME:
             return constant_instruction("IMPORT_BY_NAME", chunk, offset);
+        case OP_ITERATOR:
+            return simple_instruction("ITERATOR", offset);
+        case OP_FOR_ITERATOR:
+            return jump_instruction("FOR_ITERATOR", 1, chunk, offset);
         default:
             return unknown_instruction(instruction, offset);
     }

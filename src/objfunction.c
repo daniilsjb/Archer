@@ -61,6 +61,7 @@ ObjectType* Function_NewType(VM* vm)
     type->SetSubscript = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
+    type->MakeIterator = NULL;
     type->Call = NULL;
     type->Traverse = function_traverse;
     type->Free = function_free;
@@ -112,6 +113,7 @@ ObjectType* Upvalue_NewType(VM* vm)
     type->SetSubscript = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
+    type->MakeIterator = NULL;
     type->Call = NULL;
     type->Traverse = upvalue_traverse;
     type->Free = Object_GenericFree;
@@ -179,6 +181,7 @@ ObjectType* Closure_NewType(VM* vm)
     type->SetSubscript = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
+    type->MakeIterator = NULL;
     type->Call = closure_call;
     type->Traverse = closure_traverse;
     type->Free = closure_free;
@@ -243,6 +246,7 @@ ObjectType* BoundMethod_NewType(VM* vm)
     type->SetSubscript = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
+    type->MakeIterator = NULL;
     type->Call = bound_method_call;
     type->Traverse = bound_method_traverse;
     type->Free = Object_GenericFree;

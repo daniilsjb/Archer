@@ -33,6 +33,7 @@ typedef struct VM {
     ObjectType* mapType;
     ObjectType* arrayType;
     ObjectType* moduleType;
+    ObjectType* iteratorType;
 
     ObjectModule* mainModule;
 

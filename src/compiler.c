@@ -32,7 +32,7 @@ typedef struct {
     bool isLocal;
 } Upvalue;
 
-typedef enum { CONTROL_FOR, CONTROL_WHILE, CONTROL_DO_WHILE, CONTROL_WHEN } ControlType;
+typedef enum { CONTROL_FOR, CONTROL_FOR_IN, CONTROL_WHILE, CONTROL_DO_WHILE, CONTROL_WHEN } ControlType;
 
 typedef struct ControlBreak {
     struct ControlBreak* enclosing;
@@ -98,6 +98,7 @@ static void compile_statement_decl(Compiler* compiler, Declaration* decl);
 
 static void compile_statement(Compiler* compiler, Statement* stmt);
 static void compile_for_stmt(Compiler* compiler, Statement* stmt);
+static void compile_for_in_stmt(Compiler* compiler, Statement* stmt);
 static void compile_while_stmt(Compiler* compiler, Statement* stmt);
 static void compile_do_while_stmt(Compiler* compiler, Statement* stmt);
 static void compile_break_stmt(Compiler* compiler, Statement* stmt);
@@ -698,6 +699,7 @@ void compile_statement(Compiler* compiler, Statement* stmt)
 {
     switch (stmt->type) {
         case STMT_FOR: compile_for_stmt(compiler, stmt); return;
+        case STMT_FOR_IN: compile_for_in_stmt(compiler, stmt); return;
         case STMT_WHILE: compile_while_stmt(compiler, stmt); return;
         case STMT_DO_WHILE: compile_do_while_stmt(compiler, stmt); return;
         case STMT_BREAK: compile_break_stmt(compiler, stmt); return;
@@ -726,7 +728,6 @@ void compile_for_stmt(Compiler* compiler, Statement* stmt)
     Expression* condition = stmt->as.forStmt.condition;
     if (condition) {
         compile_expression(compiler, condition);
-
         exitJump = emit_jump(compiler, OP_POP_JUMP_IF_FALSE);
     }
 
@@ -755,7 +756,42 @@ void compile_for_stmt(Compiler* compiler, Statement* stmt)
     }
 
     exit_control_block(compiler);
+    end_scope(compiler);
+}
 
+void compile_for_in_stmt(Compiler* compiler, Statement* stmt)
+{
+    begin_scope(compiler);
+
+    Declaration* element = stmt->as.forInStmt.element;
+    Token identifier = element->as.variableDecl.identifier;
+    compiler->token = identifier;
+    
+    emit_byte(compiler, OP_LOAD_NIL);
+    declare_local_variable(compiler, identifier);
+    initialize_local(compiler);
+
+    Expression* collection = stmt->as.forInStmt.collection;
+    compile_expression(compiler, collection);
+    emit_byte(compiler, OP_ITERATOR);
+    add_local(compiler, empty_token());
+    initialize_local(compiler);
+
+    size_t loopStart = current_chunk(compiler)->count;
+    size_t exitJump = emit_jump(compiler, OP_FOR_ITERATOR);
+
+    named_variable(compiler, identifier, STORE);
+    emit_byte(compiler, OP_POP);
+
+    enter_control_block(compiler, CONTROL_FOR_IN, loopStart, 0xFFFF);
+
+    Statement* body = stmt->as.forInStmt.body;
+    compile_statement(compiler, body);
+
+    emit_loop(compiler, loopStart, OP_LOOP);
+    patch_jump(compiler, exitJump);
+
+    exit_control_block(compiler);
     end_scope(compiler);
 }
 
@@ -796,7 +832,7 @@ void compile_do_while_stmt(Compiler* compiler, Statement* stmt)
 
 static bool block_is_loop(ControlBlock* block)
 {
-    return block->type == CONTROL_FOR || block->type == CONTROL_WHILE || block->type == CONTROL_DO_WHILE;
+    return block->type == CONTROL_FOR || block->type == CONTROL_FOR_IN || block->type == CONTROL_WHILE || block->type == CONTROL_DO_WHILE;
 }
 
 static ControlBlock* closest_loop(Compiler* compiler)

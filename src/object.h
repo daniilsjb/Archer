@@ -15,6 +15,7 @@ typedef struct GC GC;
 typedef struct VM VM;
 
 typedef struct ObjectString ObjectString;
+typedef struct ObjectIterator ObjectIterator;
 typedef struct ObjectType ObjectType;
 
 typedef struct Object {
@@ -45,6 +46,7 @@ bool Object_GetMethod(Object* object, Value key, VM* vm, Value* result);
 bool Object_GetMethodDirectly(Object* object, Value key, VM* vm, Value* result);
 bool Object_SetMethod(Object* object, Value key, Value value, VM* vm);
 bool Object_SetMethodDirectly(Object* object, Value key, Value value, VM* vm);
+ObjectIterator* Object_MakeIterator(Object* object, VM* vm);
 bool Object_Call(Object* callee, uint8_t argCount, VM* vm);
 void Object_Traverse(Object* object, GC* gc);
 void Object_Free(Object* object, GC* gc);
@@ -77,6 +79,7 @@ typedef bool(*GetSubscriptFn)(Object* object, Value index, VM* vm, Value* result
 typedef bool (*SetSubscriptFn)(Object* object, Value index, Value value, VM* vm);
 typedef bool (*GetMethodFn)(ObjectType* type, Value key, VM* vm, Value* result);
 typedef bool (*SetMethodFn)(ObjectType* type, Value key, Value value, VM* vm);
+typedef ObjectIterator* (*MakeIteratorFn)(Object* object, VM* vm);
 typedef bool (*CallFn)(Object* callee, uint8_t argCount, VM* vm);
 typedef void (*TraverseFn)(Object* object, GC* gc);
 typedef void (*FreeFn)(Object* object, GC* gc);
@@ -97,6 +100,7 @@ typedef struct ObjectType {
     SetSubscriptFn SetSubscript;
     GetMethodFn GetMethod;
     SetMethodFn SetMethod;
+    MakeIteratorFn MakeIterator;
     CallFn Call;
     TraverseFn Traverse;
     FreeFn Free;

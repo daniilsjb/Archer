@@ -5,6 +5,8 @@
 #include "objnative.h"
 #include "objstring.h"
 #include "objcoroutine.h"
+#include "objiterator.h"
+
 #include "vm.h"
 #include "gc.h"
 #include "memory.h"
@@ -114,6 +116,11 @@ bool Object_SetMethod(Object* object, Value key, Value value, VM* vm)
 bool Object_SetMethodDirectly(Object* object, Value key, Value value, VM* vm)
 {
     return AS_TYPE(object)->SetMethod(AS_TYPE(object), key, value, vm);
+}
+
+ObjectIterator* Object_MakeIterator(Object* object, VM* vm)
+{
+    return object->type->MakeIterator(object, vm);
 }
 
 bool Object_Call(Object* callee, uint8_t argCount, VM* vm)
@@ -229,6 +236,7 @@ static ObjectType* new_meta_type(VM* vm)
     meta->SetField = NULL;
     meta->GetMethod = Object_GenericGetMethod;
     meta->SetMethod = NULL;
+    meta->MakeIterator = NULL;
     meta->Call = type_call;
     meta->Traverse = Type_GenericTraverse;
     meta->Free = Type_GenericFree;
@@ -280,6 +288,7 @@ ObjectType* Type_NewClass(VM* vm, const char* name)
     type->SetField = Object_GenericSetField;
     type->GetMethod = Object_GenericGetMethod;
     type->SetMethod = Object_GenericSetMethod;
+    type->MakeIterator = NULL;
     type->Call = NULL;
     type->Traverse = Object_GenericTraverse;
     type->Free = Object_GenericFree;

@@ -49,6 +49,7 @@ ObjectType* Native_NewType(VM* vm)
     type->SetSubscript = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
+    type->MakeIterator = NULL;
     type->Call = native_call;
     type->Traverse = Object_GenericTraverse;
     type->Free = Object_GenericFree;

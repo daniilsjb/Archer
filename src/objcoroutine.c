@@ -67,6 +67,7 @@ ObjectType* CoroutineFunction_NewType(VM* vm)
     type->SetSubscript = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
+    type->MakeIterator = NULL;
     type->Call = coroutine_function_call;
     type->Traverse = coroutine_function_traverse;
     type->Free = Object_GenericFree;
@@ -257,11 +258,6 @@ ObjectCoroutine* Coroutine_NewFromStack(VM* vm, ObjectClosure* closure, Value* s
     }
     push_call_frame(coroutine, closure, argCount);
     return coroutine;
-}
-
-void Coroutine_Error(ObjectCoroutine* coroutine)
-{
-    reset_stack(coroutine);
 }
 
 bool Coroutine_Call(VM* vm, ObjectCoroutine* coroutine, ObjectClosure* callee, uint8_t argCount)

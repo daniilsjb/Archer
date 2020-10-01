@@ -45,6 +45,7 @@ ObjectType* Module_NewType(VM* vm)
     type->SetSubscript = NULL;
     type->GetMethod = NULL;
     type->SetMethod = NULL;
+    type->MakeIterator = NULL;
     type->Call = NULL;
     type->Traverse = module_traverse;
     type->Free = Object_GenericFree;

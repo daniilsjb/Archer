@@ -139,6 +139,7 @@ ObjectType* Map_NewType(VM* vm)
     type->SetSubscript = map_set_subscript;
     type->GetMethod = Object_GenericGetMethod;
     type->SetMethod = NULL;
+    type->MakeIterator = NULL;
     type->Call = NULL;
     type->Traverse = map_traverse;
     type->Free = map_free;

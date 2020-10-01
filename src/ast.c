@@ -176,6 +176,7 @@ void ast_delete_statement(Statement* statement)
 
     switch (statement->type) {
         case STMT_FOR: ast_delete_for_stmt(statement); return;
+        case STMT_FOR_IN: ast_delete_for_in_stmt(statement); return;
         case STMT_WHILE: ast_delete_while_stmt(statement); return;
         case STMT_DO_WHILE: ast_delete_do_while_stmt(statement); return;
         case STMT_BREAK: ast_delete_break_stmt(statement); return;
@@ -209,6 +210,29 @@ void ast_delete_for_stmt(Statement* statement)
     ast_delete_declaration(statement->as.forStmt.initializer);
     ast_delete_expression(statement->as.forStmt.condition);
     ast_delete_expression(statement->as.forStmt.increment);
+    ast_delete_statement(statement->as.forStmt.body);
+    raw_deallocate(statement);
+}
+
+Statement* ast_new_for_in_stmt(Declaration* element, Expression* collection, Statement* body)
+{
+    Statement* stmt = raw_allocate(sizeof(Statement));
+    if (!stmt) {
+        return NULL;
+    }
+
+    stmt->type = STMT_FOR_IN;
+    stmt->as.forInStmt.element = element;
+    stmt->as.forInStmt.collection = collection;
+    stmt->as.forInStmt.body = body;
+    return stmt;
+}
+
+void ast_delete_for_in_stmt(Statement* statement)
+{
+    ast_delete_declaration(statement->as.forInStmt.element);
+    ast_delete_expression(statement->as.forInStmt.collection);
+    ast_delete_statement(statement->as.forInStmt.body);
     raw_deallocate(statement);
 }
 

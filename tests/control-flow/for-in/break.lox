@@ -1,0 +1,24 @@
+for (var item in ["Spooky", "Scary", "Stop", "Skeletons"]) {
+    if (item == "Stop") {
+        break;
+    }
+    
+    print item;
+}
+
+//Expected: Spooky
+//Expected: Scary
+
+for (var x1 in [1, 2, 3]) {
+    for (var x2 in [1, 2, 3]) {
+        if (x2 == 2) {
+            break;
+        }
+
+        print "($x1, $x2)";
+    }
+}
+
+//Expected: (1, 1)
+//Expected: (2, 1)
+//Expected: (3, 1)

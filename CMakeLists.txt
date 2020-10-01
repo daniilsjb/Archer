@@ -63,4 +63,6 @@ add_executable (clox
     "src/filereader.c"
     "src/objmodule.h"
     "src/objmodule.c"
+    "src/objiterator.h"
+    "src/objiterator.c"
 )

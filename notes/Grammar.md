@@ -79,6 +79,7 @@ VariableDeclaration → "var" Identifier ("=" Expression)? ";"
 
 ```
 Statement → ForStatement
+          | ForInStatement
           | WhileStatement
           | DoWhileStatement
           | BreakStatement
@@ -94,7 +95,13 @@ Statement → ForStatement
 #### For
 
 ```
-ForStatement → "for" "(" (VariableDeclaration | ExpressionStatement | ";") Expression? ";" Expression? ")" Statement
+ForStatement → "for" "(" VariableDeclaration | ExpressionStatement | ";") Expression? ";" Expression? ")" Statement
+```
+
+#### For In
+
+```
+ForInStatement → "for" "(" "var" Identifier "in" Expression ")" Statement
 ```
 
 #### While

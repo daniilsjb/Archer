@@ -49,10 +49,13 @@ static Declaration* import_decl(Parser* parser);
 static Declaration* class_decl(Parser* parser);
 static Declaration* function_decl(Parser* parser, bool coroutine);
 static Declaration* variable_decl(Parser* parser);
+static Declaration* begin_variable_decl(Parser* parser);
+static Declaration* end_variable_decl(Parser* parser, Declaration* declaration);
 static Declaration* statement_decl(Parser* parser);
 
 static Statement* statement(Parser* parser);
 static Statement* for_stmt(Parser* parser);
+static Statement* for_in_stmt(Parser* parser, Declaration* declaration);
 static Statement* while_stmt(Parser* parser);
 static Statement* do_while_stmt(Parser* parser);
 static Statement* break_stmt(Parser* parser);
@@ -166,6 +169,7 @@ ParseRule rules[] = {
     [TOKEN_FUN]                 = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_FOR]                 = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_IF]                  = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
+    [TOKEN_IN]                  = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_NIL]                 = { literal_expr,       NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_OR]                  = { NULL,               logical_expr,             PREC_LOGICAL_OR,     ASSOC_LEFT   },
     [TOKEN_PRINT]               = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
@@ -408,16 +412,26 @@ Declaration* function_decl(Parser* parser, bool coroutine)
 
 Declaration* variable_decl(Parser* parser)
 {
+    Declaration* decl = begin_variable_decl(parser);
+    return end_variable_decl(parser, decl);
+}
+
+Declaration* begin_variable_decl(Parser* parser)
+{
     consume(parser, TOKEN_IDENTIFIER, "Expected variable name in declaration.");
     Token identifier = parser->previous;
 
-    Expression* value = NULL;
+    return ast_new_variable_decl(identifier, NULL);
+}
+
+Declaration* end_variable_decl(Parser* parser, Declaration* declaration)
+{
     if (match(parser, TOKEN_EQUAL)) {
-        value = expression(parser);
+        declaration->as.variableDecl.value = expression(parser);
     }
 
     consume(parser, TOKEN_SEMICOLON, "Expected ';' after variable declaration.");
-    return ast_new_variable_decl(identifier, value);
+    return declaration;
 }
 
 Declaration* statement_decl(Parser* parser)
@@ -447,7 +461,13 @@ Statement* for_stmt(Parser* parser)
     consume(parser, TOKEN_L_PAREN, "Expected '(' after 'for'.");
     Declaration* initializer = NULL;
     if (match(parser, TOKEN_VAR)) {
-        initializer = variable_decl(parser);
+        initializer = begin_variable_decl(parser);
+
+        if (match(parser, TOKEN_IN)) {
+            return for_in_stmt(parser, initializer);
+        } else {
+            initializer = end_variable_decl(parser, initializer);
+        }
     } else if (!match(parser, TOKEN_SEMICOLON)) {
         initializer = ast_new_statement_decl(expression_stmt(parser));
     }
@@ -466,6 +486,18 @@ Statement* for_stmt(Parser* parser)
 
     Statement* body = statement(parser);
     return ast_new_for_stmt(initializer, condition, increment, body);
+}
+
+Statement* for_in_stmt(Parser* parser, Declaration* declaration)
+{
+    if (declaration->as.variableDecl.value != NULL) {
+        error(parser, "Variable in 'for-in' cannot be assigned.");
+    }
+
+    Expression* collection = expression(parser);
+    consume(parser, TOKEN_R_PAREN, "Expected ')' after collection in 'for-in'.");
+    Statement* body = statement(parser);
+    return ast_new_for_in_stmt(declaration, collection, body);
 }
 
 Statement* while_stmt(Parser* parser)

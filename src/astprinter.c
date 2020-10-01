@@ -14,6 +14,7 @@ static void print_statement_decl(int indent, Declaration* decl);
 
 static void print_statement(int indent, Statement* stmt);
 static void print_for_stmt(int indent, Statement* stmt);
+static void print_for_in_stmt(int indent, Statement* stmt);
 static void print_while_stmt(int indent, Statement* stmt);
 static void print_do_while_stmt(int indent, Statement* stmt);
 static void print_break_stmt(int indent, Statement* stmt);
@@ -225,6 +226,7 @@ void print_statement(int indent, Statement* stmt)
 {
     switch (stmt->type) {
         case STMT_FOR: print_for_stmt(indent, stmt); return;
+        case STMT_FOR_IN: print_for_in_stmt(indent, stmt); return;
         case STMT_WHILE: print_while_stmt(indent, stmt); return;
         case STMT_DO_WHILE: print_do_while_stmt(indent, stmt); return;
         case STMT_BREAK: print_break_stmt(indent, stmt); return;
@@ -256,6 +258,24 @@ void print_for_stmt(int indent, Statement* stmt)
     print_optional_expression(indent + 1, increment);
 
     Statement* body = stmt->as.forStmt.body;
+    print_indented(indent, "Body:\n");
+    print_statement(indent + 1, body);
+}
+
+void print_for_in_stmt(int indent, Statement* stmt)
+{
+    print_header(indent, "For-In");
+    indent++;
+
+    Declaration* element = stmt->as.forInStmt.element;
+    print_indented(indent, "Element:\n");
+    print_declaration(indent + 1, element);
+
+    Expression* collection = stmt->as.forInStmt.collection;
+    print_indented(indent, "Collection:\n");
+    print_expression(indent + 1, collection);
+
+    Statement* body = stmt->as.forInStmt.body;
     print_indented(indent, "Body:\n");
     print_statement(indent + 1, body);
 }

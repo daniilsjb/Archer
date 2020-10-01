@@ -1,0 +1,52 @@
+for (var item in [1, 2, 3, 4, 5]) {
+    print item;
+}
+
+//Expected: 1
+//Expected: 2
+//Expected: 3
+//Expected: 4
+//Expected: 5
+
+for (var item in ["Spooky", "Scary", "Skeletons"]) {
+    for (var c in item) {
+        print c.toUpper();
+    }
+    
+    print "";
+}
+
+//Expected: S
+//Expected: P
+//Expected: O
+//Expected: O
+//Expected: K
+//Expected: Y
+//Expected:
+//Expected: S
+//Expected: C
+//Expected: A
+//Expected: R
+//Expected: Y
+//Expected:
+//Expected: S
+//Expected: K
+//Expected: E
+//Expected: L
+//Expected: E
+//Expected: T
+//Expected: O
+//Expected: N
+//Expected: S
+//Expected:
+
+var arr = Array(5);
+for (var item in arr) {
+    print item;
+}
+
+//Expected: nil
+//Expected: nil
+//Expected: nil
+//Expected: nil
+//Expected: nil

@@ -37,6 +37,9 @@ typedef enum {
     /* Collections */
     OP_LOAD_SUBSCRIPT, OP_LOAD_SUBSCRIPT_SAFE, OP_STORE_SUBSCRIPT, OP_STORE_SUBSCRIPT_SAFE, OP_LIST, OP_MAP,
 
+    /* Iterators */
+    OP_ITERATOR, OP_FOR_ITERATOR,
+
     /* Stack */
     OP_POP, OP_DUP, OP_DUP_TWO, OP_SWAP, OP_SWAP_THREE, OP_SWAP_FOUR,
 

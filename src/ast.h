@@ -78,6 +78,7 @@ typedef struct Declaration {
 typedef struct Statement {
     enum {
         STMT_FOR,
+        STMT_FOR_IN,
         STMT_WHILE,
         STMT_DO_WHILE,
         STMT_BREAK,
@@ -97,6 +98,12 @@ typedef struct Statement {
             Expression* increment;
             Statement* body;
         } forStmt;
+
+        struct {
+            Declaration* element;
+            Expression* collection;
+            Statement* body;
+        } forInStmt;
 
         struct {
             Expression* condition;
@@ -379,6 +386,8 @@ void ast_delete_statement_decl(Declaration* declaration);
 void ast_delete_statement(Statement* statement);
 Statement* ast_new_for_stmt(Declaration* initializer, Expression* condition, Expression* increment, Statement* body);
 void ast_delete_for_stmt(Statement* statement);
+Statement* ast_new_for_in_stmt(Declaration* element, Expression* collection, Statement* body);
+void ast_delete_for_in_stmt(Statement* statement);
 Statement* ast_new_while_stmt(Expression* condition, Statement* body);
 void ast_delete_while_stmt(Statement* statement);
 Statement* ast_new_do_while_stmt(Statement* body, Expression* condition);

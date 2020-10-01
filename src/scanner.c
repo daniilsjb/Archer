@@ -335,6 +335,7 @@ static TokenType identifier_type(Scanner* scanner)
             if (current_length(scanner) > 1) {
                 switch (peek_start(scanner, 1)) {
                     case 'f': return check_keyword(scanner, 2, 0, "", TOKEN_IF);
+                    case 'n': return check_keyword(scanner, 2, 0, "", TOKEN_IN);
                     case 'm': return check_keyword(scanner, 2, 4, "port", TOKEN_IMPORT);
                 }
             }

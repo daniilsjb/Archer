@@ -2,11 +2,40 @@
 #include <math.h>
 
 #include "objlist.h"
-#include "vm.h"
 #include "objstring.h"
 #include "objnative.h"
 #include "objcoroutine.h"
+#include "objiterator.h"
+
+#include "vm.h"
 #include "library.h"
+
+static bool iterator_reached_end(ObjectIterator* iterator)
+{
+    ObjectList* list = AS_LIST(iterator->container);
+    return (uintptr_t)((Value*)iterator->ptr - list->elements.data) >= list->elements.count;
+}
+
+static void iterator_advance(ObjectIterator* iterator)
+{
+    ((Value*)iterator->ptr)++;
+}
+
+static Value iterator_get_value(VM* vm, ObjectIterator* iterator)
+{
+    return *((Value*)iterator->ptr);
+}
+
+static ObjectIterator* make_iterator(VM* vm, ObjectList* list)
+{
+    ObjectIterator* iterator = Iterator_New(vm);
+    iterator->container = (Object*)list;
+    iterator->ptr = list->elements.data;
+    iterator->ReachedEnd = iterator_reached_end;
+    iterator->Advance = iterator_advance;
+    iterator->GetValue = iterator_get_value;
+    return iterator;
+}
 
 static bool method_append(VM* vm, Value* args)
 {
@@ -129,6 +158,11 @@ static bool list_set_subscript(Object* object, Value index, Value value, VM* vm)
     return true;
 }
 
+static ObjectIterator* list_make_iterator(Object* object, VM* vm)
+{
+    return make_iterator(vm, AS_LIST(object));
+}
+
 static void list_traverse(Object* object, GC* gc)
 {
     GC_MarkArray(gc, &AS_LIST(object)->elements);
@@ -156,6 +190,7 @@ ObjectType* List_NewType(VM* vm)
     type->SetSubscript = list_set_subscript;
     type->GetMethod = Object_GenericGetMethod;
     type->SetMethod = NULL;
+    type->MakeIterator = list_make_iterator;
     type->Call = NULL;
     type->Traverse = list_traverse;
     type->Free = list_free;
