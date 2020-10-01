@@ -95,7 +95,7 @@ Statement → ForStatement
 #### For
 
 ```
-ForStatement → "for" "(" VariableDeclaration | ExpressionStatement | ";") Expression? ";" Expression? ")" Statement
+ForStatement → "for" "(" (VariableDeclaration | ExpressionStatement | ";") Expression? ";" Expression? ")" Statement
 ```
 
 #### For In
