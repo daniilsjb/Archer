@@ -252,6 +252,8 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return simple_instruction("ITERATOR", offset);
         case OP_FOR_ITERATOR:
             return jump_instruction("FOR_ITERATOR", 1, chunk, offset);
+        case OP_RANGE:
+            return simple_instruction("RANGE", offset);
         default:
             return unknown_instruction(instruction, offset);
     }

@@ -20,6 +20,7 @@
 #include "objmap.h"
 #include "objmodule.h"
 #include "objiterator.h"
+#include "objrange.h"
 
 #if DEBUG_TRACE_EXECUTION
 #include "disassembler.h"
@@ -52,6 +53,7 @@ void vm_init(VM* vm)
     vm->arrayType = NULL;
     vm->moduleType = NULL;
     vm->iteratorType = NULL;
+    vm->rangeType = NULL;
 
     GC_Init(&vm->gc);
     vm->gc.vm = vm;
@@ -1131,6 +1133,31 @@ static InterpretStatus run(VM* vm)
                     PUSH(Iterator_GetValue(vm, iterator));
                     Iterator_Advance(iterator);
                 }
+                break;
+            }
+            case OP_RANGE: {
+                Value begin = THIRD;
+                Value end = SECOND;
+                Value step = TOP;
+
+                if (!IS_NUMBER(begin)) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Range 'begin' must be a number.");
+                }
+
+                if (!IS_NUMBER(end)) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Range 'end' must be a number.");
+                }
+
+                if (!IS_NUMBER(step) || AS_NUMBER(step) == 0.0f) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Range 'step' must be a non-zero number.");
+                }
+
+                ObjectRange* range = Range_New(vm, AS_NUMBER(begin), AS_NUMBER(end), AS_NUMBER(step));
+                POP_N(2);
+                TOP = OBJ_VAL(range);
                 break;
             }
         }

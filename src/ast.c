@@ -451,6 +451,7 @@ void ast_delete_expression(Expression* expression)
         case EXPR_UNARY: ast_delete_unary_expr(expression); return;
         case EXPR_LITERAL: ast_delete_literal_expr(expression); return;
         case EXPR_STRING_INTERP: ast_delete_string_interp_expr(expression); return;
+        case EXPR_RANGE: ast_delete_range_expr(expression); return;
         case EXPR_LAMBDA: ast_delete_lambda_expr(expression); return;
         case EXPR_LIST: ast_delete_list_expr(expression); return;
         case EXPR_MAP: ast_delete_map_expr(expression); return;
@@ -791,6 +792,28 @@ Expression* ast_new_string_interp_expr(ExpressionList* values)
 void ast_delete_string_interp_expr(Expression* expression)
 {
     ast_delete_expression_list(expression->as.stringInterpExpr.values);
+    raw_deallocate(expression);
+}
+
+Expression* ast_new_range_expr(Expression* begin, Expression* end, Expression* step)
+{
+    Expression* expr = raw_allocate(sizeof(Expression));
+    if (!expr) {
+        return NULL;
+    }
+
+    expr->type = EXPR_RANGE;
+    expr->as.rangeExpr.begin = begin;
+    expr->as.rangeExpr.end = end;
+    expr->as.rangeExpr.step = step;
+    return expr;
+}
+
+void ast_delete_range_expr(Expression* expression)
+{
+    ast_delete_expression(expression->as.rangeExpr.begin);
+    ast_delete_expression(expression->as.rangeExpr.end);
+    ast_delete_expression(expression->as.rangeExpr.step);
     raw_deallocate(expression);
 }
 

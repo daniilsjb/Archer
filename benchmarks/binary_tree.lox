@@ -91,7 +91,7 @@ tree.insert(154);
 var begin = clock();
 
 var node;
-for (var i = 0; i < 1000000; i++) {
+for (var i in 0..1000000) {
     node = tree.search(i % 200);
 }
 print node;

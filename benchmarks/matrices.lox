@@ -41,7 +41,7 @@ var matB = Matrix(
 var begin = clock();
 
 var result = false;
-for (var i = 0; i < 100000; i++) {
+for (var i in 0..100000) {
     var matC = matA.multiply(matB);
     
     result = (

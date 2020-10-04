@@ -1,0 +1,45 @@
+var r1 = 0..5;
+
+print r1[0]; // Expected: 0
+print r1[1]; // Expected: 1
+print r1[2]; // Expected: 2
+print r1[3]; // Expected: 3
+print r1[4]; // Expected: 4
+
+print r1[-1]; // Expected: 4
+print r1[-2]; // Expected: 3
+print r1[-3]; // Expected: 2
+print r1[-4]; // Expected: 1
+print r1[-5]; // Expected: 0
+
+var r2 = 10..0:-2;
+
+print r2[0]; // Expected: 10
+print r2[1]; // Expected: 8
+print r2[2]; // Expected: 6
+print r2[3]; // Expected: 4
+print r2[4]; // Expected: 2
+
+print r2[-1]; // Expected: 2
+print r2[-2]; // Expected: 4
+print r2[-3]; // Expected: 6
+print r2[-4]; // Expected: 8
+print r2[-5]; // Expected: 10
+
+var x = 3;
+var y = -9;
+var z = 0;
+
+var r3 = x ** 2 + 1..abs(y) - 4:true ? z - 1 : 0;
+
+print r3[0]; // Expected: 10
+print r3[1]; // Expected: 9
+print r3[2]; // Expected: 8
+print r3[3]; // Expected: 7
+print r3[4]; // Expected: 6
+
+print r3[-1]; // Expected: 6
+print r3[-2]; // Expected: 7
+print r3[-3]; // Expected: 8
+print r3[-4]; // Expected: 9
+print r3[-5]; // Expected: 10

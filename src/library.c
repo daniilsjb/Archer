@@ -15,6 +15,7 @@
 #include "objarray.h"
 #include "objmodule.h"
 #include "objiterator.h"
+#include "objrange.h"
 
 bool Library_Error(VM* vm, const char* message, Value* args)
 {
@@ -92,6 +93,7 @@ void Library_Init(VM* vm)
     vm->arrayType = Array_NewType(vm);
     vm->moduleType = Module_NewType(vm);
     vm->iteratorType = Iterator_NewType(vm);
+    vm->rangeType = Range_NewType(vm);
 
     vm->initString = String_FromCString(vm, "init");
 
@@ -108,6 +110,7 @@ void Library_Init(VM* vm)
     Array_PrepareType(vm->arrayType, vm);
     Module_PrepareType(vm->moduleType, vm);
     Iterator_PrepareType(vm->iteratorType, vm);
+    Range_PrepareType(vm->rangeType, vm);
 
     define_type(vm, "String", vm->stringType);
     define_type(vm, "Array", vm->arrayType);

@@ -16,6 +16,7 @@ typedef enum {
     /* Punctuation */
     TOKEN_COMMA,
     TOKEN_DOT,
+    TOKEN_DOT_DOT,
     TOKEN_SEMICOLON,
     TOKEN_QUESTION,
     TOKEN_COLON,

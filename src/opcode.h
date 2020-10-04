@@ -47,7 +47,7 @@ typedef enum {
     OP_IMPORT_MODULE, OP_IMPORT_ALL, OP_SAVE_MODULE, OP_IMPORT_BY_NAME,
     
     /* Miscellaneous */
-    OP_PRINT, OP_BUILD_STRING
+    OP_PRINT, OP_BUILD_STRING, OP_RANGE
 } OpCode;
 
 #endif

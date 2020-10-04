@@ -1,0 +1,34 @@
+for (var i in 0..5) {
+    print i;
+}
+
+//Expected: 0
+//Expected: 1
+//Expected: 2
+//Expected: 3
+//Expected: 4
+
+for (var i in 10..0:-2) {
+    print i;
+}
+
+//Expected: 10
+//Expected: 8
+//Expected: 6
+//Expected: 4
+//Expected: 2
+
+for (var i in 0.0..5.0:0.5) {
+    print i;
+}
+
+//Expected: 0
+//Expected: 0.5
+//Expected: 1
+//Expected: 1.5
+//Expected: 2
+//Expected: 2.5
+//Expected: 3
+//Expected: 3.5
+//Expected: 4
+//Expected: 4.5

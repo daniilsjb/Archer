@@ -257,7 +257,8 @@ static Token number(Scanner* scanner)
         advance(scanner);
     }
 
-    if (match(scanner, '.')) {
+    if (peek(scanner) == '.' && peek_next(scanner) != '.') {
+        advance(scanner);
         while (is_digit(peek(scanner))) {
             advance(scanner);
         }
@@ -455,7 +456,12 @@ Token scanner_scan_token(Scanner* scanner)
         case ']': return make_token(scanner, TOKEN_R_BRACKET);
         case ';': return make_token(scanner, TOKEN_SEMICOLON);
         case ',': return make_token(scanner, TOKEN_COMMA);
-        case '.': return make_token(scanner, TOKEN_DOT);
+        case '.': {
+            switch (peek(scanner)) {
+                case '.': advance(scanner); return make_token(scanner, TOKEN_DOT_DOT);
+            }
+            return make_token(scanner, TOKEN_DOT);
+        }
         case '?': {
             switch (peek(scanner)) {
                 case '.': advance(scanner); return make_token(scanner, TOKEN_QUESTION_DOT);

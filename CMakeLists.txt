@@ -65,4 +65,6 @@ add_executable (clox
     "src/objmodule.c"
     "src/objiterator.h"
     "src/objiterator.c"
+    "src/objrange.h"
+    "src/objrange.c"
 )

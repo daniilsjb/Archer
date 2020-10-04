@@ -20,7 +20,10 @@ typedef Value(*ItereratorGetValueFn)(VM* vm, ObjectIterator* iterator);
 typedef struct ObjectIterator {
     Object base;
     Object* container;
-    void* ptr;
+    union {
+        void* ptr;
+        Value value;
+    };
 
     IteratorReachedEndFn ReachedEnd;
     IteratorAdvanceFn Advance;

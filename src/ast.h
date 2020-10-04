@@ -171,6 +171,7 @@ typedef struct Expression {
         EXPR_POSTFIX_INC,
         EXPR_LITERAL,
         EXPR_STRING_INTERP,
+        EXPR_RANGE,
         EXPR_LAMBDA,
         EXPR_LIST,
         EXPR_MAP,
@@ -268,6 +269,12 @@ typedef struct Expression {
         struct {
             ExpressionList* values;
         } stringInterpExpr;
+
+        struct {
+            Expression* begin;
+            Expression* end;
+            Expression* step;
+        } rangeExpr;
 
         struct {
             Function* function;
@@ -444,6 +451,8 @@ Expression* ast_new_literal_expr(Token value);
 void ast_delete_literal_expr(Expression* expression);
 Expression* ast_new_string_interp_expr(ExpressionList* values);
 void ast_delete_string_interp_expr(Expression* expression);
+Expression* ast_new_range_expr(Expression* begin, Expression* end, Expression* step);
+void ast_delete_range_expr(Expression* expression);
 Expression* ast_new_lambda_expr(Function* function);
 void ast_delete_lambda_expr(Expression* expression);
 Expression* ast_new_list_expr(ExpressionList* elements);

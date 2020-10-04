@@ -44,6 +44,7 @@ static void print_binary_expr(int indent, Expression* expr);
 static void print_unary_expr(int indent, Expression* expr);
 static void print_literal_expr(int indent, Expression* expr);
 static void print_string_interp_expr(int indent, Expression* expr);
+static void print_range_expr(int indent, Expression* expr);
 static void print_lambda_expr(int indent, Expression* expr);
 static void print_list_expr(int indent, Expression* expr);
 static void print_map_expr(int indent, Expression* expr);
@@ -406,6 +407,7 @@ void print_expression(int indent, Expression* expr)
         case EXPR_UNARY: print_unary_expr(indent, expr); return;
         case EXPR_LITERAL: print_literal_expr(indent, expr); return;
         case EXPR_STRING_INTERP: print_string_interp_expr(indent, expr); return;
+        case EXPR_RANGE: print_range_expr(indent, expr); return;
         case EXPR_LAMBDA: print_lambda_expr(indent, expr); return;
         case EXPR_LIST: print_list_expr(indent, expr); return;
         case EXPR_MAP: print_map_expr(indent, expr); return;
@@ -644,6 +646,21 @@ void print_string_interp_expr(int indent, Expression* expr)
 
     print_indented(indent, "Values:\n");
     print_expression_list(indent + 1, expr->as.stringInterpExpr.values);
+}
+
+void print_range_expr(int indent, Expression* expr)
+{
+    print_header(indent, "Range");
+    indent++;
+
+    print_indented(indent, "Begin:\n");
+    print_expression(indent + 1, expr->as.rangeExpr.begin);
+
+    print_indented(indent, "End:\n");
+    print_expression(indent + 1, expr->as.rangeExpr.end);
+
+    print_indented(indent, "Step: ");
+    print_optional_expression(indent + 1, expr->as.rangeExpr.step);
 }
 
 void print_lambda_expr(int indent, Expression* expr)

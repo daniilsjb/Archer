@@ -128,6 +128,7 @@ static void compile_binary_expr(Compiler* compiler, Expression* expr);
 static void compile_unary_expr(Compiler* compiler, Expression* expr);
 static void compile_literal_expr(Compiler* compiler, Expression* expr);
 static void compile_string_interp_expr(Compiler* compiler, Expression* expr);
+static void compile_range_expr(Compiler* compiler, Expression* expr);
 static void compile_lambda_expr(Compiler* compiler, Expression* expr);
 static void compile_list_expr(Compiler* compiler, Expression* expr);
 static void compile_map_expr(Compiler* compiler, Expression* expr);
@@ -979,6 +980,7 @@ void compile_expression(Compiler* compiler, Expression* expr)
         case EXPR_UNARY: compile_unary_expr(compiler, expr); return;
         case EXPR_LITERAL: compile_literal_expr(compiler, expr); return;
         case EXPR_STRING_INTERP: compile_string_interp_expr(compiler, expr); return;
+        case EXPR_RANGE: compile_range_expr(compiler, expr); return;
         case EXPR_LAMBDA: compile_lambda_expr(compiler, expr); return;
         case EXPR_LIST: compile_list_expr(compiler, expr); return;
         case EXPR_MAP: compile_map_expr(compiler, expr); return;
@@ -1608,6 +1610,20 @@ void compile_string_interp_expr(Compiler* compiler, Expression* expr)
     }
 
     emit_bytes(compiler, OP_BUILD_STRING, (uint8_t)count);
+}
+
+void compile_range_expr(Compiler* compiler, Expression* expr)
+{
+    compile_expression(compiler, expr->as.rangeExpr.begin);
+    compile_expression(compiler, expr->as.rangeExpr.end);
+
+    if (expr->as.rangeExpr.step) {
+        compile_expression(compiler, expr->as.rangeExpr.step);
+    } else {
+        emit_constant(compiler, NUMBER_VAL(1.0f));
+    }
+
+    emit_byte(compiler, OP_RANGE);
 }
 
 void compile_lambda_expr(Compiler* compiler, Expression* expr)

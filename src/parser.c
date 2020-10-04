@@ -18,6 +18,7 @@ typedef struct {
 typedef enum {
     PREC_NONE,
     PREC_ASSIGNMENT,
+    PREC_RANGE,
     PREC_CONDITIONAL,
     PREC_LOGICAL_OR,
     PREC_LOGICAL_AND,
@@ -81,6 +82,7 @@ static Expression* super_expr(Parser* parser);
 static Expression* coroutine_expr(Parser* parser);
 static Expression* yield_expr(Parser* parser);
 static Expression* call_expr(Parser* parser, Expression* prefix);
+static Expression* range_expr(Parser* parser, Expression* prefix);
 static Expression* property_expr(Parser* parser, Expression* prefix);
 static Expression* subscript_expr(Parser* parser, Expression* prefix);
 static Expression* postfix_inc_expr(Parser* parser, Expression* prefix);
@@ -116,6 +118,7 @@ ParseRule rules[] = {
     [TOKEN_R_BRACKET]           = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_COMMA]               = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_DOT]                 = { NULL,               property_expr,            PREC_POSTFIX,        ASSOC_LEFT   },
+    [TOKEN_DOT_DOT]             = { NULL,               range_expr,               PREC_RANGE,          ASSOC_LEFT   },
     [TOKEN_SEMICOLON]           = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
     [TOKEN_QUESTION]            = { NULL,               conditional_expr,         PREC_CONDITIONAL,    ASSOC_RIGHT  },
     [TOKEN_COLON]               = { NULL,               NULL,                     PREC_NONE,           ASSOC_NONE   },
@@ -779,6 +782,18 @@ Expression* call_expr(Parser* parser, Expression* prefix)
     ArgumentList* arguments = arguments_rule(parser);
     consume(parser, TOKEN_R_PAREN, "Expected ')' after call arguments.");
     return ast_new_call_expr(prefix, arguments);
+}
+
+Expression* range_expr(Parser* parser, Expression* prefix)
+{
+    Expression* end = parse_precedence(parser, PREC_CONDITIONAL);
+    Expression* step = NULL;
+
+    if (match(parser, TOKEN_COLON)) {
+        step = parse_precedence(parser, PREC_CONDITIONAL);
+    }
+
+    return ast_new_range_expr(prefix, end, step);
 }
 
 Expression* property_expr(Parser* parser, Expression* prefix)

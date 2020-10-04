@@ -197,13 +197,14 @@ Expression → AssignmentExpression
 ```
 AssignmentExpression → PostfixExpression AssignmentOperator AssignmentExpression
                      | YieldExpression
-                     | ConditionalExpression
+                     | RangeExpression
 ```
 
-#### Yield
+
+#### Range
 
 ```
-YieldExpression → "yield" Expression?
+RangeExpression → ConditionalExpression (".." ConditionalExpression (":" ConditionalExpression)?)?
 ```
 
 #### Conditional
@@ -315,11 +316,14 @@ PrimaryExpression → Literal
                   | Identifier
                   | GroupingExpression
                   | SuperExpression
+                  | YieldExpression
                   | CoroutineExpression
 
 GroupingExpression → "(" Expression ")"
 
 SuperExpression → "super" "." Identifier
+
+YieldExpression → "yield" Expression?
 
 CoroutineExpression → "coroutine" Expression
 ```
