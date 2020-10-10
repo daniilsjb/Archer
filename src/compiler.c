@@ -132,6 +132,7 @@ static void compile_range_expr(Compiler* compiler, Expression* expr);
 static void compile_lambda_expr(Compiler* compiler, Expression* expr);
 static void compile_list_expr(Compiler* compiler, Expression* expr);
 static void compile_map_expr(Compiler* compiler, Expression* expr);
+static void compile_tuple_expr(Compiler* compiler, Expression* expr);
 static void compile_identifier_expr(Compiler* compiler, Expression* expr);
 
 static void compile_when_entry(Compiler* compiler, WhenEntry* entry);
@@ -422,6 +423,13 @@ static void initialize_local(Compiler* compiler)
     }
 }
 
+static void initialize_local_relative(Compiler* compiler, int n)
+{
+    if (compiler->scopeDepth != 0) {
+        compiler->locals[compiler->localCount - 1 - n].scopeDepth = compiler->scopeDepth;
+    }
+}
+
 static void define_variable(Compiler* compiler, uint8_t global)
 {
     if (compiler->scopeDepth == 0) {
@@ -675,9 +683,8 @@ void compile_function_decl(Compiler* compiler, Declaration* decl)
     define_variable(compiler, global);
 }
 
-void compile_variable_decl(Compiler* compiler, Declaration* decl)
+static void compile_single_variable_decl(Compiler* compiler, Declaration* decl, Token identifier)
 {
-    Token identifier = decl->as.variableDecl.identifier;
     compiler->token = identifier;
     uint8_t global = declare_variable(compiler, identifier);
 
@@ -689,6 +696,58 @@ void compile_variable_decl(Compiler* compiler, Declaration* decl)
     }
 
     define_variable(compiler, global);
+}
+
+static void unpack_tuple(Compiler* compiler, Expression* tuple, size_t length)
+{
+    if (tuple == NULL) {
+        for (size_t i = 0; i < length; i++) {
+            emit_byte(compiler, OP_LOAD_NIL);
+        }
+        return;
+    }
+
+    compile_expression(compiler, tuple);
+    emit_bytes(compiler, OP_TUPLE_UNPACK, (uint8_t)length);
+}
+
+static void compile_multiple_variable_decl(Compiler* compiler, Declaration* decl, ParameterList* identifiers)
+{
+    size_t length = ast_parameter_list_length(identifiers);
+    if (length > 255) {
+        error(compiler, "Cannot unpack into more than 255 variables.");
+    }
+
+    uint8_t* globals = raw_allocate(length);
+    size_t i = 0;
+    for (ParameterList* current = identifiers; current != NULL; current = current->next) {
+        compiler->token = current->parameter;
+        globals[i++] = declare_variable(compiler, current->parameter);
+    }
+
+    unpack_tuple(compiler, decl->as.variableDecl.value, length);
+
+    if (compiler->scopeDepth == 0) {
+        for (int i = (int)length - 1; i >= 0; i--) {
+            emit_bytes(compiler, OP_DEFINE_GLOBAL, globals[i]);
+        }
+    } else {
+        for (int i = 0; i < (int)length; i++) {
+            initialize_local_relative(compiler, i);
+        }
+    }
+
+    raw_deallocate(globals);
+}
+
+void compile_variable_decl(Compiler* compiler, Declaration* decl)
+{
+    VariableTarget* target = decl->as.variableDecl.target;
+    if (target->type == VAR_SINGLE) {
+        compile_single_variable_decl(compiler, decl, target->as.single);
+    } else {
+        compile_multiple_variable_decl(compiler, decl, target->as.unpack);
+    }
 }
 
 void compile_statement_decl(Compiler* compiler, Declaration* decl)
@@ -760,17 +819,48 @@ void compile_for_stmt(Compiler* compiler, Statement* stmt)
     end_scope(compiler);
 }
 
+static void declare_for_in_variable(Compiler* compiler, Token identifier)
+{
+    compiler->token = identifier;
+    emit_byte(compiler, OP_LOAD_NIL);
+    declare_local_variable(compiler, identifier);
+    initialize_local(compiler);
+}
+
+static void for_in_declare_elements(Compiler* compiler, VariableTarget* target)
+{
+    if (target->type == VAR_UNPACK) {
+        for (ParameterList* current = target->as.unpack; current != NULL; current = current->next) {
+            declare_for_in_variable(compiler, current->parameter);
+        }
+    } else {
+        declare_for_in_variable(compiler, target->as.single);
+    }
+}
+
+static void for_in_store_elements(Compiler* compiler, VariableTarget* target)
+{
+    if (target->type == VAR_UNPACK) {
+        uint8_t count = (uint8_t)ast_parameter_list_length(target->as.unpack);
+        emit_bytes(compiler, OP_TUPLE_UNPACK, count);
+        for (ParameterList* current = ast_parameter_list_end(target->as.unpack); current != NULL; current = current->prev) {
+            named_variable(compiler, current->parameter, STORE);
+            emit_byte(compiler, OP_POP);
+        }
+    } else {
+        named_variable(compiler, target->as.single, STORE);
+        emit_byte(compiler, OP_POP);
+    }
+}
+
 void compile_for_in_stmt(Compiler* compiler, Statement* stmt)
 {
     begin_scope(compiler);
 
     Declaration* element = stmt->as.forInStmt.element;
-    Token identifier = element->as.variableDecl.identifier;
-    compiler->token = identifier;
-    
-    emit_byte(compiler, OP_LOAD_NIL);
-    declare_local_variable(compiler, identifier);
-    initialize_local(compiler);
+    VariableTarget* target = element->as.variableDecl.target;
+
+    for_in_declare_elements(compiler, target);
 
     Expression* collection = stmt->as.forInStmt.collection;
     compile_expression(compiler, collection);
@@ -781,8 +871,7 @@ void compile_for_in_stmt(Compiler* compiler, Statement* stmt)
     size_t loopStart = current_chunk(compiler)->count;
     size_t exitJump = emit_jump(compiler, OP_FOR_ITERATOR);
 
-    named_variable(compiler, identifier, STORE);
-    emit_byte(compiler, OP_POP);
+    for_in_store_elements(compiler, target);
 
     enter_control_block(compiler, CONTROL_FOR_IN, loopStart, 0xFFFF);
 
@@ -984,6 +1073,7 @@ void compile_expression(Compiler* compiler, Expression* expr)
         case EXPR_LAMBDA: compile_lambda_expr(compiler, expr); return;
         case EXPR_LIST: compile_list_expr(compiler, expr); return;
         case EXPR_MAP: compile_map_expr(compiler, expr); return;
+        case EXPR_TUPLE: compile_tuple_expr(compiler, expr); return;
         case EXPR_IDENTIFIER: compile_identifier_expr(compiler, expr); return;
     }
 }
@@ -1104,10 +1194,27 @@ void compile_super_expr(Compiler* compiler, Expression* expr)
     emit_bytes(compiler, OP_GET_SUPER, name);
 }
 
+static void compile_assignment_target(Compiler* compiler, AssignmentTarget* target)
+{
+    if (target->type == VAR_UNPACK) {
+        uint8_t count = (uint8_t)ast_expression_list_length(target->as.unpack);
+
+        emit_byte(compiler, OP_DUP);
+        emit_bytes(compiler, OP_TUPLE_UNPACK, count);
+
+        for (ExpressionList* current = ast_expression_list_end(target->as.unpack); current != NULL; current = current->prev) {
+            compile_expression(compiler, current->expression);
+            emit_byte(compiler, OP_POP);
+        }
+    } else {
+        compile_expression(compiler, target->as.single);
+    }
+}
+
 void compile_assignment_expr(Compiler* compiler, Expression* expr)
 {
     compile_expression(compiler, expr->as.assignmentExpr.value);
-    compile_expression(compiler, expr->as.assignmentExpr.target);
+    compile_assignment_target(compiler, expr->as.assignmentExpr.target);
 }
 
 static OpCode compound_opcode(Token op)
@@ -1128,10 +1235,8 @@ static OpCode compound_opcode(Token op)
     }
 }
 
-static void compile_compound_identifier_assignment(Compiler* compiler, Expression* expr)
+static void compile_compound_identifier_assignment(Compiler* compiler, Expression* expr, Expression* target)
 {
-    Expression* target = expr->as.compoundAssignmentExpr.target;
-
     Token identifier = target->as.identifierExpr.identifier;
     compiler->token = identifier;
     named_variable(compiler, identifier, LOAD);
@@ -1145,10 +1250,8 @@ static void compile_compound_identifier_assignment(Compiler* compiler, Expressio
     named_variable(compiler, identifier, STORE);
 }
 
-static void compile_compound_property_assignment(Compiler* compiler, Expression* expr)
+static void compile_compound_property_assignment(Compiler* compiler, Expression* expr, Expression* target)
 {
-    Expression* target = expr->as.compoundAssignmentExpr.target;
-
     compile_expression(compiler, target->as.propertyExpr.object);
     emit_byte(compiler, OP_DUP);
 
@@ -1169,10 +1272,8 @@ static void compile_compound_property_assignment(Compiler* compiler, Expression*
     emit_bytes(compiler, safe ? OP_STORE_PROPERTY_SAFE : OP_STORE_PROPERTY, name);
 }
 
-static void compile_compound_subscript_assignment(Compiler* compiler, Expression* expr)
+static void compile_compound_subscript_assignment(Compiler* compiler, Expression* expr, Expression* target)
 {
-    Expression* target = expr->as.compoundAssignmentExpr.target;
-
     compile_expression(compiler, target->as.subscriptExpr.object);
     compile_expression(compiler, target->as.subscriptExpr.index);
     emit_byte(compiler, OP_DUP_TWO);
@@ -1192,18 +1293,18 @@ static void compile_compound_subscript_assignment(Compiler* compiler, Expression
 
 void compile_compound_assignment_expr(Compiler* compiler, Expression* expr)
 {
-    Expression* target = expr->as.compoundAssignmentExpr.target;
-    switch (target->type) {
+    Expression* targetExpression = expr->as.compoundAssignmentExpr.target->as.single;
+    switch (targetExpression->type) {
         case EXPR_IDENTIFIER: {
-            compile_compound_identifier_assignment(compiler, expr);
+            compile_compound_identifier_assignment(compiler, expr, targetExpression);
             break;
         }
         case EXPR_PROPERTY: {
-            compile_compound_property_assignment(compiler, expr);
+            compile_compound_property_assignment(compiler, expr, targetExpression);
             break;
         }
         case EXPR_SUBSCRIPT: {
-            compile_compound_subscript_assignment(compiler, expr);
+            compile_compound_subscript_assignment(compiler, expr, targetExpression);
             break;
         }
         default: {
@@ -1647,6 +1748,15 @@ void compile_map_expr(Compiler* compiler, Expression* expr)
         error(compiler, "Cannot have more than 255 entries in a map expression.");
     }
     emit_bytes(compiler, OP_MAP, (uint8_t)count);
+}
+
+void compile_tuple_expr(Compiler* compiler, Expression* expr)
+{
+    size_t count = compile_expression_list(compiler, expr->as.tupleExpr.elements);
+    if (count > 255) {
+        error(compiler, "Cannot have more than 255 elements in a tuple expression.");
+    }
+    emit_bytes(compiler, OP_TUPLE, (uint8_t)count);
 }
 
 void compile_identifier_expr(Compiler* compiler, Expression* expr)

@@ -35,6 +35,7 @@ typedef struct VM {
     ObjectType* moduleType;
     ObjectType* iteratorType;
     ObjectType* rangeType;
+    ObjectType* tupleType;
 
     ObjectModule* mainModule;
 

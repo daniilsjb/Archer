@@ -1,0 +1,7 @@
+for (var |name, age| in [("Sparky", 3), ("Arthur", 7), ("William", 2)]) {
+    print "$name is $age years old.";
+}
+
+//Expected: Sparky is 3 years old.
+//Expected: Arthur is 7 years old.
+//Expected: William is 2 years old.

@@ -48,6 +48,7 @@ static void print_range_expr(int indent, Expression* expr);
 static void print_lambda_expr(int indent, Expression* expr);
 static void print_list_expr(int indent, Expression* expr);
 static void print_map_expr(int indent, Expression* expr);
+static void print_tuple_expr(int indent, Expression* expr);
 static void print_identifier_expr(int indent, Expression* expr);
 
 static void print_when_entry(int indent, WhenEntry* entry);
@@ -65,6 +66,8 @@ static void print_named_function_list(int indent, NamedFunctionList* list);
 static void print_method(int indent, Method* method);
 static void print_method_list(int indent, MethodList* list);
 static void print_declaration_list(int indent, DeclarationList* list);
+static void print_variable_target(int indent, VariableTarget* target);
+static void print_assignment_target(int indent, AssignmentTarget* target);
 
 static void print_indented(int indent, const char* format, ...)
 {
@@ -209,8 +212,9 @@ void print_variable_decl(int indent, Declaration* decl)
     print_header(indent, "Variable Declaration");
     indent++;
 
-    Token identifier = decl->as.variableDecl.identifier;
-    print_token_field(indent, "Identifier", identifier);
+    print_indented(indent, "Target: ");
+    print_variable_target(indent, decl->as.variableDecl.target);
+    printf("\n");
 
     print_indented(indent, "Value: ");
     Expression* value = decl->as.variableDecl.value;
@@ -411,6 +415,7 @@ void print_expression(int indent, Expression* expr)
         case EXPR_LAMBDA: print_lambda_expr(indent, expr); return;
         case EXPR_LIST: print_list_expr(indent, expr); return;
         case EXPR_MAP: print_map_expr(indent, expr); return;
+        case EXPR_TUPLE: print_tuple_expr(indent, expr); return;
         case EXPR_IDENTIFIER: print_identifier_expr(indent, expr); return;
     }
 }
@@ -482,9 +487,8 @@ void print_assignment_expr(int indent, Expression* expr)
     print_header(indent, "Assignment");
     indent++;
 
-    Expression* target = expr->as.assignmentExpr.target;
     print_indented(indent, "Target:\n");
-    print_expression(indent + 1, target);
+    print_assignment_target(indent + 1, expr->as.assignmentExpr.target);
 
     Expression* value = expr->as.assignmentExpr.value;
     print_indented(indent, "Value:\n");
@@ -496,9 +500,8 @@ void print_compound_assignment_expr(int indent, Expression* expr)
     print_header(indent, "Compound Assignment");
     indent++;
 
-    Expression* target = expr->as.compoundAssignmentExpr.target;
     print_indented(indent, "Target:\n");
-    print_expression(indent + 1, target);
+    print_assignment_target(indent + 1, expr->as.compoundAssignmentExpr.target);
 
     Token op = expr->as.compoundAssignmentExpr.op;
     print_token_field(indent, "Operator", op);
@@ -685,6 +688,15 @@ void print_map_expr(int indent, Expression* expr)
 
     print_indented(indent, "Entries:\n");
     print_map_entry_list(indent + 1, expr->as.mapExpr.entries);
+}
+
+void print_tuple_expr(int indent, Expression* expr)
+{
+    print_header(indent, "Tuple");
+    indent++;
+
+    print_indented(indent, "Elements:\n");
+    print_expression_list(indent + 1, expr->as.tupleExpr.elements);
 }
 
 void print_identifier_expr(int indent, Expression* expr)
@@ -890,5 +902,33 @@ void print_declaration_list(int indent, DeclarationList* list)
     while (current) {
         print_declaration(indent, current->declaration);
         current = current->next;
+    }
+}
+
+void print_variable_target(int indent, VariableTarget* target)
+{
+    switch (target->type) {
+        case VAR_SINGLE: {
+            print_token(target->as.single);
+            break;
+        }
+        case VAR_UNPACK: {
+            print_parameter_list_inline(target->as.unpack);
+            break;
+        }
+    }
+}
+
+void print_assignment_target(int indent, AssignmentTarget* target)
+{
+    switch (target->type) {
+        case VAR_SINGLE: {
+            print_expression(indent, target->as.single);
+            break;
+        }
+        case VAR_UNPACK: {
+            print_expression_list(indent, target->as.unpack);
+            break;
+        }
     }
 }

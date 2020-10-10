@@ -1,0 +1,9 @@
+fun tossCoin() {
+    return (4, 2);
+}
+
+var |heads, tails| = tossCoin();
+print "Heads: $heads, Tails: $tails"; //Expected: Heads: 4, Tails: 2
+
+var |x, y, z| = (0, -7, 3);
+print "{ $x, $y, $z }"; //Expected: { 0, -7, 3 }

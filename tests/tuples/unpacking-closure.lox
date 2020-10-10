@@ -1,0 +1,11 @@
+fun makePair() {
+    var |x, y| = (nil, nil);
+    
+    return \first, second -> {
+      |x, y| =  (first, second);
+      return (x, y);
+    };
+}
+
+var pair = makePair();
+print pair("First", "Second"); //Expected: (First, Second)

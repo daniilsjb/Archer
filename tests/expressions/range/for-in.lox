@@ -32,3 +32,8 @@ for (var i in 0.0..5.0:0.5) {
 //Expected: 3.5
 //Expected: 4
 //Expected: 4.5
+
+//No iterations happen
+for (var i in 10..0) {
+    print i;
+}

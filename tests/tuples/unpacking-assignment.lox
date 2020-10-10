@@ -1,0 +1,15 @@
+var |x, y| = (42, "Skeletons");
+print "x: $x, y: $y"; //Expected: x: 42, y: Skeletons
+
+|x, y| = (y, x);
+print "x: $x, y: $y"; //Expected: x: Skeletons, y: 42
+
+var z = [1, 2];
+var w = true;
+print "z: $z, w: $w"; //Expected: z: [1, 2], w: true
+
+print |z, w| = (0, 0); //Expected: (0, 0)
+
+|x, y| = |z, w| = ("Spooky", "Scary");
+print "x: $x, y: $y"; //Expected: x: Spooky, y: Scary
+print "z: $z, w: $w"; //Expected: z: Spooky, w: Scary

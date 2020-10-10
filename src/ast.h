@@ -27,6 +27,10 @@ typedef struct NamedFunctionList NamedFunctionList;
 typedef struct Method Method;
 typedef struct MethodList MethodList;
 
+typedef struct VariableTarget VariableTarget;
+typedef struct AssignmentTarget AssignmentTarget;
+typedef enum AssignmentType { VAR_SINGLE, VAR_UNPACK } AssignmentType;
+
 typedef enum ExprContext { LOAD, STORE } ExprContext;
 
 typedef enum FunctionNotation { FUNC_EXPRESSION, FUNC_BLOCK } FunctionNotation;
@@ -67,7 +71,7 @@ typedef struct Declaration {
         } functionDecl;
 
         struct {
-            Token identifier;
+            VariableTarget* target;
             Expression* value;
         } variableDecl;
 
@@ -175,6 +179,7 @@ typedef struct Expression {
         EXPR_LAMBDA,
         EXPR_LIST,
         EXPR_MAP,
+        EXPR_TUPLE,
         EXPR_IDENTIFIER,
     } type;
 
@@ -204,12 +209,12 @@ typedef struct Expression {
         } superExpr;
 
         struct {
-            Expression* target;
+            AssignmentTarget* target;
             Expression* value;
         } assignmentExpr;
 
         struct {
-            Expression* target;
+            AssignmentTarget* target;
             Token op;
             Expression* value;
         } compoundAssignmentExpr;
@@ -289,6 +294,10 @@ typedef struct Expression {
         } mapExpr;
 
         struct {
+            ExpressionList* elements;
+        } tupleExpr;
+
+        struct {
             Token identifier;
             ExprContext context;
         } identifierExpr;
@@ -297,6 +306,7 @@ typedef struct Expression {
 
 typedef struct ExpressionList {
     Expression* expression;
+    ExpressionList* prev;
     ExpressionList* next;
 } ExpressionList;
 
@@ -339,6 +349,7 @@ typedef struct FunctionBody {
 
 typedef struct ParameterList {
     Token parameter;
+    ParameterList* prev;
     ParameterList* next;
 } ParameterList;
 
@@ -373,6 +384,22 @@ typedef struct DeclarationList {
     DeclarationList* next;
 } DeclarationList;
 
+typedef struct VariableTarget {
+    AssignmentType type;
+    union {
+        Token single;
+        ParameterList* unpack;
+    } as;
+} VariableTarget;
+
+typedef struct AssignmentTarget {
+    AssignmentType type;
+    union {
+        Expression* single;
+        ExpressionList* unpack;
+    } as;
+} AssignmentTarget;
+
 AST* ast_new_tree(DeclarationList* body);
 void ast_delete_tree(AST* ast);
 
@@ -385,7 +412,7 @@ Declaration* ast_new_class_decl(Token identifier, Token superclass, MethodList* 
 void ast_delete_class_decl(Declaration* declaration);
 Declaration* ast_new_function_decl(NamedFunction* function);
 void ast_delete_function_decl(Declaration* declaration);
-Declaration* ast_new_variable_decl(Token identifier, Expression* value);
+Declaration* ast_new_variable_decl(VariableTarget* target, Expression* value);
 void ast_delete_variable_decl(Declaration* declaration);
 Declaration* ast_new_statement_decl(Statement* statement);
 void ast_delete_statement_decl(Declaration* declaration);
@@ -425,9 +452,9 @@ Expression* ast_new_subscript_expr(Expression* object, Expression* index, ExprCo
 void ast_delete_subscript_expr(Expression* expression);
 Expression* ast_new_super_expr(Token keyword, Token method);
 void ast_delete_super_expr(Expression* expression);
-Expression* ast_new_assignment_expr(Expression* target, Expression* value);
+Expression* ast_new_assignment_expr(AssignmentTarget* target, Expression* value);
 void ast_delete_assignment_expr(Expression* expression);
-Expression* ast_new_compound_assignment_expr(Expression*, Token op, Expression* value);
+Expression* ast_new_compound_assignment_expr(AssignmentTarget* target, Token op, Expression* value);
 void ast_delete_compound_assignment_expr(Expression* expression);
 Expression* ast_new_coroutine_expr(Token keyword, Expression* expression);
 void ast_delete_coroutine_expr(Expression* expression);
@@ -459,6 +486,8 @@ Expression* ast_new_list_expr(ExpressionList* elements);
 void ast_delete_list_expr(Expression* expression);
 Expression* ast_new_map_expr(MapEntryList* entries);
 void ast_delete_map_expr(Expression* expression);
+Expression* ast_new_tuple_expr(ExpressionList* elements);
+void ast_delete_tuple_expr(Expression* expression);
 Expression* ast_new_identifier_expr(Token identifier, ExprContext context);
 void ast_delete_identifier_expr(Expression* expression);
 
@@ -466,6 +495,7 @@ ExpressionList* ast_new_expression_node(Expression* expression);
 void ast_expression_list_append(ExpressionList** list, Expression* expression);
 void ast_delete_expression_list(ExpressionList* list);
 size_t ast_expression_list_length(ExpressionList* list);
+ExpressionList* ast_expression_list_end(ExpressionList* list);
 
 ArgumentList* ast_new_argument_node(Expression* expression);
 void ast_argument_list_append(ArgumentList** list, Expression* expression);
@@ -476,6 +506,7 @@ ParameterList* ast_new_parameter_node(Token parameter);
 void ast_parameter_list_append(ParameterList** list, Token parameter);
 void ast_delete_parameter_list(ParameterList* list);
 size_t ast_parameter_list_length(ParameterList* list);
+ParameterList* ast_parameter_list_end(ParameterList* list);
 
 WhenEntry* ast_new_when_entry(ExpressionList* cases, Statement* body);
 void ast_delete_when_entry(WhenEntry* entry);
@@ -525,5 +556,13 @@ DeclarationList* ast_new_declaration_node(Declaration* declaration);
 void ast_declaration_list_append(DeclarationList** list, Declaration* declaration);
 void ast_delete_declaration_list(DeclarationList* list);
 size_t ast_declaration_list_length(DeclarationList* list);
+
+VariableTarget* ast_new_single_variable_target(Token single);
+VariableTarget* ast_new_unpack_variable_target(ParameterList* unpack);
+void ast_delete_variable_target(VariableTarget* target);
+
+AssignmentTarget* ast_new_single_assignment_target(Expression* single);
+AssignmentTarget* ast_new_unpack_assignment_target(ExpressionList* unpack);
+void ast_delete_assignment_target(AssignmentTarget* target);
 
 #endif

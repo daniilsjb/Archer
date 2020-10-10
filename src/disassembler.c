@@ -226,6 +226,10 @@ uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
             return byte_instruction("LIST", chunk, offset);
         case OP_MAP:
             return byte_instruction("MAP", chunk, offset);
+        case OP_TUPLE:
+            return byte_instruction("TUPLE", chunk, offset);
+        case OP_TUPLE_UNPACK:
+            return byte_instruction("TUPLE_UNPACK", chunk, offset);
         case OP_LOAD_SUBSCRIPT:
             return simple_instruction("LOAD_SUBSCRIPT", offset);
         case OP_LOAD_SUBSCRIPT_SAFE:

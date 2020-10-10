@@ -131,7 +131,7 @@ void ast_delete_function_decl(Declaration* declaration)
     raw_deallocate(declaration);
 }
 
-Declaration* ast_new_variable_decl(Token identifier, Expression* value)
+Declaration* ast_new_variable_decl(VariableTarget* target, Expression* value)
 {
     Declaration* decl = raw_allocate(sizeof(Declaration));
     if (!decl) {
@@ -139,13 +139,14 @@ Declaration* ast_new_variable_decl(Token identifier, Expression* value)
     }
 
     decl->type = DECL_VARIABLE;
-    decl->as.variableDecl.identifier = identifier;
+    decl->as.variableDecl.target = target;
     decl->as.variableDecl.value = value;
     return decl;
 }
 
 void ast_delete_variable_decl(Declaration* declaration)
 {
+    ast_delete_variable_target(declaration->as.variableDecl.target);
     ast_delete_expression(declaration->as.variableDecl.value);
     raw_deallocate(declaration);
 }
@@ -455,6 +456,7 @@ void ast_delete_expression(Expression* expression)
         case EXPR_LAMBDA: ast_delete_lambda_expr(expression); return;
         case EXPR_LIST: ast_delete_list_expr(expression); return;
         case EXPR_MAP: ast_delete_map_expr(expression); return;
+        case EXPR_TUPLE: ast_delete_tuple_expr(expression); return;
         case EXPR_IDENTIFIER: ast_delete_identifier_expr(expression); return;
     }
 }
@@ -540,7 +542,7 @@ void ast_delete_super_expr(Expression* expression)
     raw_deallocate(expression);
 }
 
-Expression* ast_new_assignment_expr(Expression* target, Expression* value)
+Expression* ast_new_assignment_expr(AssignmentTarget* target, Expression* value)
 {
     Expression* expr = raw_allocate(sizeof(Expression));
     if (!expr) {
@@ -555,12 +557,12 @@ Expression* ast_new_assignment_expr(Expression* target, Expression* value)
 
 void ast_delete_assignment_expr(Expression* expression)
 {
-    ast_delete_expression(expression->as.assignmentExpr.target);
+    ast_delete_assignment_target(expression->as.assignmentExpr.target);
     ast_delete_expression(expression->as.assignmentExpr.value);
     raw_deallocate(expression);
 }
 
-Expression* ast_new_compound_assignment_expr(Expression* target, Token op, Expression* value)
+Expression* ast_new_compound_assignment_expr(AssignmentTarget* target, Token op, Expression* value)
 {
     Expression* expr = raw_allocate(sizeof(Expression));
     if (!expr) {
@@ -576,7 +578,7 @@ Expression* ast_new_compound_assignment_expr(Expression* target, Token op, Expre
 
 void ast_delete_compound_assignment_expr(Expression* expression)
 {
-    ast_delete_expression(expression->as.compoundAssignmentExpr.target);
+    ast_delete_assignment_target(expression->as.compoundAssignmentExpr.target);
     ast_delete_expression(expression->as.compoundAssignmentExpr.value);
     raw_deallocate(expression);
 }
@@ -871,6 +873,24 @@ void ast_delete_map_expr(Expression* expression)
     raw_deallocate(expression);
 }
 
+Expression* ast_new_tuple_expr(ExpressionList* elements)
+{
+    Expression* expr = raw_allocate(sizeof(Expression));
+    if (!expr) {
+        return NULL;
+    }
+
+    expr->type = EXPR_TUPLE;
+    expr->as.tupleExpr.elements = elements;
+    return expr;
+}
+
+void ast_delete_tuple_expr(Expression* expression)
+{
+    ast_delete_expression_list(expression->as.tupleExpr.elements);
+    raw_deallocate(expression);
+}
+
 Expression* ast_new_identifier_expr(Token identifier, ExprContext context)
 {
     Expression* expr = raw_allocate(sizeof(Expression));
@@ -897,6 +917,7 @@ ExpressionList* ast_new_expression_node(Expression* expression)
     }
 
     list->expression = expression;
+    list->prev = NULL;
     list->next = NULL;
     return list;
 }
@@ -914,6 +935,7 @@ void ast_expression_list_append(ExpressionList** list, Expression* expression)
     }
 
     current->next = ast_new_expression_node(expression);
+    current->next->prev = current;
 }
 
 void ast_delete_expression_list(ExpressionList* list)
@@ -938,6 +960,19 @@ size_t ast_expression_list_length(ExpressionList* list)
     }
 
     return length;
+}
+
+ExpressionList* ast_expression_list_end(ExpressionList* list)
+{
+    if (list == NULL) {
+        return NULL;
+    }
+
+    for (ExpressionList* current = list;; current = current->next) {
+        if (current->next == NULL) {
+            return current;
+        }
+    }
 }
 
 ArgumentList* ast_new_argument_node(Expression* expression)
@@ -999,6 +1034,7 @@ ParameterList* ast_new_parameter_node(Token parameter)
     }
 
     list->parameter = parameter;
+    list->prev = NULL;
     list->next = NULL;
     return list;
 }
@@ -1016,6 +1052,7 @@ void ast_parameter_list_append(ParameterList** list, Token parameter)
     }
 
     current->next = ast_new_parameter_node(parameter);
+    current->next->prev = current;
 }
 
 void ast_delete_parameter_list(ParameterList* list)
@@ -1039,6 +1076,19 @@ size_t ast_parameter_list_length(ParameterList* list)
     }
 
     return length;
+}
+
+ParameterList* ast_parameter_list_end(ParameterList* list)
+{
+    if (list == NULL) {
+        return NULL;
+    }
+
+    for (ParameterList* current = list;; current = current->next) {
+        if (current->next == NULL) {
+            return current;
+        }
+    }
 }
 
 WhenEntry* ast_new_when_entry(ExpressionList* cases, Statement* body)
@@ -1449,4 +1499,72 @@ size_t ast_declaration_list_length(DeclarationList* list)
     }
 
     return length;
+}
+
+VariableTarget* ast_new_single_variable_target(Token single)
+{
+    VariableTarget* target = raw_allocate(sizeof(VariableTarget));
+    if (!target) {
+        return NULL;
+    }
+
+    target->type = VAR_SINGLE;
+    target->as.single = single;
+    return target;
+}
+
+VariableTarget* ast_new_unpack_variable_target(ParameterList* unpack)
+{
+    VariableTarget* target = raw_allocate(sizeof(VariableTarget));
+    if (!target) {
+        return NULL;
+    }
+
+    target->type = VAR_UNPACK;
+    target->as.unpack = unpack;
+    return target;
+}
+
+void ast_delete_variable_target(VariableTarget* target)
+{
+    switch (target->type) {
+        case VAR_SINGLE: break;
+        case VAR_UNPACK: ast_delete_parameter_list(target->as.unpack); break;
+    }
+
+    raw_deallocate(target);
+}
+
+AssignmentTarget* ast_new_single_assignment_target(Expression* single)
+{
+    AssignmentTarget* target = raw_allocate(sizeof(AssignmentTarget));
+    if (!target) {
+        return NULL;
+    }
+
+    target->type = VAR_SINGLE;
+    target->as.single = single;
+    return target;
+}
+
+AssignmentTarget* ast_new_unpack_assignment_target(ExpressionList* unpack)
+{
+    AssignmentTarget* target = raw_allocate(sizeof(AssignmentTarget));
+    if (!target) {
+        return NULL;
+    }
+
+    target->type = VAR_UNPACK;
+    target->as.unpack = unpack;
+    return target;
+}
+
+void ast_delete_assignment_target(AssignmentTarget* target)
+{
+    switch (target->type) {
+        case VAR_SINGLE: break;
+        case VAR_UNPACK: ast_delete_expression_list(target->as.unpack); break;
+    }
+
+    raw_deallocate(target);
 }

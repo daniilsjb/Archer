@@ -1,0 +1,11 @@
+var person = ("John", "Doe", 27, false);
+
+print person;          //Expected: (John, Doe, 27, false)
+print person.length(); //Expected: 4
+print person[0];       //Expected: John
+print person[1];       //Expected: Doe
+print person[2];       //Expected: 27
+print person[3];       //Expected: false
+
+print "His name is ${person[0]} ${person[1]}, he is ${person[2]} years old and is ${ person[3] ? "" : "not " }married.";
+//Expected: His name is John Doe, he is 27 years old and is not married.

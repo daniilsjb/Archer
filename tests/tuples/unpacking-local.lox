@@ -1,0 +1,11 @@
+var |x, y| = ("Spooky", "Scary");
+
+{
+    var |x, y| = (10, 20);
+    print "x: $x, y: $y"; //Expected: x: 10, y: 20
+    
+    |x, y| = (y, x);
+    print "x: $x, y: $y"; //Expected: x: 20, y: 10
+}
+
+print "x: $x, y: $y"; //Expected: x: Spooky, y: Scary

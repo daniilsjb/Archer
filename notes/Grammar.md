@@ -72,7 +72,10 @@ FunctionDeclaration → "coroutine"? "fun" NamedFunction
 #### Variable
 
 ```
-VariableDeclaration → "var" Identifier ("=" Expression)? ";"
+VariableDeclaration → "var" VariableDeclarationTarget ("=" Expression)? ";"
+
+VariableDeclarationTarget → Identifier
+                          | VariableUnpacking
 ```
 
 ### Statements
@@ -101,7 +104,10 @@ ForStatement → "for" "(" (VariableDeclaration | ExpressionStatement | ";") Exp
 #### For In
 
 ```
-ForInStatement → "for" "(" "var" Identifier "in" Expression ")" Statement
+ForInStatement → "for" "(" "var" ForInTarget "in" Expression ")" Statement
+
+ForInTarget → Identifier
+            | VariableUnpacking
 ```
 
 #### While
@@ -186,7 +192,7 @@ ExpressionStatement → Expression ";"
 | 12         | Logical AND     | `&&`                                                                               | Left-to-right |
 | 13         | Logical OR      | `\|\|`                                                                             | Left-to-right |
 | 14         | Conditional     | `? :`, `?:`                                                                        | Right-to-left |
-| 15         | Assignment      | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `\|=`, `>>=`, `<<=`, `yield` | Right-to-left |
+| 15         | Assignment      | `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&=`, `^=`, `\|=`, `>>=`, `<<=`          | Right-to-left |
 
 ```
 Expression → AssignmentExpression
@@ -195,11 +201,12 @@ Expression → AssignmentExpression
 #### Assignment
 
 ```
-AssignmentExpression → PostfixExpression AssignmentOperator AssignmentExpression
-                     | YieldExpression
+AssignmentExpression → AssignmentTarget AssignmentOperator AssignmentExpression
                      | RangeExpression
-```
 
+AssignmentTarget → PostfixExpression
+                 | "|" PostfixExpression ("," PostfixExpression)* "|"
+```
 
 #### Range
 
@@ -319,7 +326,7 @@ PrimaryExpression → Literal
                   | YieldExpression
                   | CoroutineExpression
 
-GroupingExpression → "(" Expression ")"
+GroupingExpression → "(" Expression ("," Expression)* ")"
 
 SuperExpression → "super" "." Identifier
 
@@ -358,6 +365,8 @@ LambdaLiteral → "\" Parameters? "->" (Expression | BlockStatement)
 NamedFunction → Identifier "(" Parameters? ")" ("=" Expression | BlockStatement)
 
 Parameters → Identifier ("," Identifier)*
+
+VariableUnpacking → "|" Parameters "|"
 ```
 
 ### Operator Terminals

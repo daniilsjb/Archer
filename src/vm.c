@@ -21,6 +21,7 @@
 #include "objmodule.h"
 #include "objiterator.h"
 #include "objrange.h"
+#include "objtuple.h"
 
 #if DEBUG_TRACE_EXECUTION
 #include "disassembler.h"
@@ -54,6 +55,7 @@ void vm_init(VM* vm)
     vm->moduleType = NULL;
     vm->iteratorType = NULL;
     vm->rangeType = NULL;
+    vm->tupleType = NULL;
 
     GC_Init(&vm->gc);
     vm->gc.vm = vm;
@@ -1029,6 +1031,45 @@ static InterpretStatus run(VM* vm)
                 }
 
                 POP_N((size_t)count - 1);
+                break;
+            }
+            case OP_TUPLE: {
+                uint8_t count = READ_BYTE();
+
+                Value* accumulator = coroutine->stackTop - count;
+                PUSH(*accumulator);
+
+                *accumulator = OBJ_VAL(Tuple_New(vm, count));
+                Tuple_SetElement(VAL_AS_TUPLE(*accumulator), 0, TOP);
+                POP();
+
+                size_t index = 1;
+                for (Value* value = accumulator + 1; value < coroutine->stackTop; value++) {
+                    Tuple_SetElement(VAL_AS_TUPLE(*accumulator), index, *value);
+                    index++;
+                }
+
+                POP_N((size_t)count - 1);
+                break;
+            }
+            case OP_TUPLE_UNPACK: {
+                uint8_t count = READ_BYTE();
+
+                if (!VAL_IS_TUPLE(TOP)) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Can only unpack a tuple.");
+                }
+
+                ObjectTuple* tuple = VAL_AS_TUPLE(POP());
+                if (count != tuple->length) {
+                    frame->ip = ip;
+                    return runtime_error(vm, "Mismatch in tuple unpacking (expected %d values, but got %d).", count, tuple->length);
+                }
+
+                for (size_t i = 0; i < tuple->length; i++) {
+                    PUSH(tuple->elements[i]);
+                }
+
                 break;
             }
             case OP_BUILD_STRING: {

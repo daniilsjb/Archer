@@ -16,6 +16,7 @@
 #include "objmodule.h"
 #include "objiterator.h"
 #include "objrange.h"
+#include "objtuple.h"
 
 bool Library_Error(VM* vm, const char* message, Value* args)
 {
@@ -94,6 +95,7 @@ void Library_Init(VM* vm)
     vm->moduleType = Module_NewType(vm);
     vm->iteratorType = Iterator_NewType(vm);
     vm->rangeType = Range_NewType(vm);
+    vm->tupleType = Tuple_NewType(vm);
 
     vm->initString = String_FromCString(vm, "init");
 
@@ -111,6 +113,7 @@ void Library_Init(VM* vm)
     Module_PrepareType(vm->moduleType, vm);
     Iterator_PrepareType(vm->iteratorType, vm);
     Range_PrepareType(vm->rangeType, vm);
+    Tuple_PrepareType(vm->tupleType, vm);
 
     define_type(vm, "String", vm->stringType);
     define_type(vm, "Array", vm->arrayType);

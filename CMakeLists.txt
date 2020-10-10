@@ -67,4 +67,6 @@ add_executable (clox
     "src/objiterator.c"
     "src/objrange.h"
     "src/objrange.c"
+    "src/objtuple.h"
+    "src/objtuple.c"
 )
