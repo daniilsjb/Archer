@@ -51,7 +51,6 @@ void vm_init(VM* vm)
     vm->coroutineType = NULL;
     vm->listType = NULL;
     vm->mapType = NULL;
-    vm->arrayType = NULL;
     vm->moduleType = NULL;
     vm->iteratorType = NULL;
     vm->rangeType = NULL;

@@ -12,7 +12,6 @@
 #include "objcoroutine.h"
 #include "objlist.h"
 #include "objmap.h"
-#include "objarray.h"
 #include "objmodule.h"
 #include "objiterator.h"
 #include "objrange.h"
@@ -91,7 +90,6 @@ void Library_Init(VM* vm)
     vm->coroutineType = Coroutine_NewType(vm);
     vm->listType = List_NewType(vm);
     vm->mapType = Map_NewType(vm);
-    vm->arrayType = Array_NewType(vm);
     vm->moduleType = Module_NewType(vm);
     vm->iteratorType = Iterator_NewType(vm);
     vm->rangeType = Range_NewType(vm);
@@ -109,14 +107,12 @@ void Library_Init(VM* vm)
     Coroutine_PrepareType(vm->coroutineType, vm);
     List_PrepareType(vm->listType, vm);
     Map_PrepareType(vm->mapType, vm);
-    Array_PrepareType(vm->arrayType, vm);
     Module_PrepareType(vm->moduleType, vm);
     Iterator_PrepareType(vm->iteratorType, vm);
     Range_PrepareType(vm->rangeType, vm);
     Tuple_PrepareType(vm->tupleType, vm);
 
     define_type(vm, "String", vm->stringType);
-    define_type(vm, "Array", vm->arrayType);
     define_type(vm, "Coroutine", vm->coroutineType);
 
     define_native(vm, "clock", clock_native, 0);

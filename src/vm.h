@@ -31,7 +31,6 @@ typedef struct VM {
     ObjectType* coroutineType;
     ObjectType* listType;
     ObjectType* mapType;
-    ObjectType* arrayType;
     ObjectType* moduleType;
     ObjectType* iteratorType;
     ObjectType* rangeType;

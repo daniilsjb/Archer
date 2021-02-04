@@ -130,7 +130,6 @@ static void mark_roots(GC* gc)
     GC_MarkObject(gc, (Object*)vm->coroutineType);
     GC_MarkObject(gc, (Object*)vm->listType);
     GC_MarkObject(gc, (Object*)vm->mapType);
-    GC_MarkObject(gc, (Object*)vm->arrayType);
     GC_MarkObject(gc, (Object*)vm->moduleType);
     GC_MarkObject(gc, (Object*)vm->iteratorType);
     GC_MarkObject(gc, (Object*)vm->rangeType);

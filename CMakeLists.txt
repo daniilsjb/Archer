@@ -53,8 +53,6 @@ add_executable (archer
     "src/library.c"
     "src/objlist.h"
     "src/objlist.c"
-    "src/objarray.h"
-    "src/objarray.c"
     "src/objmap.h"
     "src/objmap.c"
     "src/objcoroutine.h"

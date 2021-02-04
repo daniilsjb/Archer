@@ -39,14 +39,3 @@ for (var item in ["Spooky", "Scary", "Skeletons"]) {
 //Expected: N
 //Expected: S
 //Expected:
-
-var arr = Array(5);
-for (var item in arr) {
-    print item;
-}
-
-//Expected: nil
-//Expected: nil
-//Expected: nil
-//Expected: nil
-//Expected: nil
