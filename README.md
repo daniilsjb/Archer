@@ -1,12 +1,12 @@
 # Archer
 
-Archer is a toy programming language based on Lox, the language presented in Bob Nystrom's [Crafting Intepreters](https://www.craftinginterpreters.com/). I wanted to expand on the features that were covered in the book, and my attempts led me to this little language. Initially, I did not plan to make this code public, as it is more of an experimental playground than a proper implementation, but it nonetheless contains a set of working features that I am proud of.
+Archer is a toy programming language based on Lox, the language presented in Bob Nystrom's [Crafting Intepreters](https://www.craftinginterpreters.com/). I wanted to expand on the features that were covered in the book, and my attempts led me to this little language. Initially, I did not plan to make this code public, as it is more of an experimental playground than a proper implementation and the code is quite messy, but it nonetheless contains a set of working features that I am proud of.
 
 ## The Language
 
 The following is a simple Archer program:
 
-```kt
+```kotlin
 var phrases = [
     ("Hello", "World"),
     ("Well met", "stranger"),
@@ -14,7 +14,7 @@ var phrases = [
 ];
 
 for (var |greeting, name| in phrases) {
-    print "$greeting $name!";
+    print "$greeting, $name!";
 }
 ```
 
