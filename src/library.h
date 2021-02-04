@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "value.h"
-#include "objnative.h"
+#include "obj_native.h"
 
 typedef struct VM VM;
 

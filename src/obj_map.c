@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "objmap.h"
 #include "vm.h"
-#include "objstring.h"
-#include "objnative.h"
 #include "library.h"
+
+#include "obj_map.h"
+#include "obj_string.h"
+#include "obj_native.h"
 
 static bool method_length(VM* vm, Value* args)
 {

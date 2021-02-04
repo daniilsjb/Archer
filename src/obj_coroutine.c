@@ -1,13 +1,14 @@
 #include <stdio.h>
 
-#include "objcoroutine.h"
-#include "objfunction.h"
-#include "objstring.h"
-#include "objmodule.h"
 #include "vm.h"
 #include "memory.h"
 #include "gc.h"
 #include "library.h"
+
+#include "obj_coroutine.h"
+#include "obj_function.h"
+#include "obj_string.h"
+#include "obj_module.h"
 
 static ObjectString* coroutine_function_to_string(Object* object, VM* vm)
 {

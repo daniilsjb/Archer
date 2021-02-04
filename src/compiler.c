@@ -5,9 +5,9 @@
 
 #include "compiler.h"
 #include "vm.h"
-#include "objfunction.h"
-#include "objstring.h"
-#include "objmodule.h"
+#include "obj_function.h"
+#include "obj_string.h"
+#include "obj_module.h"
 #include "common.h"
 #include "chunk.h"
 #include "parser.h"

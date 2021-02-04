@@ -2,7 +2,7 @@
 
 #include "vm.h"
 #include "value.h"
-#include "objstring.h"
+#include "obj_string.h"
 #include "object.h"
 #include "memory.h"
 

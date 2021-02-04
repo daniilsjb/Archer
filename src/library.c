@@ -6,16 +6,16 @@
 #include "value.h"
 
 #include "object.h"
-#include "objstring.h"
-#include "objnative.h"
-#include "objfunction.h"
-#include "objcoroutine.h"
-#include "objlist.h"
-#include "objmap.h"
-#include "objmodule.h"
-#include "objiterator.h"
-#include "objrange.h"
-#include "objtuple.h"
+#include "obj_string.h"
+#include "obj_native.h"
+#include "obj_function.h"
+#include "obj_coroutine.h"
+#include "obj_list.h"
+#include "obj_map.h"
+#include "obj_module.h"
+#include "obj_iterator.h"
+#include "obj_range.h"
+#include "obj_tuple.h"
 
 bool Library_Error(VM* vm, const char* message, Value* args)
 {

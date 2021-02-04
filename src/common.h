@@ -15,4 +15,11 @@
 
 #define UINT8_COUNT (UINT8_MAX + 1)
 
+typedef enum {
+    ERR_USAGE = 64,
+    ERR_DATA = 65,
+    ERR_SOFTWARE = 70,
+    ERR_IO = 74
+} ErrorCode;
+
 #endif

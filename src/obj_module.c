@@ -1,11 +1,12 @@
 #include <stdio.h>
 
-#include "objmodule.h"
-#include "objfunction.h"
-#include "objstring.h"
 #include "vm.h"
 #include "memory.h"
 #include "gc.h"
+
+#include "obj_module.h"
+#include "obj_function.h"
+#include "obj_string.h"
 
 static ObjectString* module_to_string(Object* object, VM* vm)
 {

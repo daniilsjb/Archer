@@ -1,12 +1,12 @@
 #include <stdio.h>
 
-#include "objrange.h"
-#include "objiterator.h"
-#include "objstring.h"
-#include "objlist.h"
-
 #include "vm.h"
 #include "library.h"
+
+#include "obj_range.h"
+#include "obj_iterator.h"
+#include "obj_string.h"
+#include "obj_list.h"
 
 static bool iterator_reached_end(ObjectIterator* iterator)
 {

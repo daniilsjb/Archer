@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "filereader.h"
-#include "errcode.h"
+#include "file_reader.h"
+#include "common.h"
 
 char* Reader_ReadFile(const char* fileName)
 {

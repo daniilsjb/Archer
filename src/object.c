@@ -1,11 +1,11 @@
 #include <stdio.h>
 
 #include "object.h"
-#include "objfunction.h"
-#include "objnative.h"
-#include "objstring.h"
-#include "objcoroutine.h"
-#include "objiterator.h"
+#include "obj_function.h"
+#include "obj_native.h"
+#include "obj_string.h"
+#include "obj_coroutine.h"
+#include "obj_iterator.h"
 
 #include "vm.h"
 #include "gc.h"

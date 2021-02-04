@@ -1,12 +1,13 @@
 #include <stdio.h>
 
-#include "objiterator.h"
-#include "objstring.h"
-#include "objnative.h"
 #include "vm.h"
 #include "memory.h"
 #include "gc.h"
 #include "library.h"
+
+#include "obj_iterator.h"
+#include "obj_string.h"
+#include "obj_native.h"
 
 static ObjectString* iterator_to_string(Object* object, VM* vm)
 {

@@ -1,11 +1,12 @@
 #include <stdio.h>
 
-#include "objnative.h"
-#include "objstring.h"
-#include "objcoroutine.h"
 #include "vm.h"
 #include "memory.h"
 #include "gc.h"
+
+#include "obj_native.h"
+#include "obj_string.h"
+#include "obj_coroutine.h"
 
 static ObjectString* native_to_string(Object* object, VM* vm)
 {

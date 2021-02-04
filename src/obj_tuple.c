@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "objtuple.h"
-#include "objstring.h"
-#include "objnative.h"
-#include "objcoroutine.h"
-#include "objiterator.h"
-
 #include "vm.h"
 #include "library.h"
+
+#include "obj_tuple.h"
+#include "obj_string.h"
+#include "obj_native.h"
+#include "obj_coroutine.h"
+#include "obj_iterator.h"
 
 static bool iterator_reached_end(ObjectIterator* iterator)
 {

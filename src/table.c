@@ -1,7 +1,7 @@
 #include <string.h>
 
 #include "table.h"
-#include "objstring.h"
+#include "obj_string.h"
 #include "vm.h"
 #include "gc.h"
 #include "memory.h"
