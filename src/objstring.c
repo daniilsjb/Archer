@@ -66,7 +66,7 @@ static bool method_to_lower(VM* vm, Value* args)
     }
 
     args[-1] = OBJ_VAL(String_FromCString(vm, cstring));
-    raw_deallocate(cstring);
+    free(cstring);
     return true;
 }
 
@@ -80,7 +80,7 @@ static bool method_to_upper(VM* vm, Value* args)
     }
 
     args[-1] = OBJ_VAL(String_FromCString(vm, cstring));
-    raw_deallocate(cstring);
+    free(cstring);
     return true;
 }
 

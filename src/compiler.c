@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "compiler.h"
 #include "vm.h"
@@ -11,7 +12,6 @@
 #include "chunk.h"
 #include "parser.h"
 #include "memory.h"
-#include "memlib.h"
 
 #if DEBUG_PRINT_CODE
 #include "disassembler.h"
@@ -308,7 +308,7 @@ static void patch_breaks(Compiler* compiler, ControlBreak* breaks)
     while (current) {
         ControlBreak* next = current->enclosing;
         patch_jump(compiler, current->address);
-        raw_deallocate(current);
+        free(current);
         current = next;
     }
 }
@@ -330,7 +330,7 @@ static ObjectFunction* finish_compilation(VM* vm)
 
 static ControlBreak* make_control_break(Compiler* compiler, size_t address, ControlBreak* enclosing)
 {
-    ControlBreak* controlBreak = raw_allocate(sizeof(ControlBreak));
+    ControlBreak* controlBreak = malloc(sizeof(ControlBreak));
     if (!controlBreak) {
         return NULL;
     }
@@ -356,7 +356,7 @@ static void push_control_break_to_block(Compiler* compiler, size_t address, Cont
 
 static void push_control_block(Compiler* compiler, ControlType type, size_t start, size_t end)
 {
-    ControlBlock* block = raw_allocate(sizeof(ControlBlock));
+    ControlBlock* block = malloc(sizeof(ControlBlock));
     block->type = type;
     block->start = start;
     block->end = end;
@@ -369,7 +369,7 @@ static void push_control_block(Compiler* compiler, ControlType type, size_t star
 static void pop_control_block(Compiler* compiler)
 {
     ControlBlock* next = compiler->controlBlock->enclosing;
-    raw_deallocate(compiler->controlBlock);
+    free(compiler->controlBlock);
     compiler->controlBlock = next;
 }
 
@@ -718,7 +718,7 @@ static void compile_multiple_variable_decl(Compiler* compiler, Declaration* decl
         error(compiler, "Cannot unpack into more than 255 variables.");
     }
 
-    uint8_t* globals = raw_allocate(length);
+    uint8_t* globals = malloc(length);
     size_t i = 0;
     for (ParameterList* current = identifiers; current != NULL; current = current->next) {
         compiler->token = current->parameter;
@@ -737,7 +737,7 @@ static void compile_multiple_variable_decl(Compiler* compiler, Declaration* decl
         }
     }
 
-    raw_deallocate(globals);
+    free(globals);
 }
 
 void compile_variable_decl(Compiler* compiler, Declaration* decl)
@@ -1651,7 +1651,7 @@ static void compile_string_literal(Compiler* compiler, Token literal)
         }
     }
 
-    char* stringBuffer = raw_allocate(bufferLength);
+    char* stringBuffer = malloc(bufferLength);
 
     size_t i = 0;
     for (const char* current = literal.start; current < end; current++) {
@@ -1664,7 +1664,7 @@ static void compile_string_literal(Compiler* compiler, Token literal)
     }
 
     ObjectString* string = String_Copy(compiler->vm, stringBuffer, bufferLength);
-    raw_deallocate(stringBuffer);
+    free(stringBuffer);
 
     emit_constant(compiler, OBJ_VAL(string));
 }

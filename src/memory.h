@@ -2,8 +2,7 @@
 #define MEMORY_H
 
 #include <stdint.h>
-
-#include "memlib.h"
+#include <stdlib.h>
 
 typedef struct GC GC;
 

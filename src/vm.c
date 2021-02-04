@@ -267,14 +267,14 @@ static char* obtain_source(VM* vm, ObjectModule* mod)
     size_t extensionLength = strlen(FILE_EXTENSION);
     size_t length = pathLength + nameLength + extensionLength + 1;
 
-    char* fullName = (char*)raw_allocate(length);
+    char* fullName = (char*)malloc(length);
     memcpy(fullName,                           AS_CSTRING(mod->path), pathLength);
     memcpy(fullName + pathLength,              AS_CSTRING(mod->name), nameLength);
     memcpy(fullName + pathLength + nameLength, FILE_EXTENSION,        extensionLength);
     fullName[length - 1] = '\0';
 
     char* source = Reader_ReadFile(fullName);
-    raw_deallocate(fullName);
+    free(fullName);
 
     return source;
 }
@@ -1227,7 +1227,7 @@ static InterpretStatus run(VM* vm)
 
 static char* convert_path(const char* path)
 {
-    char* correctPath = raw_allocate(strlen(path) + 1);
+    char* correctPath = malloc(strlen(path) + 1);
     strcpy(correctPath, path);
     for (char* c = correctPath; *c; c++) {
         if (*c == '\\') {
@@ -1243,7 +1243,7 @@ static void create_main_module(VM* vm, const char* path)
     char* correctPath = convert_path(path);
 
     ObjectString* fullPath = String_Copy(vm, correctPath, strlen(correctPath) - strlen(FILE_EXTENSION));
-    raw_deallocate(correctPath);
+    free(correctPath);
     vm_push_temporary(vm, OBJ_VAL(fullPath));
 
     ObjectModule* mainModule = Module_FromFullPath(vm, AS_CSTRING(fullPath));

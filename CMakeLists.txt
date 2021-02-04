@@ -32,8 +32,6 @@ add_executable (archer
     "src/parser.c"
     "src/token.c"
     "src/run.c"
-    "src/memlib.h"
-    "src/memlib.c"
     "src/gc.h"
     "src/gc.c"
     "src/vector.h"

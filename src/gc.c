@@ -42,7 +42,7 @@ static void free_objects(GC* gc)
 void GC_Free(GC* gc)
 {
     free_objects(gc);
-    raw_deallocate(gc->grayStack);
+    free(gc->grayStack);
 }
 
 void GC_AllocateBytes(GC* gc, size_t size)
@@ -60,7 +60,7 @@ static void ensure_graylist_capacity(GC* gc)
     if (gc->grayCapacity < gc->grayCount + 1) {
         gc->grayCapacity = GROW_CAPACITY(gc->grayCapacity);
 
-        void* reallocated = raw_reallocate(gc->grayStack, sizeof(Object*) * gc->grayCapacity);
+        void* reallocated = realloc(gc->grayStack, sizeof(Object*) * gc->grayCapacity);
         if (reallocated) {
             gc->grayStack = reallocated;
         }
