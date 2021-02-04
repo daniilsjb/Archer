@@ -1,10 +1,10 @@
 # Archer
 
-Archer is a toy programming language based on Lox, the language presented in Bob Nystrom's [Crafting Intepreters](https://www.craftinginterpreters.com/). I wanted to expand on the features that were covered in the book, and my attempts led me to this little language.
+Archer is a toy programming language with support for object-oriented, functional, and concurrent programming. It is based on Lox, the language presented in Bob Nystrom's [Crafting Intepreters](https://www.craftinginterpreters.com/). I wanted to expand on the features that were covered in the book, and my attempts led me to this little language.
 
-Initially, I did not plan to make this code public, as it is more of an experimental playground than a proper implementation, with the code turning out to be rather messy. Nonetheless, this project contains a set of working features that I am proud of.
+Initially, I did not plan to make this code public, as it is more of an experimental playground than a proper implementation. Nonetheless, this project contains a set of working features that I am proud of.
 
-## The Language
+## Language
 
 The following is a simple Archer program:
 
@@ -28,7 +28,7 @@ Although this is only a toy language, it supports a decent range of features for
 
 * Collections
 * Lambdas
-* Function expressions
+* Expression functions
 * String interpolation
 * Tuples and unpacking
 * Simple iterators and ranges
@@ -37,7 +37,7 @@ Although this is only a toy language, it supports a decent range of features for
 * Coroutines
 * Modules
 
-Some features are not fully complete. For instance, null safety doesn't work with compound assignments, and the iterator protocol is very basic. Quite a few syntax decisions were made hastily, as much bigger priority was given to testing out ideas - coroutines are a good example of that. Still, there was a lot of work involved in implementing these, and I hope that some people may find it interesting.
+Some features are not fully complete: null safety doesn't work with compound assignments; the iterator protocol is very basic and only supports some collections; some syntax decisions were made hastily, as much bigger priority was given to testing out ideas. However, there was a lot of work involved in implementing these, and I hope that some people may find it interesting.
 
 For more details, see example programs.
 
