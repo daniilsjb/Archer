@@ -1,6 +1,8 @@
 # Archer
 
-Archer is a toy programming language based on Lox, the language presented in Bob Nystrom's [Crafting Intepreters](https://www.craftinginterpreters.com/). I wanted to expand on the features that were covered in the book, and my attempts led me to this little language. Initially, I did not plan to make this code public, as it is more of an experimental playground than a proper implementation and the code is quite messy, but it nonetheless contains a set of working features that I am proud of.
+Archer is a toy programming language based on Lox, the language presented in Bob Nystrom's [Crafting Intepreters](https://www.craftinginterpreters.com/). I wanted to expand on the features that were covered in the book, and my attempts led me to this little language.
+
+Initially, I did not plan to make this code public, as it is more of an experimental playground than a proper implementation, with the code turning out to be rather messy. Nonetheless, this project contains a set of working features that I am proud of.
 
 ## The Language
 
@@ -18,7 +20,7 @@ for (var |greeting, name| in phrases) {
 }
 ```
 
-For more examples, see the `tests` and `benchmarks` directories.
+For more examples, see the `lang-tests` and `lang-benchmarks` directories. For additional information on the language syntax and grammar, see `lang-ref`.
 
 ## Features
 
@@ -41,4 +43,4 @@ For more details, see example programs.
 
 ## Plans
 
-As fun as this project was, I do not plan on continuously working on it. However, I hope to take the experience I've gained from this simple language and use it to design and build a new, better one, applicable to real projects.
+As fun as this project was, I do not plan on continuously working on it. However, I hope to take the experience I've gained from this simple language and use it to design and build a better one, applicable to real projects.
