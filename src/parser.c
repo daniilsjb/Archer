@@ -976,6 +976,7 @@ NamedFunction* named_function_rule(Parser* parser, bool coroutine)
     FunctionBody* body = NULL;
     if (match(parser, TOKEN_EQUAL)) {
         body = ast_new_expression_function_body(expression(parser));
+        consume(parser, TOKEN_SEMICOLON, "Expected ';' after expression function.");
     } else {
         consume(parser, TOKEN_L_BRACE, "Expected '{' before function body in declaration.");
         body = ast_new_block_function_body(block_rule(parser));

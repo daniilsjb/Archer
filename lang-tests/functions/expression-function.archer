@@ -1,9 +1,9 @@
-fun five() = 5
+fun five() = 5;
 print five(); //Expected: 5
 
-fun sqr(x) = x ** 2
+fun sqr(x) = x ** 2;
 print sqr(4); //Expected: 16
 
-fun absolute(x) = x < 0 ? -x : x
+fun absolute(x) = x < 0 ? -x : x;
 print absolute(5);  //Expected: 5
 print absolute(-3); //Expected: 3

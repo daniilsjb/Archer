@@ -12,7 +12,7 @@ class Person {
         print "This person's name is " + this.getName();
     }
     
-    getName() = this.name
+    getName() = this.name;
 
 }
 

@@ -5,7 +5,7 @@ class Math {
         this.pi = 3.14159;
     }
     
-    static circleArea(r) = this.pi * r ** 2
+    static circleArea(r) = this.pi * r ** 2;
     
 }
 

@@ -362,7 +362,7 @@ LambdaLiteral → "\" Parameters? "->" (Expression | BlockStatement)
 ### Helpers
 
 ```
-NamedFunction → Identifier "(" Parameters? ")" ("=" Expression | BlockStatement)
+NamedFunction → Identifier "(" Parameters? ")" ("=" Expression ";" | BlockStatement)
 
 Parameters → Identifier ("," Identifier)*
 

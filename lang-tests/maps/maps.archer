@@ -41,7 +41,7 @@ var dispatch = @{
     "attack": attack  
 };
 
-fun execute(cmd) = dispatch[cmd]()
+fun execute(cmd) = dispatch[cmd]();
 
 execute("show");   //Expected: Showing!
 execute("hide");   //Expected: Hiding!

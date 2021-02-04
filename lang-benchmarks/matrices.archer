@@ -22,7 +22,7 @@ class Matrix {
             this.x20 * other.x00 + this.x21 * other.x10 + this.x22 * other.x20,
             this.x20 * other.x01 + this.x21 * other.x11 + this.x22 * other.x21,
             this.x20 * other.x02 + this.x21 * other.x12 + this.x22 * other.x22
-        )
+        );
     
 }
 

@@ -41,7 +41,7 @@ funcA()()();
 fun makeCounter() {
     var i = 0;
     
-    fun counter() = ++i
+    fun counter() = ++i;
     
     return counter;
 }
@@ -76,7 +76,6 @@ print counter(); //Expected: 3
 }
 
 fun nestedClass() {
-
     class Bar {
         show() {
             print "Hello from Bar!";
