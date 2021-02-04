@@ -1,11 +1,15 @@
-﻿cmake_minimum_required (VERSION 3.8)
+﻿# Specify the minimum version
+cmake_minimum_required (VERSION 3.18)
 
-project ("Archer")
+# Setup a simple C project
+project (Archer DESCRIPTION "A toy proramming language." LANGUAGES C)
 
+# Visual C++: Disable unsafe std warnings
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_definitions(_CRT_SECURE_NO_DEPRECATE)
 endif()
 
+# Add the main executable
 add_executable (archer
     "src/main.c"
     "src/opcode.h"

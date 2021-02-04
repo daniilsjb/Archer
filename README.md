@@ -41,6 +41,25 @@ Some features are not fully complete. For instance, null safety doesn't work wit
 
 For more details, see example programs.
 
+## Building
+
+If you'd like to give Archer a try, building it is as straightforward as running CMake, since there are no external dependencies:
+
+```shell
+mkdir build
+cd build
+cmake ..
+cmake --build .
+```
+
+Once the build went successfully, run the resulting executable from command prompt and type the following:
+
+```kotlin
+print "Hello, World!";
+```
+
+The interpreter should simply print the line "Hello, World!" back to you.
+
 ## Plans
 
 As fun as this project was, I do not plan on continuously working on it. However, I hope to take the experience I've gained from this simple language and use it to design and build a better one, applicable to real projects.
