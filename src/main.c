@@ -7,7 +7,7 @@
 int main(int argc, const char* argv[])
 {
     if (argc > 2) {
-        fprintf(stderr, "Usage: clox [script]\n");
+        fprintf(stderr, "Usage: archer [script]\n");
         exit(ERR_USAGE);
     } else if (argc == 2) {
         run_file(argv[1]);

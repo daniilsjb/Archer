@@ -41,7 +41,7 @@ void run_prompt()
             break;
         }
 
-        vm_interpret(&vm, line, "main.lox");
+        vm_interpret(&vm, line, "main.archer");
     }
 
     vm_free(&vm);

@@ -27,7 +27,7 @@
 #include "disassembler.h"
 #endif
 
-#define FILE_EXTENSION ".lox"
+#define FILE_EXTENSION ".archer"
 
 void vm_init(VM* vm)
 {
@@ -1243,7 +1243,7 @@ static void create_main_module(VM* vm, const char* path)
 {
     char* correctPath = convert_path(path);
 
-    ObjectString* fullPath = String_Copy(vm, correctPath, strlen(correctPath) - 4);
+    ObjectString* fullPath = String_Copy(vm, correctPath, strlen(correctPath) - strlen(FILE_EXTENSION));
     raw_deallocate(correctPath);
     vm_push_temporary(vm, OBJ_VAL(fullPath));
 

@@ -1,12 +1,12 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-project ("clox")
+project ("Archer")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_definitions(_CRT_SECURE_NO_DEPRECATE)
 endif()
 
-add_executable (clox
+add_executable (archer
     "src/main.c"
     "src/opcode.h"
     "src/chunk.c"
