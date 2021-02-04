@@ -4,6 +4,7 @@
 
 #include "file_reader.h"
 #include "common.h"
+#include "memory.h"
 
 char* Reader_ReadFile(const char* fileName)
 {
@@ -17,7 +18,7 @@ char* Reader_ReadFile(const char* fileName)
     size_t fileSize = ftell(file);
     rewind(file);
 
-    char* buffer = malloc(fileSize + 1);
+    char* buffer = xmalloc(fileSize + 1);
     if (buffer == NULL) {
         fprintf(stderr, "Not enough memory to read '%s'.\n", fileName);
         exit(ERR_IO);

@@ -21,6 +21,8 @@ typedef struct GC GC;
 #define FREE_ARRAY(gc, type, pointer, capacity)                                                     \
     Mem_Deallocate(gc, pointer, sizeof(type) * capacity)                                            \
 
+void* xmalloc(size_t size);
+
 void* Mem_Allocate(GC* gc, size_t size);
 void Mem_Deallocate(GC* gc, void* pointer, size_t size);
 void* Mem_Reallocate(GC* gc, void* pointer, size_t oldSize, size_t newSize);

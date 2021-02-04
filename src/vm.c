@@ -267,7 +267,7 @@ static char* obtain_source(VM* vm, ObjectModule* mod)
     size_t extensionLength = strlen(FILE_EXTENSION);
     size_t length = pathLength + nameLength + extensionLength + 1;
 
-    char* fullName = (char*)malloc(length);
+    char* fullName = (char*)xmalloc(length);
     memcpy(fullName,                           AS_CSTRING(mod->path), pathLength);
     memcpy(fullName + pathLength,              AS_CSTRING(mod->name), nameLength);
     memcpy(fullName + pathLength + nameLength, FILE_EXTENSION,        extensionLength);
@@ -1227,7 +1227,7 @@ static InterpretStatus run(VM* vm)
 
 static char* convert_path(const char* path)
 {
-    char* correctPath = malloc(strlen(path) + 1);
+    char* correctPath = xmalloc(strlen(path) + 1);
     strcpy(correctPath, path);
     for (char* c = correctPath; *c; c++) {
         if (*c == '\\') {

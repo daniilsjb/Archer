@@ -2,10 +2,11 @@
 #include <stdlib.h>
 
 #include "ast.h"
+#include "memory.h"
 
 AST* ast_new_tree(DeclarationList* body)
 {
-    AST* ast = malloc(sizeof(AST));
+    AST* ast = xmalloc(sizeof(AST));
     if (!ast) {
         return NULL;
     }
@@ -41,7 +42,7 @@ void ast_delete_declaration(Declaration* declaration)
 
 Declaration* ast_new_import_all_decl(Expression* moduleName)
 {
-    Declaration* decl = malloc(sizeof(Declaration));
+    Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
         return NULL;
     }
@@ -54,7 +55,7 @@ Declaration* ast_new_import_all_decl(Expression* moduleName)
 
 Declaration* ast_new_import_as_decl(Expression* moduleName, Token alias)
 {
-    Declaration* decl = malloc(sizeof(Declaration));
+    Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
         return NULL;
     }
@@ -68,7 +69,7 @@ Declaration* ast_new_import_as_decl(Expression* moduleName, Token alias)
 
 Declaration* ast_new_import_for_decl(Expression* moduleName, ParameterList* names)
 {
-    Declaration* decl = malloc(sizeof(Declaration));
+    Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
         return NULL;
     }
@@ -95,7 +96,7 @@ void ast_delete_import_decl(Declaration* declaration)
 
 Declaration* ast_new_class_decl(Token identifier, Token superclass, MethodList* body)
 {
-    Declaration* decl = malloc(sizeof(Declaration));
+    Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
         return NULL;
     }
@@ -115,7 +116,7 @@ void ast_delete_class_decl(Declaration* declaration)
 
 Declaration* ast_new_function_decl(NamedFunction* function)
 {
-    Declaration* decl = malloc(sizeof(Declaration));
+    Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
         return NULL;
     }
@@ -133,7 +134,7 @@ void ast_delete_function_decl(Declaration* declaration)
 
 Declaration* ast_new_variable_decl(VariableTarget* target, Expression* value)
 {
-    Declaration* decl = malloc(sizeof(Declaration));
+    Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
         return NULL;
     }
@@ -153,7 +154,7 @@ void ast_delete_variable_decl(Declaration* declaration)
 
 Declaration* ast_new_statement_decl(Statement* statement)
 {
-    Declaration* decl = malloc(sizeof(Declaration));
+    Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
         return NULL;
     }
@@ -193,7 +194,7 @@ void ast_delete_statement(Statement* statement)
 
 Statement* ast_new_for_stmt(Declaration* initializer, Expression* condition, Expression* increment, Statement* body)
 {
-    Statement* stmt = malloc(sizeof(Statement));
+    Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
         return NULL;
     }
@@ -217,7 +218,7 @@ void ast_delete_for_stmt(Statement* statement)
 
 Statement* ast_new_for_in_stmt(Declaration* element, Expression* collection, Statement* body)
 {
-    Statement* stmt = malloc(sizeof(Statement));
+    Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
         return NULL;
     }
@@ -239,7 +240,7 @@ void ast_delete_for_in_stmt(Statement* statement)
 
 Statement* ast_new_while_stmt(Expression* condition, Statement* body)
 {
-    Statement* stmt = malloc(sizeof(Statement));
+    Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
         return NULL;
     }
@@ -259,7 +260,7 @@ void ast_delete_while_stmt(Statement* statement)
 
 Statement* ast_new_do_while_stmt(Statement* body, Expression* condition)
 {
-    Statement* stmt = malloc(sizeof(Statement));
+    Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
         return NULL;
     }
@@ -279,7 +280,7 @@ void ast_delete_do_while_stmt(Statement* statement)
 
 Statement* ast_new_break_stmt(Token keyword)
 {
-    Statement* stmt = malloc(sizeof(Statement));
+    Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
         return NULL;
     }
@@ -296,7 +297,7 @@ void ast_delete_break_stmt(Statement* statement)
 
 Statement* ast_new_continue_stmt(Token keyword)
 {
-    Statement* stmt = malloc(sizeof(Statement));
+    Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
         return NULL;
     }
@@ -313,7 +314,7 @@ void ast_delete_continue_stmt(Statement* statement)
 
 Statement* ast_new_when_stmt(Expression* control, WhenEntryList* entries, Statement* elseBranch)
 {
-    Statement* stmt = malloc(sizeof(Statement));
+    Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
         return NULL;
     }
@@ -335,7 +336,7 @@ void ast_delete_when_stmt(Statement* statement)
 
 Statement* ast_new_if_stmt(Expression* condition, Statement* thenBranch, Statement* elseBranch)
 {
-    Statement* stmt = malloc(sizeof(Statement));
+    Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
         return NULL;
     }
@@ -357,7 +358,7 @@ void ast_delete_if_stmt(Statement* statement)
 
 Statement* ast_new_return_stmt(Token keyword, Expression* expression)
 {
-    Statement* stmt = malloc(sizeof(Statement));
+    Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
         return NULL;
     }
@@ -376,7 +377,7 @@ void ast_delete_return_stmt(Statement* statement)
 
 Statement* ast_new_print_stmt(Expression* expression)
 {
-    Statement* stmt = malloc(sizeof(Statement));
+    Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
         return NULL;
     }
@@ -394,7 +395,7 @@ void ast_delete_print_stmt(Statement* statement)
 
 Statement* ast_new_block_stmt(Block* block)
 {
-    Statement* stmt = malloc(sizeof(Statement));
+    Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
         return NULL;
     }
@@ -412,7 +413,7 @@ void ast_delete_block_stmt(Statement* statement)
 
 Statement* ast_new_expression_stmt(Expression* expression)
 {
-    Statement* stmt = malloc(sizeof(Statement));
+    Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
         return NULL;
     }
@@ -463,7 +464,7 @@ void ast_delete_expression(Expression* expression)
 
 Expression* ast_new_call_expr(Expression* callee, ArgumentList* arguments)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -483,7 +484,7 @@ void ast_delete_call_expr(Expression* expression)
 
 Expression* ast_new_property_expr(Expression* object, Token property, ExprContext context, bool safe)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -504,7 +505,7 @@ void ast_delete_property_expr(Expression* expression)
 
 Expression* ast_new_subscript_expr(Expression* object, Expression* index, ExprContext context, bool safe)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -526,7 +527,7 @@ void ast_delete_subscript_expr(Expression* expression)
 
 Expression* ast_new_super_expr(Token keyword, Token method)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -544,7 +545,7 @@ void ast_delete_super_expr(Expression* expression)
 
 Expression* ast_new_assignment_expr(AssignmentTarget* target, Expression* value)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -564,7 +565,7 @@ void ast_delete_assignment_expr(Expression* expression)
 
 Expression* ast_new_compound_assignment_expr(AssignmentTarget* target, Token op, Expression* value)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -585,7 +586,7 @@ void ast_delete_compound_assignment_expr(Expression* expression)
 
 Expression* ast_new_coroutine_expr(Token keyword, Expression* expression)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -604,7 +605,7 @@ void ast_delete_coroutine_expr(Expression* expression)
 
 Expression* ast_new_yield_expr(Token keyword, Expression* expression)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -623,7 +624,7 @@ void ast_delete_yield_expr(Expression* expression)
 
 Expression* ast_new_logical_expr(Expression* left, Token op, Expression* right)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -644,7 +645,7 @@ void ast_delete_logical_expr(Expression* expression)
 
 Expression* ast_new_conditional_expr(Expression* condition, Expression* thenBranch, Expression* elseBranch)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -666,7 +667,7 @@ void ast_delete_conditional_expr(Expression* expression)
 
 Expression* ast_new_elvis_expr(Expression* left, Expression* right)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -686,7 +687,7 @@ void ast_delete_elvis_expr(Expression* expression)
 
 Expression* ast_new_binary_expr(Expression* left, Token op, Expression* right)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -707,7 +708,7 @@ void ast_delete_binary_expr(Expression* expression)
 
 Expression* ast_new_unary_expr(Token op, Expression* expression)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -726,7 +727,7 @@ void ast_delete_unary_expr(Expression* expression)
 
 Expression* ast_new_postfix_inc_expr(Token op, Expression* expression)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -745,7 +746,7 @@ void ast_delete_postfix_inc_expr(Expression* expression)
 
 Expression* ast_new_prefix_inc_expr(Token op, Expression* expression)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -764,7 +765,7 @@ void ast_delete_prefix_inc_expr(Expression* expression)
 
 Expression* ast_new_literal_expr(Token value)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -781,7 +782,7 @@ void ast_delete_literal_expr(Expression* expression)
 
 Expression* ast_new_string_interp_expr(ExpressionList* values)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -799,7 +800,7 @@ void ast_delete_string_interp_expr(Expression* expression)
 
 Expression* ast_new_range_expr(Expression* begin, Expression* end, Expression* step)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -821,7 +822,7 @@ void ast_delete_range_expr(Expression* expression)
 
 Expression* ast_new_lambda_expr(Function* function)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -839,7 +840,7 @@ void ast_delete_lambda_expr(Expression* expression)
 
 Expression* ast_new_list_expr(ExpressionList* elements)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -857,7 +858,7 @@ void ast_delete_list_expr(Expression* expression)
 
 Expression* ast_new_map_expr(MapEntryList* entries)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -875,7 +876,7 @@ void ast_delete_map_expr(Expression* expression)
 
 Expression* ast_new_tuple_expr(ExpressionList* elements)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -893,7 +894,7 @@ void ast_delete_tuple_expr(Expression* expression)
 
 Expression* ast_new_identifier_expr(Token identifier, ExprContext context)
 {
-    Expression* expr = malloc(sizeof(Expression));
+    Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
         return NULL;
     }
@@ -911,7 +912,7 @@ void ast_delete_identifier_expr(Expression* expression)
 
 ExpressionList* ast_new_expression_node(Expression* expression)
 {
-    ExpressionList* list = malloc(sizeof(ExpressionList));
+    ExpressionList* list = xmalloc(sizeof(ExpressionList));
     if (!list) {
         return NULL;
     }
@@ -977,7 +978,7 @@ ExpressionList* ast_expression_list_end(ExpressionList* list)
 
 ArgumentList* ast_new_argument_node(Expression* expression)
 {
-    ArgumentList* list = malloc(sizeof(ArgumentList));
+    ArgumentList* list = xmalloc(sizeof(ArgumentList));
     if (!list) {
         return NULL;
     }
@@ -1028,7 +1029,7 @@ size_t ast_argument_list_length(ArgumentList* list)
 
 ParameterList* ast_new_parameter_node(Token parameter)
 {
-    ParameterList* list = malloc(sizeof(ParameterList));
+    ParameterList* list = xmalloc(sizeof(ParameterList));
     if (!list) {
         return NULL;
     }
@@ -1093,7 +1094,7 @@ ParameterList* ast_parameter_list_end(ParameterList* list)
 
 WhenEntry* ast_new_when_entry(ExpressionList* cases, Statement* body)
 {
-    WhenEntry* entry = malloc(sizeof(WhenEntry));
+    WhenEntry* entry = xmalloc(sizeof(WhenEntry));
     if (!entry) {
         return NULL;
     }
@@ -1112,7 +1113,7 @@ void ast_delete_when_entry(WhenEntry* entry)
 
 WhenEntryList* ast_new_when_entry_node(WhenEntry* entry)
 {
-    WhenEntryList* list = malloc(sizeof(WhenEntryList));
+    WhenEntryList* list = xmalloc(sizeof(WhenEntryList));
     if (!list) {
         return NULL;
     }
@@ -1163,7 +1164,7 @@ size_t ast_when_entry_list_length(WhenEntryList* list)
 
 MapEntry* ast_new_map_entry(Expression* key, Expression* value)
 {
-    MapEntry* entry = malloc(sizeof(MapEntry));
+    MapEntry* entry = xmalloc(sizeof(MapEntry));
     if (!entry) {
         return NULL;
     }
@@ -1182,7 +1183,7 @@ void ast_delete_map_entry(MapEntry* entry)
 
 MapEntryList* ast_new_map_entry_node(MapEntry* entry)
 {
-    MapEntryList* list = malloc(sizeof(MapEntryList));
+    MapEntryList* list = xmalloc(sizeof(MapEntryList));
     if (!list) {
         return NULL;
     }
@@ -1233,7 +1234,7 @@ size_t ast_map_entry_list_length(MapEntryList* list)
 
 Block* ast_new_block(DeclarationList* body)
 {
-    Block* block = malloc(sizeof(Block));
+    Block* block = xmalloc(sizeof(Block));
     if (!block) {
         return NULL;
     }
@@ -1258,7 +1259,7 @@ void ast_delete_function_body(FunctionBody* body)
 
 FunctionBody* ast_new_expression_function_body(Expression* expression)
 {
-    FunctionBody* body = malloc(sizeof(FunctionBody));
+    FunctionBody* body = xmalloc(sizeof(FunctionBody));
     if (!body) {
         return NULL;
     }
@@ -1276,7 +1277,7 @@ void ast_delete_expression_function_body(FunctionBody* body)
 
 FunctionBody* ast_new_block_function_body(Block* block)
 {
-    FunctionBody* body = malloc(sizeof(FunctionBody));
+    FunctionBody* body = xmalloc(sizeof(FunctionBody));
     if (!body) {
         return NULL;
     }
@@ -1294,7 +1295,7 @@ void ast_delete_block_function_body(FunctionBody* body)
 
 Function* ast_new_function(ParameterList* parameters, FunctionBody* body)
 {
-    Function* function = malloc(sizeof(Function));
+    Function* function = xmalloc(sizeof(Function));
     if (!function) {
         return NULL;
     }
@@ -1313,7 +1314,7 @@ void ast_delete_function(Function* function)
 
 NamedFunction* ast_new_named_function(Token identifier, Function* function, bool coroutine)
 {
-    NamedFunction* namedFunction = malloc(sizeof(NamedFunction));
+    NamedFunction* namedFunction = xmalloc(sizeof(NamedFunction));
     if (!function) {
         return NULL;
     }
@@ -1332,7 +1333,7 @@ void ast_delete_named_function(NamedFunction* namedFunction)
 
 NamedFunctionList* ast_new_named_function_node(NamedFunction* function)
 {
-    NamedFunctionList* list = malloc(sizeof(NamedFunctionList));
+    NamedFunctionList* list = xmalloc(sizeof(NamedFunctionList));
     if (!list) {
         return NULL;
     }
@@ -1383,7 +1384,7 @@ size_t ast_named_function_list_length(NamedFunctionList* list)
 
 Method* ast_new_method(bool isStatic, NamedFunction* namedFunction)
 {
-    Method* method = malloc(sizeof(Method));
+    Method* method = xmalloc(sizeof(Method));
     if (!method) {
         return NULL;
     }
@@ -1401,7 +1402,7 @@ void ast_delete_method(Method* method)
 
 MethodList* ast_new_method_node(Method* method)
 {
-    MethodList* list = malloc(sizeof(MethodList));
+    MethodList* list = xmalloc(sizeof(MethodList));
     if (!list) {
         return NULL;
     }
@@ -1452,7 +1453,7 @@ size_t ast_method_list_length(MethodList* list)
 
 DeclarationList* ast_new_declaration_node(Declaration* declaration)
 {
-    DeclarationList* list = malloc(sizeof(DeclarationList));
+    DeclarationList* list = xmalloc(sizeof(DeclarationList));
     if (!list) {
         return NULL;
     }
@@ -1503,7 +1504,7 @@ size_t ast_declaration_list_length(DeclarationList* list)
 
 VariableTarget* ast_new_single_variable_target(Token single)
 {
-    VariableTarget* target = malloc(sizeof(VariableTarget));
+    VariableTarget* target = xmalloc(sizeof(VariableTarget));
     if (!target) {
         return NULL;
     }
@@ -1515,7 +1516,7 @@ VariableTarget* ast_new_single_variable_target(Token single)
 
 VariableTarget* ast_new_unpack_variable_target(ParameterList* unpack)
 {
-    VariableTarget* target = malloc(sizeof(VariableTarget));
+    VariableTarget* target = xmalloc(sizeof(VariableTarget));
     if (!target) {
         return NULL;
     }
@@ -1537,7 +1538,7 @@ void ast_delete_variable_target(VariableTarget* target)
 
 AssignmentTarget* ast_new_single_assignment_target(Expression* single)
 {
-    AssignmentTarget* target = malloc(sizeof(AssignmentTarget));
+    AssignmentTarget* target = xmalloc(sizeof(AssignmentTarget));
     if (!target) {
         return NULL;
     }
@@ -1549,7 +1550,7 @@ AssignmentTarget* ast_new_single_assignment_target(Expression* single)
 
 AssignmentTarget* ast_new_unpack_assignment_target(ExpressionList* unpack)
 {
-    AssignmentTarget* target = malloc(sizeof(AssignmentTarget));
+    AssignmentTarget* target = xmalloc(sizeof(AssignmentTarget));
     if (!target) {
         return NULL;
     }

@@ -37,7 +37,7 @@ Although this is only a toy language, it supports a decent range of features for
 * Coroutines
 * Modules
 
-Some features are not fully complete. For instance, null safety doesn't work with compound assignments, and the iterator system is very basic. Quite a few syntax decisions were made hastily, as much bigger priority was given to testing out ideas - coroutines are a good example of that. Still, there was a lot of work involved in implementing these, and I hope that some people may find it interesting.
+Some features are not fully complete. For instance, null safety doesn't work with compound assignments, and the iterator protocol is very basic. Quite a few syntax decisions were made hastily, as much bigger priority was given to testing out ideas - coroutines are a good example of that. Still, there was a lot of work involved in implementing these, and I hope that some people may find it interesting.
 
 For more details, see example programs.
 
@@ -58,7 +58,7 @@ Once the build went successfully, run the resulting executable from command prom
 print "Hello, World!";
 ```
 
-The interpreter should simply print the line "Hello, World!" back to you.
+The interpreter should simply print the line `"Hello, World!"` back to you.
 
 ## Plans
 
