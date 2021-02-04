@@ -4,7 +4,7 @@
 #include "memory.h"
 #include "vm.h"
 
-void chunk_init(Chunk* chunk)
+void Chunk_Init(Chunk* chunk)
 {
     chunk->count = 0;
     chunk->capacity = 0;
@@ -14,12 +14,12 @@ void chunk_init(Chunk* chunk)
     VECTOR_INIT(ValueArray, &chunk->constants);
 }
 
-void chunk_free(GC* gc, Chunk* chunk)
+void Chunk_Free(GC* gc, Chunk* chunk)
 {
     FREE_ARRAY(gc, uint8_t, chunk->code, chunk->capacity);
     VECTOR_FREE(gc, LineArray, &chunk->lines, Line);
     VECTOR_FREE(gc, ValueArray, &chunk->constants, Value);
-    chunk_init(chunk);
+    Chunk_Init(chunk);
 }
 
 static void append_line(VM* vm, LineArray* array, int line)
@@ -35,7 +35,7 @@ static void append_line(VM* vm, LineArray* array, int line)
     VECTOR_PUSH(&vm->gc, LineArray, array, Line, ((Line) { .number = line, .count = 1 }));
 }
 
-void chunk_write(VM* vm, Chunk* chunk, uint8_t byte, int line)
+void Chunk_Write(VM* vm, Chunk* chunk, uint8_t byte, int line)
 {
     if (chunk->count >= chunk->capacity) {
         size_t oldCapacity = chunk->capacity;
@@ -49,15 +49,15 @@ void chunk_write(VM* vm, Chunk* chunk, uint8_t byte, int line)
     append_line(vm, &chunk->lines, line);
 }
 
-uint8_t chunk_add_constant(VM* vm, Chunk* chunk, Value constant)
+uint8_t Chunk_AddConst(VM* vm, Chunk* chunk, Value constant)
 {
-    vm_push_temporary(vm, constant);
+    Vm_PushTemporary(vm, constant);
     VECTOR_PUSH(&vm->gc, ValueArray, &chunk->constants, Value, constant);
-    vm_pop_temporary(vm);
+    Vm_PopTemporary(vm);
     return (uint8_t)(chunk->constants.count - 1);
 }
 
-int chunk_get_line(Chunk* chunk, size_t offset)
+int Chunk_GetLine(Chunk* chunk, size_t offset)
 {
     size_t index = 0;
     size_t span = 0;

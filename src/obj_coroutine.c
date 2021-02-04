@@ -38,7 +38,7 @@ static bool coroutine_function_call(Object* callee, uint8_t argCount, VM* vm)
 {
     ObjectClosure* closure = AS_COROUTINE_FUNCTION(callee)->closure;
     if (argCount != closure->function->arity) {
-        runtime_error(vm, "Expected %d arguments but got %d.", closure->function->arity, argCount);
+        Vm_RuntimeError(vm, "Expected %d arguments but got %d.", closure->function->arity, argCount);
         return false;
     }
 
@@ -115,12 +115,12 @@ static void push_call_frame(ObjectCoroutine* coroutine, ObjectClosure* closure, 
 static bool call_routine(VM* vm, ObjectCoroutine* coroutine, ObjectClosure* closure, uint8_t argCount)
 {
     if (argCount != closure->function->arity) {
-        runtime_error(vm, "Expected %d arguments but got %d", closure->function->arity, argCount);
+        Vm_RuntimeError(vm, "Expected %d arguments but got %d", closure->function->arity, argCount);
         return false;
     }
 
     if (coroutine->frameCount == FRAMES_MAX) {
-        runtime_error(vm, "Stack overflow.");
+        Vm_RuntimeError(vm, "Stack overflow.");
         return false;
     }
 
@@ -155,24 +155,24 @@ static void coroutine_print(Object* object)
 static bool coroutine_call(Object* callee, uint8_t argCount, VM* vm)
 {
     if (argCount > 1) {
-        runtime_error(vm, "Expected 0 or 1 argument but got %d.", argCount);
+        Vm_RuntimeError(vm, "Expected 0 or 1 argument but got %d.", argCount);
         return false;
     }
 
     ObjectCoroutine* coroutine = AS_COROUTINE(callee);
     if (Coroutine_IsDone(coroutine)) {
-        runtime_error(vm, "Cannot resume coroutine that has already finished.");
+        Vm_RuntimeError(vm, "Cannot resume coroutine that has already finished.");
         return false;
     }
 
-    Value value = argCount == 1 ? vm_pop(vm) : NIL_VAL();
-    vm_pop(vm);
+    Value value = argCount == 1 ? Vm_Pop(vm) : NIL_VAL();
+    Vm_Pop(vm);
 
     coroutine->transfer = vm->coroutine;
     vm->coroutine = coroutine;
 
     if (coroutine->started) {
-        vm_push(vm, value);
+        Vm_Push(vm, value);
     }
 
     coroutine->started = true;
@@ -264,12 +264,12 @@ ObjectCoroutine* Coroutine_NewFromStack(VM* vm, ObjectClosure* closure, Value* s
 bool Coroutine_Call(VM* vm, ObjectCoroutine* coroutine, ObjectClosure* callee, uint8_t argCount)
 {
     if (argCount != callee->function->arity) {
-        runtime_error(vm, "Expected %d arguments but got %d", callee->function->arity, argCount);
+        Vm_RuntimeError(vm, "Expected %d arguments but got %d", callee->function->arity, argCount);
         return false;
     }
 
     if (coroutine->frameCount == FRAMES_MAX) {
-        runtime_error(vm, "Stack overflow.");
+        Vm_RuntimeError(vm, "Stack overflow.");
         return false;
     }
 
@@ -280,13 +280,13 @@ bool Coroutine_Call(VM* vm, ObjectCoroutine* coroutine, ObjectClosure* callee, u
 bool Coroutine_CallValue(VM* vm, ObjectCoroutine* coroutine, Value callee, uint8_t argCount)
 {
     if (!IS_OBJ(callee)) {
-        runtime_error(vm, "Can only call objects.");
+        Vm_RuntimeError(vm, "Can only call objects.");
         return false;
     }
 
     Object* object = AS_OBJ(callee);
     if (!OBJ_TYPE(object)->Call) {
-        runtime_error(vm, "Objects of type '%s' are not callable.", OBJ_TYPE(object)->name);
+        Vm_RuntimeError(vm, "Objects of type '%s' are not callable.", OBJ_TYPE(object)->name);
         return false;
     }
 

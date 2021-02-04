@@ -4,13 +4,13 @@
 #include "object.h"
 #include "obj_function.h"
 
-void disassemble_chunk(Chunk* chunk, const char* name)
+void Disassembler_DisChunk(Chunk* chunk, const char* name)
 {
     printf("Chunk: %s\n", name);
 
     uint32_t offset = 0;
     while (offset < (uint32_t)chunk->count) {
-        offset = disassemble_instruction(chunk, offset);
+        offset = Disassembler_DisInstruction(chunk, offset);
     }
 }
 
@@ -24,7 +24,7 @@ static uint32_t constant_instruction(const char* name, Chunk* chunk, uint32_t of
 {
     uint8_t location = chunk->code[offset + 1];
     printf("%-22s %4d '", name, location);
-    print_value(chunk->constants.data[location]);
+    Value_Print(chunk->constants.data[location]);
     printf("'\n");
     return offset + 2;
 }
@@ -41,7 +41,7 @@ static uint32_t invoke_instruction(const char* name, Chunk* chunk, uint32_t offs
     uint8_t constant = chunk->code[offset + 1];
     uint8_t argCount = chunk->code[offset + 2];
     printf("%-22s %4d '", name, constant);
-    print_value(chunk->constants.data[constant]);
+    Value_Print(chunk->constants.data[constant]);
     printf("' (%d args)\n", argCount);
     return offset + 3;
 }
@@ -60,7 +60,7 @@ static uint32_t closure_instruction(Chunk* chunk, uint32_t offset)
 
     uint8_t constant = chunk->code[currentOffset++];
     printf("%-22s %4d ", "CLOSURE", constant);
-    print_value(chunk->constants.data[constant]);
+    Value_Print(chunk->constants.data[constant]);
     printf("\n");
 
     ObjectFunction* function = VAL_AS_FUNCTION(chunk->constants.data[constant]);
@@ -79,12 +79,12 @@ static uint32_t unknown_instruction(uint8_t instruction, uint32_t offset)
     return offset + 1;
 }
 
-uint32_t disassemble_instruction(Chunk* chunk, uint32_t offset)
+uint32_t Disassembler_DisInstruction(Chunk* chunk, uint32_t offset)
 {
     printf("%04d ", offset);
 
-    uint32_t previousLine = chunk_get_line(chunk, offset - 1);
-    uint32_t currentLine = chunk_get_line(chunk, offset);
+    uint32_t previousLine = Chunk_GetLine(chunk, offset - 1);
+    uint32_t currentLine = Chunk_GetLine(chunk, offset);
 
     if (offset > 0 && currentLine == previousLine) {
         printf("   | ");

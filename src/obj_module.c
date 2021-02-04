@@ -74,18 +74,18 @@ ObjectModule* Module_FromFullPath(VM* vm, const char* fullPath)
     char* dest = strrchr(fullPath, '/');
     if (!dest) {
         path = String_MakeEmpty(vm);
-        vm_push_temporary(vm, OBJ_VAL(path));
+        Vm_PushTemporary(vm, OBJ_VAL(path));
         name = String_Copy(vm, fullPath, strlen(fullPath));
-        vm_push_temporary(vm, OBJ_VAL(name));
+        Vm_PushTemporary(vm, OBJ_VAL(name));
     } else {
         path = String_Copy(vm, fullPath, strlen(fullPath) - strlen(dest) + 1);
-        vm_push_temporary(vm, OBJ_VAL(path));
+        Vm_PushTemporary(vm, OBJ_VAL(path));
         name = String_Copy(vm, dest + 1, strlen(dest + 1));
-        vm_push_temporary(vm, OBJ_VAL(name));
+        Vm_PushTemporary(vm, OBJ_VAL(name));
     }
 
     ObjectModule* mod = Module_New(vm, path, name);
-    vm_pop_temporary(vm);
-    vm_pop_temporary(vm);
+    Vm_PopTemporary(vm);
+    Vm_PopTemporary(vm);
     return mod;
 }

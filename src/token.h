@@ -117,9 +117,9 @@ typedef struct {
     int line;
 } Token;
 
-bool lexemes_equal(Token* a, Token* b);
-Token synthetic_token(const char* lexeme);
+bool Token_LexemesEqual(Token* a, Token* b);
 
-Token empty_token();
+Token Token_Synthetic(const char* lexeme);
+Token Token_Empty();
 
 #endif

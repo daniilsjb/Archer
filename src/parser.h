@@ -3,6 +3,6 @@
 
 #include "ast.h"
 
-AST* parse(const char* source);
+AST* Parser_Parse(const char* source);
 
 #endif

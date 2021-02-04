@@ -24,12 +24,12 @@ typedef struct {
     ValueArray constants;
 } Chunk;
 
-void chunk_init(Chunk* chunk);
-void chunk_free(GC* gc, Chunk* chunk);
+void Chunk_Init(Chunk* chunk);
+void Chunk_Free(GC* gc, Chunk* chunk);
 
-void chunk_write(VM* vm, Chunk* chunk, uint8_t byte, int line);
-uint8_t chunk_add_constant(VM* vm, Chunk* chunk, Value constant);
+void Chunk_Write(VM* vm, Chunk* chunk, uint8_t byte, int line);
+uint8_t Chunk_AddConst(VM* vm, Chunk* chunk, Value constant);
 
-int chunk_get_line(Chunk* chunk, size_t offset);
+int Chunk_GetLine(Chunk* chunk, size_t offset);
 
 #endif

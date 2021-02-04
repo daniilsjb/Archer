@@ -167,7 +167,7 @@ static ObjectIterator* string_make_iterator(Object* object, VM* vm)
 static void string_free(Object* object, GC* gc)
 {
     ObjectString* string = AS_STRING(object);
-    table_free(gc, &string->base.fields);
+    Table_Free(gc, &string->base.fields);
     Mem_Deallocate(gc, string, sizeof(ObjectString) + string->length + 1);
 }
 
@@ -217,7 +217,7 @@ ObjectString* String_New(VM* vm, size_t length)
 ObjectString* String_Copy(VM* vm, const char* chars, size_t length)
 {
     uint32_t hash = hash_cstring(chars, length);
-    ObjectString* interned = table_find_string(&vm->strings, chars, length, hash);
+    ObjectString* interned = Table_FindString(&vm->strings, chars, length, hash);
     if (interned != NULL) {
         return interned;
     }
@@ -228,9 +228,9 @@ ObjectString* String_Copy(VM* vm, const char* chars, size_t length)
     string->chars[length] = '\0';
     string->hash = hash;
 
-    vm_push_temporary(vm, OBJ_VAL(string));
-    table_put(vm, &vm->strings, OBJ_VAL(string), NIL_VAL());
-    vm_pop_temporary(vm);
+    Vm_PushTemporary(vm, OBJ_VAL(string));
+    Table_Put(vm, &vm->strings, OBJ_VAL(string), NIL_VAL());
+    Vm_PopTemporary(vm);
 
     return string;
 }
@@ -272,16 +272,16 @@ ObjectString* String_Concatenate(VM* vm, ObjectString* a, ObjectString* b)
     string->chars[length] = '\0';
     string->hash = hash_cstring(string->chars, string->length);
 
-    ObjectString* interned = table_find_string(&vm->strings, string->chars, length, string->hash);
+    ObjectString* interned = Table_FindString(&vm->strings, string->chars, length, string->hash);
     if (interned != NULL) {
         vm->gc.allocatedObjects = vm->gc.allocatedObjects->next;
         Mem_Deallocate(&vm->gc, string, sizeof(ObjectString) + string->length + 1);
 
         return interned;
     } else {
-        vm_push_temporary(vm, OBJ_VAL(string));
-        table_put(vm, &vm->strings, OBJ_VAL(string), NIL_VAL());
-        vm_pop_temporary(vm);
+        Vm_PushTemporary(vm, OBJ_VAL(string));
+        Table_Put(vm, &vm->strings, OBJ_VAL(string), NIL_VAL());
+        Vm_PopTemporary(vm);
 
         return string;
     }

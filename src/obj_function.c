@@ -43,7 +43,7 @@ static void function_traverse(Object* object, GC* gc)
 
 static void function_free(Object* object, GC* gc)
 {
-    chunk_free(gc, &AS_FUNCTION(object)->chunk);
+    Chunk_Free(gc, &AS_FUNCTION(object)->chunk);
     Object_Deallocate(gc, object);
 }
 
@@ -79,7 +79,7 @@ ObjectFunction* Function_New(VM* vm)
     function->arity = 0;
     function->upvalueCount = 0;
     function->name = NULL;
-    chunk_init(&function->chunk);
+    Chunk_Init(&function->chunk);
     return function;
 }
 
@@ -146,7 +146,7 @@ static void closure_print(Object* object)
 
 static bool closure_call(Object* callee, uint8_t argCount, VM* vm)
 {
-    return call(vm, AS_CLOSURE(callee), argCount);
+    return Vm_Call(vm, AS_CLOSURE(callee), argCount);
 }
 
 static void closure_traverse(Object* object, GC* gc)

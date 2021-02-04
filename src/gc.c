@@ -136,7 +136,7 @@ static void mark_roots(GC* gc)
     GC_MarkObject(gc, (Object*)vm->tupleType);
 
     GC_MarkObject(gc, (Object*)vm->initString);
-    mark_compiler_roots(gc->vm);
+    Compiler_MarkRoots(gc->vm);
 }
 
 static void trace_references(GC* gc)
@@ -153,7 +153,7 @@ void table_remove_white_strings(Table* table)
     for (int i = 0; i <= table->capacityMask; i++) {
         Entry* entry = &table->entries[i];
         if (!IS_UNDEFINED(entry->key) && !VAL_AS_STRING(entry->key)->base.marked) {
-            table_remove(table, entry->key);
+            Table_Remove(table, entry->key);
         }
     }
 }

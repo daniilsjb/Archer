@@ -4,7 +4,7 @@
 #include "ast.h"
 #include "memory.h"
 
-AST* ast_new_tree(DeclarationList* body)
+AST* Ast_NewTree(DeclarationList* body)
 {
     AST* ast = xmalloc(sizeof(AST));
     if (!ast) {
@@ -15,32 +15,32 @@ AST* ast_new_tree(DeclarationList* body)
     return ast;
 }
 
-void ast_delete_tree(AST* ast)
+void Ast_DeleteTree(AST* ast)
 {
     if (!ast) {
         return;
     }
 
-    ast_delete_declaration_list(ast->body);
+    Ast_DeleteDeclarationList(ast->body);
     free(ast);
 }
 
-void ast_delete_declaration(Declaration* declaration)
+void Ast_DeleteDeclaration(Declaration* declaration)
 {
     if (!declaration) {
         return;
     }
 
     switch (declaration->type) {
-        case DECL_IMPORT: ast_delete_import_decl(declaration); return;
-        case DECL_CLASS: ast_delete_class_decl(declaration); return;
-        case DECL_FUNCTION: ast_delete_function_decl(declaration); return;
-        case DECL_VARIABLE: ast_delete_variable_decl(declaration); return;
-        case DECL_STATEMENT: ast_delete_statement_decl(declaration); return;
+        case DECL_IMPORT: Ast_DeleteImportDecl(declaration); return;
+        case DECL_CLASS: Ast_DeleteClassDecl(declaration); return;
+        case DECL_FUNCTION: Ast_DeleteFunctionDecl(declaration); return;
+        case DECL_VARIABLE: Ast_DeleteVariableDecl(declaration); return;
+        case DECL_STATEMENT: Ast_DeleteStatementDecl(declaration); return;
     }
 }
 
-Declaration* ast_new_import_all_decl(Expression* moduleName)
+Declaration* Ast_NewImportAllDecl(Expression* moduleName)
 {
     Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
@@ -53,7 +53,7 @@ Declaration* ast_new_import_all_decl(Expression* moduleName)
     return decl;
 }
 
-Declaration* ast_new_import_as_decl(Expression* moduleName, Token alias)
+Declaration* Ast_NewImportAsDecl(Expression* moduleName, Token alias)
 {
     Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
@@ -67,7 +67,7 @@ Declaration* ast_new_import_as_decl(Expression* moduleName, Token alias)
     return decl;
 }
 
-Declaration* ast_new_import_for_decl(Expression* moduleName, ParameterList* names)
+Declaration* Ast_NewImportForDecl(Expression* moduleName, ParameterList* names)
 {
     Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
@@ -81,20 +81,20 @@ Declaration* ast_new_import_for_decl(Expression* moduleName, ParameterList* name
     return decl;
 }
 
-void ast_delete_import_decl(Declaration* declaration)
+void Ast_DeleteImportDecl(Declaration* declaration)
 {
-    ast_delete_expression(declaration->as.importDecl.moduleName);
+    Ast_DeleteExpression(declaration->as.importDecl.moduleName);
 
     switch (declaration->as.importDecl.type) {
         case IMPORT_ALL: break;
         case IMPORT_AS: break;
-        case IMPORT_FOR: ast_delete_parameter_list(declaration->as.importDecl.with.names);
+        case IMPORT_FOR: Ast_DeleteParameterList(declaration->as.importDecl.with.names);
     }
 
     free(declaration);
 }
 
-Declaration* ast_new_class_decl(Token identifier, Token superclass, MethodList* body)
+Declaration* Ast_NewClassDecl(Token identifier, Token superclass, MethodList* body)
 {
     Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
@@ -108,13 +108,13 @@ Declaration* ast_new_class_decl(Token identifier, Token superclass, MethodList* 
     return decl;
 }
 
-void ast_delete_class_decl(Declaration* declaration)
+void Ast_DeleteClassDecl(Declaration* declaration)
 {
-    ast_delete_method_list(declaration->as.classDecl.body);
+    Ast_DeleteMethodList(declaration->as.classDecl.body);
     free(declaration);
 }
 
-Declaration* ast_new_function_decl(NamedFunction* function)
+Declaration* Ast_NewFunctionDecl(NamedFunction* function)
 {
     Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
@@ -126,13 +126,13 @@ Declaration* ast_new_function_decl(NamedFunction* function)
     return decl;
 }
 
-void ast_delete_function_decl(Declaration* declaration)
+void Ast_DeleteFunctionDecl(Declaration* declaration)
 {
-    ast_delete_named_function(declaration->as.functionDecl.function);
+    Ast_DeleteNamedFunction(declaration->as.functionDecl.function);
     free(declaration);
 }
 
-Declaration* ast_new_variable_decl(VariableTarget* target, Expression* value)
+Declaration* Ast_NewVariableDecl(VariableTarget* target, Expression* value)
 {
     Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
@@ -145,14 +145,14 @@ Declaration* ast_new_variable_decl(VariableTarget* target, Expression* value)
     return decl;
 }
 
-void ast_delete_variable_decl(Declaration* declaration)
+void Ast_DeleteVariableDecl(Declaration* declaration)
 {
-    ast_delete_variable_target(declaration->as.variableDecl.target);
-    ast_delete_expression(declaration->as.variableDecl.value);
+    Ast_DeleteVariableTarget(declaration->as.variableDecl.target);
+    Ast_DeleteExpression(declaration->as.variableDecl.value);
     free(declaration);
 }
 
-Declaration* ast_new_statement_decl(Statement* statement)
+Declaration* Ast_NewStatementDecl(Statement* statement)
 {
     Declaration* decl = xmalloc(sizeof(Declaration));
     if (!decl) {
@@ -164,35 +164,35 @@ Declaration* ast_new_statement_decl(Statement* statement)
     return decl;
 }
 
-void ast_delete_statement_decl(Declaration* declaration)
+void Ast_DeleteStatementDecl(Declaration* declaration)
 {
-    ast_delete_statement(declaration->as.statement);
+    Ast_DeleteStatement(declaration->as.statement);
     free(declaration);
 }
 
-void ast_delete_statement(Statement* statement)
+void Ast_DeleteStatement(Statement* statement)
 {
     if (!statement) {
         return;
     }
 
     switch (statement->type) {
-        case STMT_FOR: ast_delete_for_stmt(statement); return;
-        case STMT_FOR_IN: ast_delete_for_in_stmt(statement); return;
-        case STMT_WHILE: ast_delete_while_stmt(statement); return;
-        case STMT_DO_WHILE: ast_delete_do_while_stmt(statement); return;
-        case STMT_BREAK: ast_delete_break_stmt(statement); return;
-        case STMT_CONTINUE: ast_delete_continue_stmt(statement); return;
-        case STMT_WHEN: ast_delete_when_stmt(statement); return;
-        case STMT_IF: ast_delete_if_stmt(statement); return;
-        case STMT_RETURN: ast_delete_return_stmt(statement); return;
-        case STMT_PRINT: ast_delete_print_stmt(statement); return;
-        case STMT_BLOCK: ast_delete_block_stmt(statement); return;
-        case STMT_EXPRESSION: ast_delete_expression_stmt(statement); return;
+        case STMT_FOR: Ast_DeleteForStmt(statement); return;
+        case STMT_FOR_IN: Ast_DeleteForInStmt(statement); return;
+        case STMT_WHILE: ast_DeleteWhileStmt(statement); return;
+        case STMT_DO_WHILE: Ast_DeleteDoWhileStmt(statement); return;
+        case STMT_BREAK: Ast_DeleteBreakStmt(statement); return;
+        case STMT_CONTINUE: Ast_DeleteContinueStmt(statement); return;
+        case STMT_WHEN: Ast_DeleteWhenStmt(statement); return;
+        case STMT_IF: Ast_DeleteIfStmt(statement); return;
+        case STMT_RETURN: Ast_DeleteReturnStmt(statement); return;
+        case STMT_PRINT: Ast_DeletePrintStmt(statement); return;
+        case STMT_BLOCK: Ast_DeleteBlockStmt(statement); return;
+        case STMT_EXPRESSION: Ast_DeleteExpressionStmt(statement); return;
     }
 }
 
-Statement* ast_new_for_stmt(Declaration* initializer, Expression* condition, Expression* increment, Statement* body)
+Statement* Ast_NewForStmt(Declaration* initializer, Expression* condition, Expression* increment, Statement* body)
 {
     Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
@@ -207,16 +207,16 @@ Statement* ast_new_for_stmt(Declaration* initializer, Expression* condition, Exp
     return stmt;
 }
 
-void ast_delete_for_stmt(Statement* statement)
+void Ast_DeleteForStmt(Statement* statement)
 {
-    ast_delete_declaration(statement->as.forStmt.initializer);
-    ast_delete_expression(statement->as.forStmt.condition);
-    ast_delete_expression(statement->as.forStmt.increment);
-    ast_delete_statement(statement->as.forStmt.body);
+    Ast_DeleteDeclaration(statement->as.forStmt.initializer);
+    Ast_DeleteExpression(statement->as.forStmt.condition);
+    Ast_DeleteExpression(statement->as.forStmt.increment);
+    Ast_DeleteStatement(statement->as.forStmt.body);
     free(statement);
 }
 
-Statement* ast_new_for_in_stmt(Declaration* element, Expression* collection, Statement* body)
+Statement* Ast_NewForInStmt(Declaration* element, Expression* collection, Statement* body)
 {
     Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
@@ -230,15 +230,15 @@ Statement* ast_new_for_in_stmt(Declaration* element, Expression* collection, Sta
     return stmt;
 }
 
-void ast_delete_for_in_stmt(Statement* statement)
+void Ast_DeleteForInStmt(Statement* statement)
 {
-    ast_delete_declaration(statement->as.forInStmt.element);
-    ast_delete_expression(statement->as.forInStmt.collection);
-    ast_delete_statement(statement->as.forInStmt.body);
+    Ast_DeleteDeclaration(statement->as.forInStmt.element);
+    Ast_DeleteExpression(statement->as.forInStmt.collection);
+    Ast_DeleteStatement(statement->as.forInStmt.body);
     free(statement);
 }
 
-Statement* ast_new_while_stmt(Expression* condition, Statement* body)
+Statement* Ast_NewWhileStmt(Expression* condition, Statement* body)
 {
     Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
@@ -251,14 +251,14 @@ Statement* ast_new_while_stmt(Expression* condition, Statement* body)
     return stmt;
 }
 
-void ast_delete_while_stmt(Statement* statement)
+void ast_DeleteWhileStmt(Statement* statement)
 {
-    ast_delete_expression(statement->as.whileStmt.condition);
-    ast_delete_statement(statement->as.whileStmt.body);
+    Ast_DeleteExpression(statement->as.whileStmt.condition);
+    Ast_DeleteStatement(statement->as.whileStmt.body);
     free(statement);
 }
 
-Statement* ast_new_do_while_stmt(Statement* body, Expression* condition)
+Statement* Ast_NewDoWhileStmt(Statement* body, Expression* condition)
 {
     Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
@@ -271,14 +271,14 @@ Statement* ast_new_do_while_stmt(Statement* body, Expression* condition)
     return stmt;
 }
 
-void ast_delete_do_while_stmt(Statement* statement)
+void Ast_DeleteDoWhileStmt(Statement* statement)
 {
-    ast_delete_statement(statement->as.doWhileStmt.body);
-    ast_delete_expression(statement->as.doWhileStmt.condition);
+    Ast_DeleteStatement(statement->as.doWhileStmt.body);
+    Ast_DeleteExpression(statement->as.doWhileStmt.condition);
     free(statement);
 }
 
-Statement* ast_new_break_stmt(Token keyword)
+Statement* Ast_NewBreakStmt(Token keyword)
 {
     Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
@@ -290,12 +290,12 @@ Statement* ast_new_break_stmt(Token keyword)
     return stmt;
 }
 
-void ast_delete_break_stmt(Statement* statement)
+void Ast_DeleteBreakStmt(Statement* statement)
 {
     free(statement);
 }
 
-Statement* ast_new_continue_stmt(Token keyword)
+Statement* Ast_NewContinueStmt(Token keyword)
 {
     Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
@@ -307,12 +307,12 @@ Statement* ast_new_continue_stmt(Token keyword)
     return stmt;
 }
 
-void ast_delete_continue_stmt(Statement* statement)
+void Ast_DeleteContinueStmt(Statement* statement)
 {
     free(statement);
 }
 
-Statement* ast_new_when_stmt(Expression* control, WhenEntryList* entries, Statement* elseBranch)
+Statement* Ast_NewWhenStmt(Expression* control, WhenEntryList* entries, Statement* elseBranch)
 {
     Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
@@ -326,15 +326,15 @@ Statement* ast_new_when_stmt(Expression* control, WhenEntryList* entries, Statem
     return stmt;
 }
 
-void ast_delete_when_stmt(Statement* statement)
+void Ast_DeleteWhenStmt(Statement* statement)
 {
-    ast_delete_expression(statement->as.whenStmt.control);
-    ast_delete_when_entry_list(statement->as.whenStmt.entries);
-    ast_delete_statement(statement->as.whenStmt.elseBranch);
+    Ast_DeleteExpression(statement->as.whenStmt.control);
+    Ast_DeleteWhenEntryList(statement->as.whenStmt.entries);
+    Ast_DeleteStatement(statement->as.whenStmt.elseBranch);
     free(statement);
 }
 
-Statement* ast_new_if_stmt(Expression* condition, Statement* thenBranch, Statement* elseBranch)
+Statement* Ast_NewIfStmt(Expression* condition, Statement* thenBranch, Statement* elseBranch)
 {
     Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
@@ -348,15 +348,15 @@ Statement* ast_new_if_stmt(Expression* condition, Statement* thenBranch, Stateme
     return stmt;
 }
 
-void ast_delete_if_stmt(Statement* statement)
+void Ast_DeleteIfStmt(Statement* statement)
 {
-    ast_delete_expression(statement->as.ifStmt.condition);
-    ast_delete_statement(statement->as.ifStmt.thenBranch);
-    ast_delete_statement(statement->as.ifStmt.elseBranch);
+    Ast_DeleteExpression(statement->as.ifStmt.condition);
+    Ast_DeleteStatement(statement->as.ifStmt.thenBranch);
+    Ast_DeleteStatement(statement->as.ifStmt.elseBranch);
     free(statement);
 }
 
-Statement* ast_new_return_stmt(Token keyword, Expression* expression)
+Statement* Ast_NewReturnStmt(Token keyword, Expression* expression)
 {
     Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
@@ -369,13 +369,13 @@ Statement* ast_new_return_stmt(Token keyword, Expression* expression)
     return stmt;
 }
 
-void ast_delete_return_stmt(Statement* statement)
+void Ast_DeleteReturnStmt(Statement* statement)
 {
-    ast_delete_expression(statement->as.returnStmt.expression);
+    Ast_DeleteExpression(statement->as.returnStmt.expression);
     free(statement);
 }
 
-Statement* ast_new_print_stmt(Expression* expression)
+Statement* Ast_NewPrintStmt(Expression* expression)
 {
     Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
@@ -387,13 +387,13 @@ Statement* ast_new_print_stmt(Expression* expression)
     return stmt;
 }
 
-void ast_delete_print_stmt(Statement* statement)
+void Ast_DeletePrintStmt(Statement* statement)
 {
-    ast_delete_expression(statement->as.printStmt.expression);
+    Ast_DeleteExpression(statement->as.printStmt.expression);
     free(statement);
 }
 
-Statement* ast_new_block_stmt(Block* block)
+Statement* Ast_NewBlockStmt(Block* block)
 {
     Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
@@ -405,13 +405,13 @@ Statement* ast_new_block_stmt(Block* block)
     return stmt;
 }
 
-void ast_delete_block_stmt(Statement* statement)
+void Ast_DeleteBlockStmt(Statement* statement)
 {
-    ast_delete_block(statement->as.blockStmt.block);
+    Ast_DeleteBlock(statement->as.blockStmt.block);
     free(statement);
 }
 
-Statement* ast_new_expression_stmt(Expression* expression)
+Statement* Ast_NewExpressionStmt(Expression* expression)
 {
     Statement* stmt = xmalloc(sizeof(Statement));
     if (!stmt) {
@@ -423,46 +423,46 @@ Statement* ast_new_expression_stmt(Expression* expression)
     return stmt;
 }
 
-void ast_delete_expression_stmt(Statement* statement)
+void Ast_DeleteExpressionStmt(Statement* statement)
 {
-    ast_delete_expression(statement->as.expression);
+    Ast_DeleteExpression(statement->as.expression);
     free(statement);
 }
 
-void ast_delete_expression(Expression* expression)
+void Ast_DeleteExpression(Expression* expression)
 {
     if (!expression) {
         return;
     }
 
     switch (expression->type) {
-        case EXPR_CALL: ast_delete_call_expr(expression); return;
-        case EXPR_PROPERTY: ast_delete_property_expr(expression); return;
-        case EXPR_SUBSCRIPT: ast_delete_subscript_expr(expression); return;
-        case EXPR_SUPER: ast_delete_super_expr(expression); return;
-        case EXPR_ASSIGNMENT: ast_delete_assignment_expr(expression); return;
-        case EXPR_COMPOUND_ASSIGNMNET: ast_delete_compound_assignment_expr(expression); return;
-        case EXPR_COROUTINE: ast_delete_coroutine_expr(expression); return;
-        case EXPR_YIELD: ast_delete_yield_expr(expression); return;
-        case EXPR_POSTFIX_INC: ast_delete_postfix_inc_expr(expression); return;
-        case EXPR_PREFIX_INC: ast_delete_prefix_inc_expr(expression); return;
-        case EXPR_LOGICAL: ast_delete_logical_expr(expression); return;
-        case EXPR_CONDITIONAL: ast_delete_conditional_expr(expression); return;
-        case EXPR_ELVIS: ast_delete_elvis_expr(expression); return;
-        case EXPR_BINARY: ast_delete_binary_expr(expression); return;
-        case EXPR_UNARY: ast_delete_unary_expr(expression); return;
-        case EXPR_LITERAL: ast_delete_literal_expr(expression); return;
-        case EXPR_STRING_INTERP: ast_delete_string_interp_expr(expression); return;
-        case EXPR_RANGE: ast_delete_range_expr(expression); return;
-        case EXPR_LAMBDA: ast_delete_lambda_expr(expression); return;
-        case EXPR_LIST: ast_delete_list_expr(expression); return;
-        case EXPR_MAP: ast_delete_map_expr(expression); return;
-        case EXPR_TUPLE: ast_delete_tuple_expr(expression); return;
-        case EXPR_IDENTIFIER: ast_delete_identifier_expr(expression); return;
+        case EXPR_CALL: Ast_DeleteCallExpr(expression); return;
+        case EXPR_PROPERTY: Ast_DeletePropertyExpr(expression); return;
+        case EXPR_SUBSCRIPT: Ast_DeleteSubscriptExpr(expression); return;
+        case EXPR_SUPER: Ast_DeleteSuperExpr(expression); return;
+        case EXPR_ASSIGNMENT: Ast_DeleteAssignmentExpr(expression); return;
+        case EXPR_COMPOUND_ASSIGNMNET: Ast_DeleteCompoundAssignmentExpr(expression); return;
+        case EXPR_COROUTINE: Ast_DeleteCoroutineExpr(expression); return;
+        case EXPR_YIELD: Ast_DeleteYieldExpr(expression); return;
+        case EXPR_POSTFIX_INC: Ast_DeletePostifxIncExpr(expression); return;
+        case EXPR_PREFIX_INC: Ast_DeletePrefixIncExpr(expression); return;
+        case EXPR_LOGICAL: Ast_DeleteLogicalExpr(expression); return;
+        case EXPR_CONDITIONAL: Ast_DeleteConditionalExpr(expression); return;
+        case EXPR_ELVIS: Ast_DeleteElvisExpr(expression); return;
+        case EXPR_BINARY: Ast_DeleteBinaryExpr(expression); return;
+        case EXPR_UNARY: Ast_DeleteUnaryExpr(expression); return;
+        case EXPR_LITERAL: Ast_DeleteLiteralExpr(expression); return;
+        case EXPR_STRING_INTERP: Ast_DeleteStringInterpExpr(expression); return;
+        case EXPR_RANGE: Ast_DeleteRangeExpr(expression); return;
+        case EXPR_LAMBDA: Ast_DeleteLambdaExpr(expression); return;
+        case EXPR_LIST: Ast_DeleteListExpr(expression); return;
+        case EXPR_MAP: Ast_DeleteMapExpr(expression); return;
+        case EXPR_TUPLE: Ast_DeleteTupleExpr(expression); return;
+        case EXPR_IDENTIFIER: Ast_DeleteIdentifierExpr(expression); return;
     }
 }
 
-Expression* ast_new_call_expr(Expression* callee, ArgumentList* arguments)
+Expression* Ast_NewCallExpr(Expression* callee, ArgumentList* arguments)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -475,14 +475,14 @@ Expression* ast_new_call_expr(Expression* callee, ArgumentList* arguments)
     return expr;
 }
 
-void ast_delete_call_expr(Expression* expression)
+void Ast_DeleteCallExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.callExpr.callee);
-    ast_delete_argument_list(expression->as.callExpr.arguments);
+    Ast_DeleteExpression(expression->as.callExpr.callee);
+    Ast_DeleteArgumentList(expression->as.callExpr.arguments);
     free(expression);
 }
 
-Expression* ast_new_property_expr(Expression* object, Token property, ExprContext context, bool safe)
+Expression* Ast_NewPropertyExpr(Expression* object, Token property, ExprContext context, bool safe)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -497,13 +497,13 @@ Expression* ast_new_property_expr(Expression* object, Token property, ExprContex
     return expr;
 }
 
-void ast_delete_property_expr(Expression* expression)
+void Ast_DeletePropertyExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.propertyExpr.object);
+    Ast_DeleteExpression(expression->as.propertyExpr.object);
     free(expression);
 }
 
-Expression* ast_new_subscript_expr(Expression* object, Expression* index, ExprContext context, bool safe)
+Expression* Ast_NewSubscriptExpr(Expression* object, Expression* index, ExprContext context, bool safe)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -518,14 +518,14 @@ Expression* ast_new_subscript_expr(Expression* object, Expression* index, ExprCo
     return expr;
 }
 
-void ast_delete_subscript_expr(Expression* expression)
+void Ast_DeleteSubscriptExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.subscriptExpr.object);
-    ast_delete_expression(expression->as.subscriptExpr.index);
+    Ast_DeleteExpression(expression->as.subscriptExpr.object);
+    Ast_DeleteExpression(expression->as.subscriptExpr.index);
     free(expression);
 }
 
-Expression* ast_new_super_expr(Token keyword, Token method)
+Expression* Ast_NewSuperExpr(Token keyword, Token method)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -538,12 +538,12 @@ Expression* ast_new_super_expr(Token keyword, Token method)
     return expr;
 }
 
-void ast_delete_super_expr(Expression* expression)
+void Ast_DeleteSuperExpr(Expression* expression)
 {
     free(expression);
 }
 
-Expression* ast_new_assignment_expr(AssignmentTarget* target, Expression* value)
+Expression* Ast_NewAssignmentExpr(AssignmentTarget* target, Expression* value)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -556,14 +556,14 @@ Expression* ast_new_assignment_expr(AssignmentTarget* target, Expression* value)
     return expr;
 }
 
-void ast_delete_assignment_expr(Expression* expression)
+void Ast_DeleteAssignmentExpr(Expression* expression)
 {
-    ast_delete_assignment_target(expression->as.assignmentExpr.target);
-    ast_delete_expression(expression->as.assignmentExpr.value);
+    Ast_DeleteAssignmentTarget(expression->as.assignmentExpr.target);
+    Ast_DeleteExpression(expression->as.assignmentExpr.value);
     free(expression);
 }
 
-Expression* ast_new_compound_assignment_expr(AssignmentTarget* target, Token op, Expression* value)
+Expression* Ast_NewCompoundAssignmentExpr(AssignmentTarget* target, Token op, Expression* value)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -577,14 +577,14 @@ Expression* ast_new_compound_assignment_expr(AssignmentTarget* target, Token op,
     return expr;
 }
 
-void ast_delete_compound_assignment_expr(Expression* expression)
+void Ast_DeleteCompoundAssignmentExpr(Expression* expression)
 {
-    ast_delete_assignment_target(expression->as.compoundAssignmentExpr.target);
-    ast_delete_expression(expression->as.compoundAssignmentExpr.value);
+    Ast_DeleteAssignmentTarget(expression->as.compoundAssignmentExpr.target);
+    Ast_DeleteExpression(expression->as.compoundAssignmentExpr.value);
     free(expression);
 }
 
-Expression* ast_new_coroutine_expr(Token keyword, Expression* expression)
+Expression* Ast_NewCoroutineExpr(Token keyword, Expression* expression)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -597,13 +597,13 @@ Expression* ast_new_coroutine_expr(Token keyword, Expression* expression)
     return expr;
 }
 
-void ast_delete_coroutine_expr(Expression* expression)
+void Ast_DeleteCoroutineExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.coroutineExpr.expression);
+    Ast_DeleteExpression(expression->as.coroutineExpr.expression);
     free(expression);
 }
 
-Expression* ast_new_yield_expr(Token keyword, Expression* expression)
+Expression* Ast_NewYieldExpr(Token keyword, Expression* expression)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -616,13 +616,13 @@ Expression* ast_new_yield_expr(Token keyword, Expression* expression)
     return expr;
 }
 
-void ast_delete_yield_expr(Expression* expression)
+void Ast_DeleteYieldExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.yieldExpr.expression);
+    Ast_DeleteExpression(expression->as.yieldExpr.expression);
     free(expression);
 }
 
-Expression* ast_new_logical_expr(Expression* left, Token op, Expression* right)
+Expression* Ast_NewLogicalExpr(Expression* left, Token op, Expression* right)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -636,14 +636,14 @@ Expression* ast_new_logical_expr(Expression* left, Token op, Expression* right)
     return expr;
 }
 
-void ast_delete_logical_expr(Expression* expression)
+void Ast_DeleteLogicalExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.logicalExpr.left);
-    ast_delete_expression(expression->as.logicalExpr.right);
+    Ast_DeleteExpression(expression->as.logicalExpr.left);
+    Ast_DeleteExpression(expression->as.logicalExpr.right);
     free(expression);
 }
 
-Expression* ast_new_conditional_expr(Expression* condition, Expression* thenBranch, Expression* elseBranch)
+Expression* Ast_NewConditionalExpr(Expression* condition, Expression* thenBranch, Expression* elseBranch)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -657,15 +657,15 @@ Expression* ast_new_conditional_expr(Expression* condition, Expression* thenBran
     return expr;
 }
 
-void ast_delete_conditional_expr(Expression* expression)
+void Ast_DeleteConditionalExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.conditionalExpr.condition);
-    ast_delete_expression(expression->as.conditionalExpr.thenBranch);
-    ast_delete_expression(expression->as.conditionalExpr.elseBranch);
+    Ast_DeleteExpression(expression->as.conditionalExpr.condition);
+    Ast_DeleteExpression(expression->as.conditionalExpr.thenBranch);
+    Ast_DeleteExpression(expression->as.conditionalExpr.elseBranch);
     free(expression);
 }
 
-Expression* ast_new_elvis_expr(Expression* left, Expression* right)
+Expression* Ast_NewElvisExpr(Expression* left, Expression* right)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -678,14 +678,14 @@ Expression* ast_new_elvis_expr(Expression* left, Expression* right)
     return expr;
 }
 
-void ast_delete_elvis_expr(Expression* expression)
+void Ast_DeleteElvisExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.elvisExpr.left);
-    ast_delete_expression(expression->as.elvisExpr.right);
+    Ast_DeleteExpression(expression->as.elvisExpr.left);
+    Ast_DeleteExpression(expression->as.elvisExpr.right);
     free(expression);
 }
 
-Expression* ast_new_binary_expr(Expression* left, Token op, Expression* right)
+Expression* Ast_NewBinaryExpr(Expression* left, Token op, Expression* right)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -699,14 +699,14 @@ Expression* ast_new_binary_expr(Expression* left, Token op, Expression* right)
     return expr;
 }
 
-void ast_delete_binary_expr(Expression* expression)
+void Ast_DeleteBinaryExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.binaryExpr.left);
-    ast_delete_expression(expression->as.binaryExpr.right);
+    Ast_DeleteExpression(expression->as.binaryExpr.left);
+    Ast_DeleteExpression(expression->as.binaryExpr.right);
     free(expression);
 }
 
-Expression* ast_new_unary_expr(Token op, Expression* expression)
+Expression* Ast_NewUnaryExpr(Token op, Expression* expression)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -719,13 +719,13 @@ Expression* ast_new_unary_expr(Token op, Expression* expression)
     return expr;
 }
 
-void ast_delete_unary_expr(Expression* expression)
+void Ast_DeleteUnaryExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.unaryExpr.expression);
+    Ast_DeleteExpression(expression->as.unaryExpr.expression);
     free(expression);
 }
 
-Expression* ast_new_postfix_inc_expr(Token op, Expression* expression)
+Expression* Ast_NewPostfixIncExpr(Token op, Expression* expression)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -738,13 +738,13 @@ Expression* ast_new_postfix_inc_expr(Token op, Expression* expression)
     return expr;
 }
 
-void ast_delete_postfix_inc_expr(Expression* expression)
+void Ast_DeletePostifxIncExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.postfixIncExpr.target);
+    Ast_DeleteExpression(expression->as.postfixIncExpr.target);
     free(expression);
 }
 
-Expression* ast_new_prefix_inc_expr(Token op, Expression* expression)
+Expression* Ast_NewPrefixIncExpr(Token op, Expression* expression)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -757,13 +757,13 @@ Expression* ast_new_prefix_inc_expr(Token op, Expression* expression)
     return expr;
 }
 
-void ast_delete_prefix_inc_expr(Expression* expression)
+void Ast_DeletePrefixIncExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.prefixIncExpr.target);
+    Ast_DeleteExpression(expression->as.prefixIncExpr.target);
     free(expression);
 }
 
-Expression* ast_new_literal_expr(Token value)
+Expression* Ast_NewLiteralExpr(Token value)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -775,12 +775,12 @@ Expression* ast_new_literal_expr(Token value)
     return expr;
 }
 
-void ast_delete_literal_expr(Expression* expression)
+void Ast_DeleteLiteralExpr(Expression* expression)
 {
     free(expression);
 }
 
-Expression* ast_new_string_interp_expr(ExpressionList* values)
+Expression* Ast_NewStringInterpExpr(ExpressionList* values)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -792,13 +792,13 @@ Expression* ast_new_string_interp_expr(ExpressionList* values)
     return expr;
 }
 
-void ast_delete_string_interp_expr(Expression* expression)
+void Ast_DeleteStringInterpExpr(Expression* expression)
 {
-    ast_delete_expression_list(expression->as.stringInterpExpr.values);
+    Ast_DeleteExpressionList(expression->as.stringInterpExpr.values);
     free(expression);
 }
 
-Expression* ast_new_range_expr(Expression* begin, Expression* end, Expression* step)
+Expression* Ast_NewRangeExpr(Expression* begin, Expression* end, Expression* step)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -812,15 +812,15 @@ Expression* ast_new_range_expr(Expression* begin, Expression* end, Expression* s
     return expr;
 }
 
-void ast_delete_range_expr(Expression* expression)
+void Ast_DeleteRangeExpr(Expression* expression)
 {
-    ast_delete_expression(expression->as.rangeExpr.begin);
-    ast_delete_expression(expression->as.rangeExpr.end);
-    ast_delete_expression(expression->as.rangeExpr.step);
+    Ast_DeleteExpression(expression->as.rangeExpr.begin);
+    Ast_DeleteExpression(expression->as.rangeExpr.end);
+    Ast_DeleteExpression(expression->as.rangeExpr.step);
     free(expression);
 }
 
-Expression* ast_new_lambda_expr(Function* function)
+Expression* Ast_NewLambdaExpr(Function* function)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -832,13 +832,13 @@ Expression* ast_new_lambda_expr(Function* function)
     return expr;
 }
 
-void ast_delete_lambda_expr(Expression* expression)
+void Ast_DeleteLambdaExpr(Expression* expression)
 {
-    ast_delete_function(expression->as.lambdaExpr.function);
+    Ast_DeleteFunction(expression->as.lambdaExpr.function);
     free(expression);
 }
 
-Expression* ast_new_list_expr(ExpressionList* elements)
+Expression* Ast_NewListExpr(ExpressionList* elements)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -850,13 +850,13 @@ Expression* ast_new_list_expr(ExpressionList* elements)
     return expr;
 }
 
-void ast_delete_list_expr(Expression* expression)
+void Ast_DeleteListExpr(Expression* expression)
 {
-    ast_delete_expression_list(expression->as.listExpr.elements);
+    Ast_DeleteExpressionList(expression->as.listExpr.elements);
     free(expression);
 }
 
-Expression* ast_new_map_expr(MapEntryList* entries)
+Expression* Ast_NewMapExpr(MapEntryList* entries)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -868,13 +868,13 @@ Expression* ast_new_map_expr(MapEntryList* entries)
     return expr;
 }
 
-void ast_delete_map_expr(Expression* expression)
+void Ast_DeleteMapExpr(Expression* expression)
 {
-    ast_delete_map_entry_list(expression->as.mapExpr.entries);
+    Ast_DeleteMapEntryList(expression->as.mapExpr.entries);
     free(expression);
 }
 
-Expression* ast_new_tuple_expr(ExpressionList* elements)
+Expression* Ast_NewTupleExpr(ExpressionList* elements)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -886,13 +886,13 @@ Expression* ast_new_tuple_expr(ExpressionList* elements)
     return expr;
 }
 
-void ast_delete_tuple_expr(Expression* expression)
+void Ast_DeleteTupleExpr(Expression* expression)
 {
-    ast_delete_expression_list(expression->as.tupleExpr.elements);
+    Ast_DeleteExpressionList(expression->as.tupleExpr.elements);
     free(expression);
 }
 
-Expression* ast_new_identifier_expr(Token identifier, ExprContext context)
+Expression* Ast_NewIdentifierExpr(Token identifier, ExprContext context)
 {
     Expression* expr = xmalloc(sizeof(Expression));
     if (!expr) {
@@ -905,12 +905,12 @@ Expression* ast_new_identifier_expr(Token identifier, ExprContext context)
     return expr;
 }
 
-void ast_delete_identifier_expr(Expression* expression)
+void Ast_DeleteIdentifierExpr(Expression* expression)
 {
     free(expression);
 }
 
-ExpressionList* ast_new_expression_node(Expression* expression)
+ExpressionList* Ast_NewExpressionNode(Expression* expression)
 {
     ExpressionList* list = xmalloc(sizeof(ExpressionList));
     if (!list) {
@@ -923,10 +923,10 @@ ExpressionList* ast_new_expression_node(Expression* expression)
     return list;
 }
 
-void ast_expression_list_append(ExpressionList** list, Expression* expression)
+void Ast_ExpressionListAppend(ExpressionList** list, Expression* expression)
 {
     if (!(*list)) {
-        *list = ast_new_expression_node(expression);
+        *list = Ast_NewExpressionNode(expression);
         return;
     }
 
@@ -935,22 +935,22 @@ void ast_expression_list_append(ExpressionList** list, Expression* expression)
         current = current->next;
     }
 
-    current->next = ast_new_expression_node(expression);
+    current->next = Ast_NewExpressionNode(expression);
     current->next->prev = current;
 }
 
-void ast_delete_expression_list(ExpressionList* list)
+void Ast_DeleteExpressionList(ExpressionList* list)
 {
     ExpressionList* current = list;
     while (current != NULL) {
         ExpressionList* next = current->next;
-        ast_delete_expression(current->expression);
+        Ast_DeleteExpression(current->expression);
         free(current);
         current = next;
     }
 }
 
-size_t ast_expression_list_length(ExpressionList* list)
+size_t Ast_ExpressionListLength(ExpressionList* list)
 {
     size_t length = 0;
     ExpressionList* current = list;
@@ -963,7 +963,7 @@ size_t ast_expression_list_length(ExpressionList* list)
     return length;
 }
 
-ExpressionList* ast_expression_list_end(ExpressionList* list)
+ExpressionList* Ast_ExpressionListEnd(ExpressionList* list)
 {
     if (list == NULL) {
         return NULL;
@@ -976,7 +976,7 @@ ExpressionList* ast_expression_list_end(ExpressionList* list)
     }
 }
 
-ArgumentList* ast_new_argument_node(Expression* expression)
+ArgumentList* Ast_NewArgumentNode(Expression* expression)
 {
     ArgumentList* list = xmalloc(sizeof(ArgumentList));
     if (!list) {
@@ -988,10 +988,10 @@ ArgumentList* ast_new_argument_node(Expression* expression)
     return list;
 }
 
-void ast_argument_list_append(ArgumentList** list, Expression* expression)
+void Ast_ArgumentListAppend(ArgumentList** list, Expression* expression)
 {
     if (!(*list)) {
-        *list = ast_new_argument_node(expression);
+        *list = Ast_NewArgumentNode(expression);
         return;
     }
 
@@ -1000,21 +1000,21 @@ void ast_argument_list_append(ArgumentList** list, Expression* expression)
         current = current->next;
     }
 
-    current->next = ast_new_argument_node(expression);
+    current->next = Ast_NewArgumentNode(expression);
 }
 
-void ast_delete_argument_list(ArgumentList* list)
+void Ast_DeleteArgumentList(ArgumentList* list)
 {
     ArgumentList* current = list;
     while (current != NULL) {
         ArgumentList* next = current->next;
-        ast_delete_expression(current->expression);
+        Ast_DeleteExpression(current->expression);
         free(current);
         current = next;
     }
 }
 
-size_t ast_argument_list_length(ArgumentList* list)
+size_t Ast_ArgumentListLength(ArgumentList* list)
 {
     size_t length = 0;
     ArgumentList* current = list;
@@ -1027,7 +1027,7 @@ size_t ast_argument_list_length(ArgumentList* list)
     return length;
 }
 
-ParameterList* ast_new_parameter_node(Token parameter)
+ParameterList* Ast_NewParameterNode(Token parameter)
 {
     ParameterList* list = xmalloc(sizeof(ParameterList));
     if (!list) {
@@ -1040,10 +1040,10 @@ ParameterList* ast_new_parameter_node(Token parameter)
     return list;
 }
 
-void ast_parameter_list_append(ParameterList** list, Token parameter)
+void Ast_ParameterListAppend(ParameterList** list, Token parameter)
 {
     if (!(*list)) {
-        *list = ast_new_parameter_node(parameter);
+        *list = Ast_NewParameterNode(parameter);
         return;
     }
 
@@ -1052,11 +1052,11 @@ void ast_parameter_list_append(ParameterList** list, Token parameter)
         current = current->next;
     }
 
-    current->next = ast_new_parameter_node(parameter);
+    current->next = Ast_NewParameterNode(parameter);
     current->next->prev = current;
 }
 
-void ast_delete_parameter_list(ParameterList* list)
+void Ast_DeleteParameterList(ParameterList* list)
 {
     ParameterList* current = list;
     while (current != NULL) {
@@ -1066,7 +1066,7 @@ void ast_delete_parameter_list(ParameterList* list)
     }
 }
 
-size_t ast_parameter_list_length(ParameterList* list)
+size_t Ast_ParameterListLength(ParameterList* list)
 {
     size_t length = 0;
     ParameterList* current = list;
@@ -1079,7 +1079,7 @@ size_t ast_parameter_list_length(ParameterList* list)
     return length;
 }
 
-ParameterList* ast_parameter_list_end(ParameterList* list)
+ParameterList* Ast_ParameterListEnd(ParameterList* list)
 {
     if (list == NULL) {
         return NULL;
@@ -1092,7 +1092,7 @@ ParameterList* ast_parameter_list_end(ParameterList* list)
     }
 }
 
-WhenEntry* ast_new_when_entry(ExpressionList* cases, Statement* body)
+WhenEntry* Ast_NewWhenEntry(ExpressionList* cases, Statement* body)
 {
     WhenEntry* entry = xmalloc(sizeof(WhenEntry));
     if (!entry) {
@@ -1104,14 +1104,14 @@ WhenEntry* ast_new_when_entry(ExpressionList* cases, Statement* body)
     return entry;
 }
 
-void ast_delete_when_entry(WhenEntry* entry)
+void Ast_DeleteWhenEntry(WhenEntry* entry)
 {
-    ast_delete_expression_list(entry->cases);
-    ast_delete_statement(entry->body);
+    Ast_DeleteExpressionList(entry->cases);
+    Ast_DeleteStatement(entry->body);
     free(entry);
 }
 
-WhenEntryList* ast_new_when_entry_node(WhenEntry* entry)
+WhenEntryList* Ast_NewWhenEntryNode(WhenEntry* entry)
 {
     WhenEntryList* list = xmalloc(sizeof(WhenEntryList));
     if (!list) {
@@ -1123,10 +1123,10 @@ WhenEntryList* ast_new_when_entry_node(WhenEntry* entry)
     return list;
 }
 
-void ast_when_entry_list_append(WhenEntryList** list, WhenEntry* entry)
+void Ast_WhenEntryListAppend(WhenEntryList** list, WhenEntry* entry)
 {
     if (!(*list)) {
-        *list = ast_new_when_entry_node(entry);
+        *list = Ast_NewWhenEntryNode(entry);
         return;
     }
 
@@ -1135,21 +1135,21 @@ void ast_when_entry_list_append(WhenEntryList** list, WhenEntry* entry)
         current = current->next;
     }
 
-    current->next = ast_new_when_entry_node(entry);
+    current->next = Ast_NewWhenEntryNode(entry);
 }
 
-void ast_delete_when_entry_list(WhenEntryList* list)
+void Ast_DeleteWhenEntryList(WhenEntryList* list)
 {
     WhenEntryList* current = list;
     while (current != NULL) {
         WhenEntryList* next = current->next;
-        ast_delete_when_entry(current->entry);
+        Ast_DeleteWhenEntry(current->entry);
         free(current);
         current = next;
     }
 }
 
-size_t ast_when_entry_list_length(WhenEntryList* list)
+size_t Ast_WhenEntryListLength(WhenEntryList* list)
 {
     size_t length = 0;
     WhenEntryList* current = list;
@@ -1162,7 +1162,7 @@ size_t ast_when_entry_list_length(WhenEntryList* list)
     return length;
 }
 
-MapEntry* ast_new_map_entry(Expression* key, Expression* value)
+MapEntry* Ast_NewMapEntry(Expression* key, Expression* value)
 {
     MapEntry* entry = xmalloc(sizeof(MapEntry));
     if (!entry) {
@@ -1174,14 +1174,14 @@ MapEntry* ast_new_map_entry(Expression* key, Expression* value)
     return entry;
 }
 
-void ast_delete_map_entry(MapEntry* entry)
+void Ast_DeleteMapEntry(MapEntry* entry)
 {
-    ast_delete_expression(entry->key);
-    ast_delete_expression(entry->value);
+    Ast_DeleteExpression(entry->key);
+    Ast_DeleteExpression(entry->value);
     free(entry);
 }
 
-MapEntryList* ast_new_map_entry_node(MapEntry* entry)
+MapEntryList* Ast_NewMapEntryNode(MapEntry* entry)
 {
     MapEntryList* list = xmalloc(sizeof(MapEntryList));
     if (!list) {
@@ -1193,10 +1193,10 @@ MapEntryList* ast_new_map_entry_node(MapEntry* entry)
     return list;
 }
 
-void ast_map_entry_list_append(MapEntryList** list, MapEntry* entry)
+void Ast_MapEntryListAppend(MapEntryList** list, MapEntry* entry)
 {
     if (!(*list)) {
-        *list = ast_new_map_entry_node(entry);
+        *list = Ast_NewMapEntryNode(entry);
         return;
     }
 
@@ -1205,21 +1205,21 @@ void ast_map_entry_list_append(MapEntryList** list, MapEntry* entry)
         current = current->next;
     }
 
-    current->next = ast_new_map_entry_node(entry);
+    current->next = Ast_NewMapEntryNode(entry);
 }
 
-void ast_delete_map_entry_list(MapEntryList* list)
+void Ast_DeleteMapEntryList(MapEntryList* list)
 {
     MapEntryList* current = list;
     while (current != NULL) {
         MapEntryList* next = current->next;
-        ast_delete_map_entry(current->entry);
+        Ast_DeleteMapEntry(current->entry);
         free(current);
         current = next;
     }
 }
 
-size_t ast_map_entry_list_length(MapEntryList* list)
+size_t Ast_MapEntryListLength(MapEntryList* list)
 {
     size_t length = 0;
     MapEntryList* current = list;
@@ -1232,7 +1232,7 @@ size_t ast_map_entry_list_length(MapEntryList* list)
     return length;
 }
 
-Block* ast_new_block(DeclarationList* body)
+Block* Ast_NewBlock(DeclarationList* body)
 {
     Block* block = xmalloc(sizeof(Block));
     if (!block) {
@@ -1243,21 +1243,21 @@ Block* ast_new_block(DeclarationList* body)
     return block;
 }
 
-void ast_delete_block(Block* block)
+void Ast_DeleteBlock(Block* block)
 {
-    ast_delete_declaration_list(block->body);
+    Ast_DeleteDeclarationList(block->body);
     free(block);
 }
 
-void ast_delete_function_body(FunctionBody* body)
+void Ast_DeleteFunctionBody(FunctionBody* body)
 {
     switch (body->notation) {
-        case FUNC_EXPRESSION: ast_delete_expression_function_body(body); return;
-        case FUNC_BLOCK: ast_delete_block_function_body(body); return;
+        case FUNC_EXPRESSION: Ast_DeleteExpressionFunctionBody(body); return;
+        case FUNC_BLOCK: Ast_DeleteBlockFunctionBody(body); return;
     }
 }
 
-FunctionBody* ast_new_expression_function_body(Expression* expression)
+FunctionBody* Ast_NewExpressionFunctionBody(Expression* expression)
 {
     FunctionBody* body = xmalloc(sizeof(FunctionBody));
     if (!body) {
@@ -1269,13 +1269,13 @@ FunctionBody* ast_new_expression_function_body(Expression* expression)
     return body;
 }
 
-void ast_delete_expression_function_body(FunctionBody* body)
+void Ast_DeleteExpressionFunctionBody(FunctionBody* body)
 {
-    ast_delete_expression(body->as.expression);
+    Ast_DeleteExpression(body->as.expression);
     free(body);
 }
 
-FunctionBody* ast_new_block_function_body(Block* block)
+FunctionBody* Ast_NewBlockFunctionBody(Block* block)
 {
     FunctionBody* body = xmalloc(sizeof(FunctionBody));
     if (!body) {
@@ -1287,13 +1287,13 @@ FunctionBody* ast_new_block_function_body(Block* block)
     return body;
 }
 
-void ast_delete_block_function_body(FunctionBody* body)
+void Ast_DeleteBlockFunctionBody(FunctionBody* body)
 {
-    ast_delete_block(body->as.block);
+    Ast_DeleteBlock(body->as.block);
     free(body);
 }
 
-Function* ast_new_function(ParameterList* parameters, FunctionBody* body)
+Function* Ast_NewFunction(ParameterList* parameters, FunctionBody* body)
 {
     Function* function = xmalloc(sizeof(Function));
     if (!function) {
@@ -1305,14 +1305,14 @@ Function* ast_new_function(ParameterList* parameters, FunctionBody* body)
     return function;
 }
 
-void ast_delete_function(Function* function)
+void Ast_DeleteFunction(Function* function)
 {
-    ast_delete_parameter_list(function->parameters);
-    ast_delete_function_body(function->body);
+    Ast_DeleteParameterList(function->parameters);
+    Ast_DeleteFunctionBody(function->body);
     free(function);
 }
 
-NamedFunction* ast_new_named_function(Token identifier, Function* function, bool coroutine)
+NamedFunction* Ast_NewNamedFunction(Token identifier, Function* function, bool coroutine)
 {
     NamedFunction* namedFunction = xmalloc(sizeof(NamedFunction));
     if (!function) {
@@ -1325,13 +1325,13 @@ NamedFunction* ast_new_named_function(Token identifier, Function* function, bool
     return namedFunction;
 }
 
-void ast_delete_named_function(NamedFunction* namedFunction)
+void Ast_DeleteNamedFunction(NamedFunction* namedFunction)
 {
-    ast_delete_function(namedFunction->function);
+    Ast_DeleteFunction(namedFunction->function);
     free(namedFunction);
 }
 
-NamedFunctionList* ast_new_named_function_node(NamedFunction* function)
+NamedFunctionList* Ast_NewNamedFunctionNode(NamedFunction* function)
 {
     NamedFunctionList* list = xmalloc(sizeof(NamedFunctionList));
     if (!list) {
@@ -1343,10 +1343,10 @@ NamedFunctionList* ast_new_named_function_node(NamedFunction* function)
     return list;
 }
 
-void ast_named_function_list_append(NamedFunctionList** list, NamedFunction* function)
+void Ast_NamedFunctionListAppend(NamedFunctionList** list, NamedFunction* function)
 {
     if (!(*list)) {
-        *list = ast_new_named_function_node(function);
+        *list = Ast_NewNamedFunctionNode(function);
         return;
     }
 
@@ -1355,21 +1355,21 @@ void ast_named_function_list_append(NamedFunctionList** list, NamedFunction* fun
         current = current->next;
     }
 
-    current->next = ast_new_named_function_node(function);
+    current->next = Ast_NewNamedFunctionNode(function);
 }
 
-void ast_delete_named_function_list(NamedFunctionList* list)
+void Ast_DeleteNamedFunctionList(NamedFunctionList* list)
 {
     NamedFunctionList* current = list;
     while (current != NULL) {
         NamedFunctionList* next = current->next;
-        ast_delete_named_function(current->function);
+        Ast_DeleteNamedFunction(current->function);
         free(current);
         current = next;
     }
 }
 
-size_t ast_named_function_list_length(NamedFunctionList* list)
+size_t Ast_NamedFunctionListLength(NamedFunctionList* list)
 {
     size_t length = 0;
     NamedFunctionList* current = list;
@@ -1382,7 +1382,7 @@ size_t ast_named_function_list_length(NamedFunctionList* list)
     return length;
 }
 
-Method* ast_new_method(bool isStatic, NamedFunction* namedFunction)
+Method* Ast_NewMethod(bool isStatic, NamedFunction* namedFunction)
 {
     Method* method = xmalloc(sizeof(Method));
     if (!method) {
@@ -1394,13 +1394,13 @@ Method* ast_new_method(bool isStatic, NamedFunction* namedFunction)
     return method;
 }
 
-void ast_delete_method(Method* method)
+void Ast_DeleteMethod(Method* method)
 {
-    ast_delete_named_function(method->namedFunction);
+    Ast_DeleteNamedFunction(method->namedFunction);
     free(method);
 }
 
-MethodList* ast_new_method_node(Method* method)
+MethodList* Ast_NewMethodNode(Method* method)
 {
     MethodList* list = xmalloc(sizeof(MethodList));
     if (!list) {
@@ -1412,10 +1412,10 @@ MethodList* ast_new_method_node(Method* method)
     return list;
 }
 
-void ast_method_list_append(MethodList** list, Method* method)
+void Ast_MethodListAppend(MethodList** list, Method* method)
 {
     if (!(*list)) {
-        *list = ast_new_method_node(method);
+        *list = Ast_NewMethodNode(method);
         return;
     }
 
@@ -1424,21 +1424,21 @@ void ast_method_list_append(MethodList** list, Method* method)
         current = current->next;
     }
 
-    current->next = ast_new_method_node(method);
+    current->next = Ast_NewMethodNode(method);
 }
 
-void ast_delete_method_list(MethodList* list)
+void Ast_DeleteMethodList(MethodList* list)
 {
     MethodList* current = list;
     while (current != NULL) {
         MethodList* next = current->next;
-        ast_delete_method(current->method);
+        Ast_DeleteMethod(current->method);
         free(current);
         current = next;
     }
 }
 
-size_t ast_method_list_length(MethodList* list)
+size_t Ast_MethodListLength(MethodList* list)
 {
     size_t length = 0;
     MethodList* current = list;
@@ -1451,7 +1451,7 @@ size_t ast_method_list_length(MethodList* list)
     return length;
 }
 
-DeclarationList* ast_new_declaration_node(Declaration* declaration)
+DeclarationList* Ast_NewDeclarationNode(Declaration* declaration)
 {
     DeclarationList* list = xmalloc(sizeof(DeclarationList));
     if (!list) {
@@ -1463,10 +1463,10 @@ DeclarationList* ast_new_declaration_node(Declaration* declaration)
     return list;
 }
 
-void ast_declaration_list_append(DeclarationList** list, Declaration* declaration)
+void Ast_DeclarationListAppend(DeclarationList** list, Declaration* declaration)
 {
     if (!(*list)) {
-        *list = ast_new_declaration_node(declaration);
+        *list = Ast_NewDeclarationNode(declaration);
         return;
     }
 
@@ -1475,21 +1475,21 @@ void ast_declaration_list_append(DeclarationList** list, Declaration* declaratio
         current = current->next;
     }
 
-    current->next = ast_new_declaration_node(declaration);
+    current->next = Ast_NewDeclarationNode(declaration);
 }
 
-void ast_delete_declaration_list(DeclarationList* list)
+void Ast_DeleteDeclarationList(DeclarationList* list)
 {
     DeclarationList* current = list;
     while (current != NULL) {
         DeclarationList* next = current->next;
-        ast_delete_declaration(current->declaration);
+        Ast_DeleteDeclaration(current->declaration);
         free(current);
         current = next;
     }
 }
 
-size_t ast_declaration_list_length(DeclarationList* list)
+size_t Ast_DeclarationListLength(DeclarationList* list)
 {
     size_t length = 0;
     DeclarationList* current = list;
@@ -1502,7 +1502,7 @@ size_t ast_declaration_list_length(DeclarationList* list)
     return length;
 }
 
-VariableTarget* ast_new_single_variable_target(Token single)
+VariableTarget* Ast_NewSingleVariableTarget(Token single)
 {
     VariableTarget* target = xmalloc(sizeof(VariableTarget));
     if (!target) {
@@ -1514,7 +1514,7 @@ VariableTarget* ast_new_single_variable_target(Token single)
     return target;
 }
 
-VariableTarget* ast_new_unpack_variable_target(ParameterList* unpack)
+VariableTarget* Ast_NewUnpackVariableTarget(ParameterList* unpack)
 {
     VariableTarget* target = xmalloc(sizeof(VariableTarget));
     if (!target) {
@@ -1526,17 +1526,17 @@ VariableTarget* ast_new_unpack_variable_target(ParameterList* unpack)
     return target;
 }
 
-void ast_delete_variable_target(VariableTarget* target)
+void Ast_DeleteVariableTarget(VariableTarget* target)
 {
     switch (target->type) {
         case VAR_SINGLE: break;
-        case VAR_UNPACK: ast_delete_parameter_list(target->as.unpack); break;
+        case VAR_UNPACK: Ast_DeleteParameterList(target->as.unpack); break;
     }
 
     free(target);
 }
 
-AssignmentTarget* ast_new_single_assignment_target(Expression* single)
+AssignmentTarget* Ast_NewSingleAssignmentTarget(Expression* single)
 {
     AssignmentTarget* target = xmalloc(sizeof(AssignmentTarget));
     if (!target) {
@@ -1548,7 +1548,7 @@ AssignmentTarget* ast_new_single_assignment_target(Expression* single)
     return target;
 }
 
-AssignmentTarget* ast_new_unpack_assignment_target(ExpressionList* unpack)
+AssignmentTarget* Ast_NewUnpackAssignmentTarget(ExpressionList* unpack)
 {
     AssignmentTarget* target = xmalloc(sizeof(AssignmentTarget));
     if (!target) {
@@ -1560,11 +1560,11 @@ AssignmentTarget* ast_new_unpack_assignment_target(ExpressionList* unpack)
     return target;
 }
 
-void ast_delete_assignment_target(AssignmentTarget* target)
+void Ast_DeleteAssignmentTarget(AssignmentTarget* target)
 {
     switch (target->type) {
         case VAR_SINGLE: break;
-        case VAR_UNPACK: ast_delete_expression_list(target->as.unpack); break;
+        case VAR_UNPACK: Ast_DeleteExpressionList(target->as.unpack); break;
     }
 
     free(target);

@@ -22,7 +22,7 @@ static bool native_call(Object* callee, uint8_t argCount, VM* vm)
 {
     ObjectNative* native = AS_NATIVE(callee);
     if (native->arity != argCount) {
-        runtime_error(vm, "Expected %d arguments but got %d.", native->arity, argCount);
+        Vm_RuntimeError(vm, "Expected %d arguments but got %d.", native->arity, argCount);
         return false;
     }
 
@@ -30,7 +30,7 @@ static bool native_call(Object* callee, uint8_t argCount, VM* vm)
         vm->coroutine->stackTop -= (uint64_t)argCount;
         return true;
     } else {
-        runtime_error(vm, VAL_AS_CSTRING(vm_peek(vm, argCount)));
+        Vm_RuntimeError(vm, VAL_AS_CSTRING(Vm_Peek(vm, argCount)));
         return false;
     }
 }

@@ -29,7 +29,7 @@
 
 #define FILE_EXTENSION ".archer"
 
-void vm_init(VM* vm)
+void Vm_Init(VM* vm)
 {
     vm->compiler = NULL;
     vm->classCompiler = NULL;
@@ -59,53 +59,53 @@ void vm_init(VM* vm)
     GC_Init(&vm->gc);
     vm->gc.vm = vm;
 
-    table_init(&vm->modules);
-    table_init(&vm->builtins);
-    table_init(&vm->strings);
+    Table_Init(&vm->modules);
+    Table_Init(&vm->builtins);
+    Table_Init(&vm->strings);
 
     vm->temporaryCount = 0;
 
     Library_Init(vm);
 }
 
-void vm_free(VM* vm)
+void Vm_Free(VM* vm)
 {
     vm->initString = NULL;
 
-    table_free(&vm->gc, &vm->strings);
+    Table_Free(&vm->gc, &vm->strings);
 
     GC_Free(&vm->gc);
 }
 
-void vm_push(VM* vm, Value value)
+void Vm_Push(VM* vm, Value value)
 {
     *vm->coroutine->stackTop = value;
     vm->coroutine->stackTop++;
 }
 
-Value vm_pop(VM* vm)
+Value Vm_Pop(VM* vm)
 {
     vm->coroutine->stackTop--;
     return *vm->coroutine->stackTop;
 }
 
-Value vm_peek(VM* vm, int distance)
+Value Vm_Peek(VM* vm, int distance)
 {
     return vm->coroutine->stackTop[-1 - distance];
 }
 
-void vm_push_temporary(VM* vm, Value value)
+void Vm_PushTemporary(VM* vm, Value value)
 {
     vm->temporaries[vm->temporaryCount++] = value;
 }
 
-Value vm_pop_temporary(VM* vm)
+Value Vm_PopTemporary(VM* vm)
 {
     vm->temporaryCount--;
     return vm->temporaries[vm->temporaryCount];
 }
 
-Value vm_peek_temporary(VM* vm, int distance)
+Value Vm_PeekTemporary(VM* vm, int distance)
 {
     return vm->temporaries[vm->temporaryCount - 1 - distance];
 }
@@ -114,7 +114,7 @@ static int get_current_line(CallFrame* frame)
 {
     Chunk* chunk = &frame->closure->function->chunk;
     size_t instruction = frame->ip - chunk->code - 1;
-    return chunk_get_line(chunk, instruction);
+    return Chunk_GetLine(chunk, instruction);
 }
 
 static void print_call_frame(CallFrame* frame)
@@ -131,7 +131,7 @@ static void print_stack_trace(VM* vm)
     }
 }
 
-InterpretStatus runtime_error(VM* vm, const char* format, ...)
+InterpretStatus Vm_RuntimeError(VM* vm, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -146,7 +146,7 @@ InterpretStatus runtime_error(VM* vm, const char* format, ...)
     return INTERPRET_RUNTIME_ERROR;
 }
 
-bool call(VM* vm, ObjectClosure* closure, uint8_t argCount)
+bool Vm_Call(VM* vm, ObjectClosure* closure, uint8_t argCount)
 {
     return Coroutine_Call(vm, vm->coroutine, closure, argCount);
 }
@@ -167,12 +167,12 @@ static bool load_property(VM* vm, Object* object, ObjectString* name, Value* res
     }
 
     if (!object->type->GetMethod) {
-        runtime_error(vm, "Objects of type '%s' do not have methods.", object->type->name);
+        Vm_RuntimeError(vm, "Objects of type '%s' do not have methods.", object->type->name);
         return false;
     }
 
     if (!Object_GetMethod(object, key, vm, result)) {
-        runtime_error(vm, "Undefined property '%s'.", name->chars);
+        Vm_RuntimeError(vm, "Undefined property '%s'.", name->chars);
         return false;
     }
 
@@ -184,7 +184,7 @@ static bool invoke_from_class(VM* vm, ObjectType* clazz, ObjectString* name, uin
     Value key = OBJ_VAL(name);
     Value method;
     if (!Object_GetMethodDirectly((Object*)clazz, key, vm, &method)) {
-        runtime_error(vm, "Undefined property '%s'", name->chars);
+        Vm_RuntimeError(vm, "Undefined property '%s'", name->chars);
         return false;
     }
 
@@ -193,9 +193,9 @@ static bool invoke_from_class(VM* vm, ObjectType* clazz, ObjectString* name, uin
 
 static bool invoke(VM* vm, ObjectString* name, uint8_t argCount)
 {
-    Value value = vm_peek(vm, argCount);
+    Value value = Vm_Peek(vm, argCount);
     if (!IS_OBJ(value)) {
-        runtime_error(vm, "Can only invoke methods on objects.");
+        Vm_RuntimeError(vm, "Can only invoke methods on objects.");
         return false;
     }
 
@@ -292,20 +292,20 @@ static ObjectModule* get_current_module(VM* vm)
 static ObjectModule* create_module(VM* vm, ObjectString* relativePath)
 {
     ObjectString* fullPath = String_Concatenate(vm, get_current_module(vm)->path, relativePath);
-    vm_push_temporary(vm, OBJ_VAL(fullPath));
+    Vm_PushTemporary(vm, OBJ_VAL(fullPath));
 
     Value cached;
-    if (table_get(&vm->modules, OBJ_VAL(fullPath), &cached)) {
-        vm_pop_temporary(vm);
+    if (Table_Get(&vm->modules, OBJ_VAL(fullPath), &cached)) {
+        Vm_PopTemporary(vm);
         return VAL_AS_MODULE(cached);
     }
 
     ObjectModule* mod = Module_FromFullPath(vm, AS_CSTRING(fullPath));
-    vm_pop_temporary(vm);
+    Vm_PopTemporary(vm);
 
-    vm_push_temporary(vm, OBJ_VAL(mod));
-    table_put(vm, &vm->modules, OBJ_VAL(fullPath), OBJ_VAL(mod));
-    vm_pop_temporary(vm);
+    Vm_PushTemporary(vm, OBJ_VAL(mod));
+    Table_Put(vm, &vm->modules, OBJ_VAL(fullPath), OBJ_VAL(mod));
+    Vm_PopTemporary(vm);
 
     return mod;
 }
@@ -313,19 +313,19 @@ static ObjectModule* create_module(VM* vm, ObjectString* relativePath)
 static bool import_module(VM* vm, ObjectModule* mod)
 {
     char* source = obtain_source(vm, mod);
-    ObjectFunction* function = compile(vm, source, mod);
+    ObjectFunction* function = Compiler_Compile(vm, source, mod);
     if (function == NULL) {
-        runtime_error(vm, "Could not compile module '%s'.", AS_CSTRING(mod->name));
+        Vm_RuntimeError(vm, "Could not compile module '%s'.", AS_CSTRING(mod->name));
         return false;
     }
 
-    vm_push_temporary(vm, OBJ_VAL(function));
+    Vm_PushTemporary(vm, OBJ_VAL(function));
     ObjectClosure* closure = Closure_New(vm, function);
-    vm_pop_temporary(vm);
+    Vm_PopTemporary(vm);
 
-    vm_push_temporary(vm, OBJ_VAL(closure));
+    Vm_PushTemporary(vm, OBJ_VAL(closure));
     Coroutine_Run(vm, Coroutine_New(vm, closure));
-    vm_pop_temporary(vm);
+    Vm_PopTemporary(vm);
 
     mod->imported = true;
     return true;
@@ -362,9 +362,9 @@ static InterpretStatus run(VM* vm)
 #define THIRD  coroutine->stackTop[-3]
 #define FOURTH coroutine->stackTop[-4]
 
-#define PUSH(value) vm_push(vm, (value))
-#define POP() vm_pop(vm)
-#define PEEK(distance) vm_peek(vm, distance)
+#define PUSH(value) Vm_Push(vm, (value))
+#define POP() Vm_Pop(vm)
+#define PEEK(distance) Vm_Peek(vm, distance)
 
 #define POP_N(n) coroutine->stackTop -= (n);
 
@@ -401,18 +401,18 @@ static InterpretStatus run(VM* vm)
             }
             case OP_NOT_EQUAL: {
                 Value rhs = POP();
-                TOP = BOOL_VAL(!values_equal(TOP, rhs));
+                TOP = BOOL_VAL(!Value_Equal(TOP, rhs));
                 break;
             }
             case OP_EQUAL: {
                 Value rhs = POP();
-                TOP = BOOL_VAL(values_equal(TOP, rhs));
+                TOP = BOOL_VAL(Value_Equal(TOP, rhs));
                 break;
             }
             case OP_GREATER: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 double rhs = AS_NUMBER(POP());
@@ -422,7 +422,7 @@ static InterpretStatus run(VM* vm)
             case OP_GREATER_EQUAL: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 double rhs = AS_NUMBER(POP());
@@ -432,7 +432,7 @@ static InterpretStatus run(VM* vm)
             case OP_LESS: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 double rhs = AS_NUMBER(POP());
@@ -442,7 +442,7 @@ static InterpretStatus run(VM* vm)
             case OP_LESS_EQUAL: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 double rhs = AS_NUMBER(POP());
@@ -450,13 +450,13 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_NOT: {
-                TOP = BOOL_VAL(value_is_falsey(TOP));
+                TOP = BOOL_VAL(Value_IsFalsey(TOP));
                 break;
             }
             case OP_NEGATE: {
                 if (!IS_NUMBER(TOP)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operand must be a number.");
+                    return Vm_RuntimeError(vm, "Operand must be a number.");
                 }
 
                 TOP = NUMBER_VAL(-AS_NUMBER(TOP));
@@ -465,7 +465,7 @@ static InterpretStatus run(VM* vm)
             case OP_DEC: {
                 if (!IS_NUMBER(TOP)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operand must be a number.");
+                    return Vm_RuntimeError(vm, "Operand must be a number.");
                 }
 
                 TOP = NUMBER_VAL(AS_NUMBER(TOP) - 1);
@@ -474,7 +474,7 @@ static InterpretStatus run(VM* vm)
             case OP_INC: {
                 if (!IS_NUMBER(TOP)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operand must be a number.");
+                    return Vm_RuntimeError(vm, "Operand must be a number.");
                 }
 
                 TOP = NUMBER_VAL(AS_NUMBER(TOP) + 1);
@@ -493,14 +493,14 @@ static InterpretStatus run(VM* vm)
                     TOP = NUMBER_VAL(AS_NUMBER(TOP) + rhs);
                 } else {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be either numbers or strings.");
+                    return Vm_RuntimeError(vm, "Operands must be either numbers or strings.");
                 }
                 break;
             }
             case OP_SUBTRACT: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 double rhs = AS_NUMBER(POP());
@@ -510,7 +510,7 @@ static InterpretStatus run(VM* vm)
             case OP_MULTIPLY: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 double rhs = AS_NUMBER(POP());
@@ -520,7 +520,7 @@ static InterpretStatus run(VM* vm)
             case OP_DIVIDE: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 double rhs = AS_NUMBER(POP());
@@ -530,7 +530,7 @@ static InterpretStatus run(VM* vm)
             case OP_MODULO: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 double rhs = AS_NUMBER(POP());
@@ -540,7 +540,7 @@ static InterpretStatus run(VM* vm)
             case OP_POWER: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 double exponent = AS_NUMBER(POP());
@@ -550,7 +550,7 @@ static InterpretStatus run(VM* vm)
             case OP_BITWISE_NOT: {
                 if (!IS_NUMBER(TOP)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operand must be a number.");
+                    return Vm_RuntimeError(vm, "Operand must be a number.");
                 }
 
                 TOP = NUMBER_VAL((double)(~AS_COMPLEMENT(TOP)));
@@ -559,7 +559,7 @@ static InterpretStatus run(VM* vm)
             case OP_BITWISE_AND: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 int64_t rhs = AS_COMPLEMENT(POP());
@@ -569,7 +569,7 @@ static InterpretStatus run(VM* vm)
             case OP_BITWISE_OR: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 int64_t rhs = AS_COMPLEMENT(POP());
@@ -579,7 +579,7 @@ static InterpretStatus run(VM* vm)
             case OP_BITWISE_XOR: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 int64_t rhs = AS_COMPLEMENT(POP());
@@ -589,7 +589,7 @@ static InterpretStatus run(VM* vm)
             case OP_BITWISE_LEFT_SHIFT: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 uint64_t rhs = AS_COMPLEMENT(POP());
@@ -599,7 +599,7 @@ static InterpretStatus run(VM* vm)
             case OP_BITWISE_RIGHT_SHIFT: {
                 if (!IS_NUMBER(TOP) || !IS_NUMBER(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Operands must be numbers");
+                    return Vm_RuntimeError(vm, "Operands must be numbers");
                 }
 
                 uint64_t rhs = AS_COMPLEMENT(POP());
@@ -613,7 +613,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_POP_LOOP_IF_TRUE: {
                 uint16_t offset = READ_SHORT();
-                if (!value_is_falsey(POP())) {
+                if (!Value_IsFalsey(POP())) {
                     ip -= offset;
                 }
                 break;
@@ -625,21 +625,21 @@ static InterpretStatus run(VM* vm)
             }
             case OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
-                if (value_is_falsey(TOP)) {
+                if (Value_IsFalsey(TOP)) {
                     ip += offset;
                 }
                 break;
             }
             case OP_POP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
-                if (value_is_falsey(POP())) {
+                if (Value_IsFalsey(POP())) {
                     ip += offset;
                 }
                 break;
             }
             case OP_POP_JUMP_IF_EQUAL: {
                 uint16_t offset = READ_SHORT();
-                if (values_equal(TOP, SECOND)) {
+                if (Value_Equal(TOP, SECOND)) {
                     ip += offset;
                 }
                 POP();
@@ -696,7 +696,7 @@ static InterpretStatus run(VM* vm)
             }
             case OP_DEFINE_GLOBAL: {
                 ObjectString* identifier = READ_STRING();
-                table_put(vm, &get_current_module(vm)->base.fields, OBJ_VAL(identifier), TOP);
+                Table_Put(vm, &get_current_module(vm)->base.fields, OBJ_VAL(identifier), TOP);
                 POP();
                 break;
             }
@@ -704,25 +704,25 @@ static InterpretStatus run(VM* vm)
                 ObjectString* identifier = READ_STRING();
                 Value key = OBJ_VAL(identifier);
                 Value value;
-                if (table_get(&get_current_module(vm)->base.fields, key, &value)) {
+                if (Table_Get(&get_current_module(vm)->base.fields, key, &value)) {
                     PUSH(value);
                     break;
                 }
-                if (table_get(&vm->builtins, key, &value)) {
+                if (Table_Get(&vm->builtins, key, &value)) {
                     PUSH(value);
                     break;
                 }
                 frame->ip = ip;
-                return runtime_error(vm, "Undefined variable '%s'.", identifier->chars);
+                return Vm_RuntimeError(vm, "Undefined variable '%s'.", identifier->chars);
             }
             case OP_STORE_GLOBAL: {
                 ObjectString* identifier = READ_STRING();
                 Value key = OBJ_VAL(identifier);
                 ObjectModule* mod = get_current_module(vm);
-                if (table_put(vm, &mod->base.fields, key, TOP)) {
+                if (Table_Put(vm, &mod->base.fields, key, TOP)) {
                     frame->ip = ip;
-                    table_remove(&mod->base.fields, key);
-                    return runtime_error(vm, "Undefined variable '%s'.", identifier->chars);
+                    Table_Remove(&mod->base.fields, key);
+                    return Vm_RuntimeError(vm, "Undefined variable '%s'.", identifier->chars);
                 }
                 break;
             }
@@ -772,13 +772,13 @@ static InterpretStatus run(VM* vm)
             case OP_STORE_PROPERTY: {
                 if (!IS_OBJ(TOP)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Can only set properties of objects.");
+                    return Vm_RuntimeError(vm, "Can only set properties of objects.");
                 }
 
                 Object* object = AS_OBJ(TOP);
                 if (!object->type->SetField) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Properties on objects of type '%s' cannot be assigned.", object->type->name);
+                    return Vm_RuntimeError(vm, "Properties on objects of type '%s' cannot be assigned.", object->type->name);
                 }
 
                 Object_SetField(object, OBJ_VAL(READ_STRING()), SECOND, vm);
@@ -786,7 +786,7 @@ static InterpretStatus run(VM* vm)
                 break;
             }
             case OP_PRINT: {
-                print_value(POP());
+                Value_Print(POP());
                 printf("\n");
                 break;
             }
@@ -866,30 +866,30 @@ static InterpretStatus run(VM* vm)
                 Value method = TOP;
                 ObjectType* clazz = VAL_AS_TYPE(SECOND);
                 Object_SetMethod((Object*)clazz, OBJ_VAL(READ_STRING()), method, vm);
-                vm_pop(vm);
+                Vm_Pop(vm);
                 break;
             }
             case OP_METHOD: {
                 Value method = TOP;
                 ObjectType* clazz = VAL_AS_TYPE(SECOND);
                 Object_SetMethodDirectly((Object*)clazz, OBJ_VAL(READ_STRING()), method, vm);
-                vm_pop(vm);
+                Vm_Pop(vm);
                 break;
             }
             case OP_INHERIT: {
                 if (!VAL_IS_TYPE(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Superclass must be a class.");
+                    return Vm_RuntimeError(vm, "Superclass must be a class.");
                 }
 
                 ObjectType* superclass = VAL_AS_TYPE(SECOND);
                 if (!(superclass->flags & TF_ALLOW_INHERITANCE)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Class '%s' cannot be inherited from.", superclass->name);
+                    return Vm_RuntimeError(vm, "Class '%s' cannot be inherited from.", superclass->name);
                 }
 
                 ObjectType* subclass = VAL_AS_TYPE(TOP);
-                table_put_from(vm, &superclass->methods, &subclass->methods);
+                Table_PutFrom(vm, &superclass->methods, &subclass->methods);
                 POP();
                 break;
             }
@@ -901,7 +901,7 @@ static InterpretStatus run(VM* vm)
                 Value method;
                 if (!Object_GetMethod((Object*)superclass, key, vm, &method)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Undefined method '%s' of superclass.", name->chars);
+                    return Vm_RuntimeError(vm, "Undefined method '%s' of superclass.", name->chars);
                 }
 
                 TOP = key;
@@ -939,14 +939,14 @@ static InterpretStatus run(VM* vm)
             case OP_LOAD_SUBSCRIPT: {
                 if (!IS_OBJ(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Can only subscript objects.");
+                    return Vm_RuntimeError(vm, "Can only subscript objects.");
                 }
 
                 Object* object = AS_OBJ(SECOND);
 
                 if (!object->type->GetSubscript) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Objects of type '%s' cannot be subscripted.", object->type->name);
+                    return Vm_RuntimeError(vm, "Objects of type '%s' cannot be subscripted.", object->type->name);
                 }
 
                 Value result;
@@ -969,14 +969,14 @@ static InterpretStatus run(VM* vm)
             case OP_STORE_SUBSCRIPT: {
                 if (!IS_OBJ(SECOND)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Can only subscript objects.");
+                    return Vm_RuntimeError(vm, "Can only subscript objects.");
                 }
 
                 Object* object = AS_OBJ(SECOND);
 
                 if (!object->type->SetSubscript) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Objects of type '%s' cannot be subscripted.", object->type->name);
+                    return Vm_RuntimeError(vm, "Objects of type '%s' cannot be subscripted.", object->type->name);
                 }
 
                 frame->ip = ip;
@@ -1056,13 +1056,13 @@ static InterpretStatus run(VM* vm)
 
                 if (!VAL_IS_TUPLE(TOP)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Can only unpack a tuple.");
+                    return Vm_RuntimeError(vm, "Can only unpack a tuple.");
                 }
 
                 ObjectTuple* tuple = VAL_AS_TUPLE(POP());
                 if (count != tuple->length) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Mismatch in tuple unpacking (expected %d values, but got %d).", count, tuple->length);
+                    return Vm_RuntimeError(vm, "Mismatch in tuple unpacking (expected %d values, but got %d).", count, tuple->length);
                 }
 
                 for (size_t i = 0; i < tuple->length; i++) {
@@ -1088,7 +1088,7 @@ static InterpretStatus run(VM* vm)
             case OP_COROUTINE: {
                 if (!VAL_IS_CLOSURE(TOP, vm)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Expected a function in coroutine expression.");
+                    return Vm_RuntimeError(vm, "Expected a function in coroutine expression.");
                 }
 
                 TOP = OBJ_VAL(CoroutineFunction_New(vm, VAL_AS_CLOSURE(TOP)));
@@ -1100,7 +1100,7 @@ static InterpretStatus run(VM* vm)
 
                 if (!coroutine->transfer) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Cannot yield outside a coroutine.");
+                    return Vm_RuntimeError(vm, "Cannot yield outside a coroutine.");
                 }
 
                 coroutine->frames[coroutine->frameCount - 1].ip = ip;
@@ -1113,7 +1113,7 @@ static InterpretStatus run(VM* vm)
             case OP_IMPORT_MODULE: {
                 frame->ip = ip;
                 if (!VAL_IS_STRING(TOP, vm)) {
-                    return runtime_error(vm, "Module name must be a string.");
+                    return Vm_RuntimeError(vm, "Module name must be a string.");
                 }
 
                 TOP = OBJ_VAL(create_module(vm, VAL_AS_STRING(TOP)));
@@ -1121,7 +1121,7 @@ static InterpretStatus run(VM* vm)
                 if (mod->imported) {
                     PUSH(NIL_VAL());
                 } else if (!import_module(vm, mod)) {
-                    return runtime_error(vm, "Could not import module.");
+                    return Vm_RuntimeError(vm, "Could not import module.");
                 }
 
                 UPDATE_POINTERS();
@@ -1130,7 +1130,7 @@ static InterpretStatus run(VM* vm)
             case OP_IMPORT_ALL: {
                 Table* source = &VAL_AS_MODULE(TOP)->base.fields;
                 Table* destination = &get_current_module(vm)->base.fields;
-                table_put_from(vm, source, destination);
+                Table_PutFrom(vm, source, destination);
                 POP();
                 break;
             }
@@ -1141,9 +1141,9 @@ static InterpretStatus run(VM* vm)
             case OP_IMPORT_BY_NAME: {
                 ObjectString* name = READ_STRING();
                 Value value;
-                if (!table_get(&vm->moduleRegister->base.fields, OBJ_VAL(name), &value)) {
+                if (!Table_Get(&vm->moduleRegister->base.fields, OBJ_VAL(name), &value)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Identifier '%s' not found in module '%s'.", AS_CSTRING(name), AS_CSTRING(vm->moduleRegister->name));
+                    return Vm_RuntimeError(vm, "Identifier '%s' not found in module '%s'.", AS_CSTRING(name), AS_CSTRING(vm->moduleRegister->name));
                 }
                 PUSH(value);
                 break;
@@ -1151,13 +1151,13 @@ static InterpretStatus run(VM* vm)
             case OP_ITERATOR: {
                 if (!IS_OBJ(TOP)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Primitive values are not iterable.");
+                    return Vm_RuntimeError(vm, "Primitive values are not iterable.");
                 }
 
                 Object* obj = AS_OBJ(TOP);
                 if (!obj->type->MakeIterator) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Objects of type '%s' are not iterable.", obj->type->name);
+                    return Vm_RuntimeError(vm, "Objects of type '%s' are not iterable.", obj->type->name);
                 }
 
                 TOP = OBJ_VAL(obj->type->MakeIterator(obj, vm));
@@ -1182,17 +1182,17 @@ static InterpretStatus run(VM* vm)
 
                 if (!IS_NUMBER(begin)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Range 'begin' must be a number.");
+                    return Vm_RuntimeError(vm, "Range 'begin' must be a number.");
                 }
 
                 if (!IS_NUMBER(end)) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Range 'end' must be a number.");
+                    return Vm_RuntimeError(vm, "Range 'end' must be a number.");
                 }
 
                 if (!IS_NUMBER(step) || AS_NUMBER(step) == 0.0f) {
                     frame->ip = ip;
-                    return runtime_error(vm, "Range 'step' must be a non-zero number.");
+                    return Vm_RuntimeError(vm, "Range 'step' must be a non-zero number.");
                 }
 
                 ObjectRange* range = Range_New(vm, AS_NUMBER(begin), AS_NUMBER(end), AS_NUMBER(step));
@@ -1244,37 +1244,37 @@ static void create_main_module(VM* vm, const char* path)
 
     ObjectString* fullPath = String_Copy(vm, correctPath, strlen(correctPath) - strlen(FILE_EXTENSION));
     free(correctPath);
-    vm_push_temporary(vm, OBJ_VAL(fullPath));
+    Vm_PushTemporary(vm, OBJ_VAL(fullPath));
 
     ObjectModule* mainModule = Module_FromFullPath(vm, AS_CSTRING(fullPath));
     mainModule->imported = true;
 
-    vm_push_temporary(vm, OBJ_VAL(mainModule));
-    table_put(vm, &vm->modules, OBJ_VAL(fullPath), OBJ_VAL(mainModule));
-    vm_pop_temporary(vm);
-    vm_pop_temporary(vm);
+    Vm_PushTemporary(vm, OBJ_VAL(mainModule));
+    Table_Put(vm, &vm->modules, OBJ_VAL(fullPath), OBJ_VAL(mainModule));
+    Vm_PopTemporary(vm);
+    Vm_PopTemporary(vm);
 
     vm->mainModule = mainModule;
 }
 
-InterpretStatus vm_interpret(VM* vm, const char* source, const char* path)
+InterpretStatus Vm_Interpret(VM* vm, const char* source, const char* path)
 {
     if (!vm->mainModule) {
         create_main_module(vm, path);
     }
 
-    ObjectFunction* function = compile(vm, source, vm->mainModule);
+    ObjectFunction* function = Compiler_Compile(vm, source, vm->mainModule);
     if (function == NULL) {
         return INTERPRET_COMPILE_ERROR;
     }
 
-    vm_push_temporary(vm, OBJ_VAL(function));
+    Vm_PushTemporary(vm, OBJ_VAL(function));
     ObjectClosure* closure = Closure_New(vm, function);
-    vm_pop_temporary(vm);
+    Vm_PopTemporary(vm);
 
-    vm_push_temporary(vm, OBJ_VAL(closure));
+    Vm_PushTemporary(vm, OBJ_VAL(closure));
     Coroutine_Run(vm, Coroutine_New(vm, closure));
-    vm_pop_temporary(vm);
+    Vm_PopTemporary(vm);
 
     return run(vm);
 }

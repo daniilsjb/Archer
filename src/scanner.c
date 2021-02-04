@@ -4,13 +4,13 @@
 #include "scanner.h"
 #include "common.h"
 
-void scanner_init(Scanner* scanner, const char* source)
+void Scanner_Init(Scanner* scanner, const char* source)
 {
     scanner->start = source;
     scanner->current = source;
     scanner->line = 1;
 
-    scanner_clear(scanner);
+    Scanner_Clear(scanner);
 }
 
 static void clear_interpolation_stack(Scanner* scanner)
@@ -19,7 +19,7 @@ static void clear_interpolation_stack(Scanner* scanner)
     scanner->interpolationDepth = -1;
 }
 
-void scanner_clear(Scanner* scanner)
+void Scanner_Clear(Scanner* scanner)
 {
     clear_interpolation_stack(scanner);
 }
@@ -423,7 +423,7 @@ static Token right_brace(Scanner* scanner, TokenType type)
     return make_token(scanner, type);
 }
 
-Token scanner_scan_token(Scanner* scanner)
+Token Scanner_ScanToken(Scanner* scanner)
 {
     if (interpolated_identifier(scanner)) {
         return continue_interpolated_string(scanner);

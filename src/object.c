@@ -16,7 +16,7 @@ Object* Object_Allocate(VM* vm, size_t size)
 {
     Object* object = (Object*)Mem_Allocate(&vm->gc, size);
     object->marked = false;
-    table_init(&object->fields);
+    Table_Init(&object->fields);
 
     GC_AppendObject(&vm->gc, object);
 
@@ -29,16 +29,16 @@ Object* Object_Allocate(VM* vm, size_t size)
 
 void Object_Deallocate(GC* gc, Object* object)
 {
-    table_free(gc, &object->fields);
+    Table_Free(gc, &object->fields);
     Mem_Deallocate(gc, object, object->type->size);
 }
 
 Object* Object_New(VM* vm, ObjectType* type)
 {
-    vm_push_temporary(vm, OBJ_VAL(type));
+    Vm_PushTemporary(vm, OBJ_VAL(type));
     Object* object = Object_Allocate(vm, type->size);
     object->type = type;
-    vm_pop_temporary(vm);
+    Vm_PopTemporary(vm);
     return object;
 }
 
@@ -146,27 +146,27 @@ void Object_Free(Object* object, GC* gc)
 
 uint32_t Object_GenericHash(Object* object)
 {
-    return hash_bits((uint64_t)(uintptr_t)object);
+    return Value_HashBits((uint64_t)(uintptr_t)object);
 }
 
 bool Object_GenericGetField(Object* object, Value key, VM* vm, Value* result)
 {
-    return table_get(&object->fields, key, result);
+    return Table_Get(&object->fields, key, result);
 }
 
 bool Object_GenericSetField(Object* object, Value key, Value value, VM* vm)
 {
-    return table_put(vm, &object->fields, key, value);
+    return Table_Put(vm, &object->fields, key, value);
 }
 
 bool Object_GenericGetMethod(ObjectType* type, Value key, VM* vm, Value* result)
 {
-    return table_get(&type->methods, key, result);
+    return Table_Get(&type->methods, key, result);
 }
 
 bool Object_GenericSetMethod(ObjectType* type, Value key, Value value, VM* vm)
 {
-    return table_put(vm, &type->methods, key, value);
+    return Table_Put(vm, &type->methods, key, value);
 }
 
 void Object_GenericTraverse(Object* object, GC* gc)
@@ -183,13 +183,13 @@ void Object_GenericFree(Object* object, GC* gc)
 ObjectType* Type_Allocate(VM* vm)
 {
     ObjectType* type = (ObjectType*)Object_Allocate(vm, sizeof(ObjectType));
-    table_init(&type->methods);
+    Table_Init(&type->methods);
     return type;
 }
 
 void Type_Deallocate(ObjectType* type, GC* gc)
 {
-    table_free(gc, &type->methods);
+    Table_Free(gc, &type->methods);
     Object_Deallocate(gc, (Object*)type);
 }
 
@@ -211,12 +211,12 @@ static bool type_call(Object* callee, uint8_t argCount, VM* vm)
     vm->coroutine->stackTop[-argCount - 1] = OBJ_VAL(Object_New(vm, type));
 
     Value initializer;
-    if (table_get(&type->methods, OBJ_VAL(vm->initString), &initializer)) {
+    if (Table_Get(&type->methods, OBJ_VAL(vm->initString), &initializer)) {
         return Object_Call(AS_OBJ(initializer), argCount, vm);
     }
 
     if (argCount != 0) {
-        runtime_error(vm, "Expected 0 arguments but got %d.", argCount);
+        Vm_RuntimeError(vm, "Expected 0 arguments but got %d.", argCount);
         return false;
     }
 
@@ -248,7 +248,7 @@ ObjectType* Type_New(VM* vm)
 {
     ObjectType* meta = new_meta_type(vm);
     ObjectType* type = (ObjectType*)Object_New(vm, meta);
-    table_init(&type->methods);
+    Table_Init(&type->methods);
     return type;
 }
 

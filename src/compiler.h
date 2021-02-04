@@ -5,8 +5,8 @@ typedef struct ObjectFunction ObjectFunction;
 typedef struct ObjectModule ObjectModule;
 typedef struct VM VM;
 
-ObjectFunction* compile(VM* vm, const char* source, ObjectModule* mod);
+ObjectFunction* Compiler_Compile(VM* vm, const char* source, ObjectModule* mod);
 
-void mark_compiler_roots(VM* vm);
+void Compiler_MarkRoots(VM* vm);
 
 #endif

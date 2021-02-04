@@ -14,9 +14,9 @@ typedef struct {
     char interpolationDepth;
 } Scanner;
 
-void scanner_init(Scanner* scanner, char const* source);
-void scanner_clear(Scanner* scanner);
+void Scanner_Init(Scanner* scanner, char const* source);
+void Scanner_Clear(Scanner* scanner);
 
-Token scanner_scan_token(Scanner* scanner);
+Token Scanner_ScanToken(Scanner* scanner);
 
 #endif

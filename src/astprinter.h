@@ -3,6 +3,6 @@
 
 #include "ast.h"
 
-void print_ast(AST* ast);
+void AstPrinter_Print(AST* ast);
 
 #endif

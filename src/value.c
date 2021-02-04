@@ -6,12 +6,12 @@
 #include "object.h"
 #include "memory.h"
 
-bool value_is_falsey(Value value)
+bool Value_IsFalsey(Value value)
 {
     return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
-bool values_equal(Value a, Value b)
+bool Value_Equal(Value a, Value b)
 {
 #if NAN_BOXING
     if (IS_NUMBER(a) && IS_NUMBER(b)) {
@@ -39,7 +39,7 @@ bool values_equal(Value a, Value b)
  *  Thomas Wang, Integer Hash Functions
  *  https://gist.github.com/badboy/6267743
  */
-uint32_t hash_bits(uint64_t hash)
+uint32_t Value_HashBits(uint64_t hash)
 {
     hash = ~hash + (hash << 18);
     hash = hash ^ (hash >> 31);
@@ -56,17 +56,17 @@ static uint32_t hash_number(double number)
 {
     uint64_t bits;
     memcpy(&bits, &number, sizeof(double));
-    return hash_bits(bits);
+    return Value_HashBits(bits);
 }
 
-uint32_t value_hash(Value value)
+uint32_t Value_Hash(Value value)
 {
 #if NAN_BOXING
     if (IS_OBJ(value)) {
         return Object_Hash(AS_OBJ(value));
     }
 
-    return hash_bits(value);
+    return Value_HashBits(value);
 #else
     switch (value.type) {
         case VALUE_NIL: return 1;
@@ -79,7 +79,7 @@ uint32_t value_hash(Value value)
 #endif
 }
 
-void print_value(Value value)
+void Value_Print(Value value)
 {
 #if NAN_BOXING
     if (IS_NIL(value)) {

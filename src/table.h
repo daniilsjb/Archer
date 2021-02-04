@@ -22,18 +22,18 @@ typedef struct Table {
     Entry* entries;
 } Table;
 
-void table_init(Table* table);
-void table_free(GC* gc, Table* table);
+void Table_Init(Table* table);
+void Table_Free(GC* gc, Table* table);
 
-size_t table_size(Table* table);
+size_t Table_Size(Table* table);
 
-bool table_get(Table* table, Value key, Value* value);
+bool Table_Get(Table* table, Value key, Value* value);
 
-bool table_put(VM* vm, Table* table, Value key, Value value);
-void table_put_from(VM* vm, Table* source, Table* destination);
+bool Table_Put(VM* vm, Table* table, Value key, Value value);
+void Table_PutFrom(VM* vm, Table* source, Table* destination);
 
-bool table_remove(Table* table, Value key);
+bool Table_Remove(Table* table, Value key);
 
-ObjectString* table_find_string(Table* table, const char* chars, size_t length, uint32_t hash);
+ObjectString* Table_FindString(Table* table, const char* chars, size_t length, uint32_t hash);
 
 #endif

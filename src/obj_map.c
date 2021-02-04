@@ -10,13 +10,13 @@
 
 static bool method_length(VM* vm, Value* args)
 {
-    args[-1] = NUMBER_VAL((double)table_size(&VAL_AS_MAP(args[-1])->table));
+    args[-1] = NUMBER_VAL((double)Table_Size(&VAL_AS_MAP(args[-1])->table));
     return true;
 }
 
 static bool method_is_empty(VM* vm, Value* args)
 {
-    args[-1] = BOOL_VAL(table_size(&VAL_AS_MAP(args[-1])->table) == 0);
+    args[-1] = BOOL_VAL(Table_Size(&VAL_AS_MAP(args[-1])->table) == 0);
     return true;
 }
 
@@ -26,7 +26,7 @@ static bool method_contains_key(VM* vm, Value* args)
     Value key = args[0];
 
     Value dump;
-    args[-1] = BOOL_VAL(table_get(&map->table, key, &dump));
+    args[-1] = BOOL_VAL(Table_Get(&map->table, key, &dump));
     return true;
 }
 
@@ -37,7 +37,7 @@ static bool method_get_or_default(VM* vm, Value* args)
     Value value = args[1];
 
     Value result;
-    if (table_get(&map->table, key, &result)) {
+    if (Table_Get(&map->table, key, &result)) {
         args[-1] = result;
     } else {
         args[-1] = value;
@@ -50,10 +50,10 @@ static bool method_put_if_absent(VM* vm, Value* args)
 {
     ObjectMap* map = VAL_AS_MAP(args[-1]);
     Value result;
-    if (table_get(&map->table, args[0], &result)) {
+    if (Table_Get(&map->table, args[0], &result)) {
         args[-1] = result;
     } else {
-        table_put(vm, &map->table, args[0], args[1]);
+        Table_Put(vm, &map->table, args[0], args[1]);
         args[-1] = NIL_VAL();
     }
 
@@ -68,7 +68,7 @@ static bool method_put_all(VM* vm, Value* args)
 
     ObjectMap* map = VAL_AS_MAP(args[-1]);
     ObjectMap* other = VAL_AS_MAP(args[0]);
-    table_put_from(vm, &other->table, &map->table);
+    Table_PutFrom(vm, &other->table, &map->table);
 
     args[-1] = NIL_VAL();
     return true;
@@ -76,14 +76,14 @@ static bool method_put_all(VM* vm, Value* args)
 
 static bool method_remove(VM* vm, Value* args)
 {
-    table_remove(&VAL_AS_MAP(args[-1])->table, args[0]);
+    Table_Remove(&VAL_AS_MAP(args[-1])->table, args[0]);
     args[-1] = NIL_VAL();
     return true;
 }
 
 static bool method_clear(VM* vm, Value* args)
 {
-    table_free(&vm->gc, &VAL_AS_MAP(args[-1])->table);
+    Table_Free(&vm->gc, &VAL_AS_MAP(args[-1])->table);
     args[-1] = NIL_VAL();
     return true;
 }
@@ -100,8 +100,8 @@ static void map_print(Object* object)
 
 static bool map_get_subscript(Object* object, Value index, VM* vm, Value* result)
 {
-    if (!table_get(&AS_MAP(object)->table, index, result)) {
-        runtime_error(vm, "Key not found.");
+    if (!Table_Get(&AS_MAP(object)->table, index, result)) {
+        Vm_RuntimeError(vm, "Key not found.");
         return false;
     }
     
@@ -110,7 +110,7 @@ static bool map_get_subscript(Object* object, Value index, VM* vm, Value* result
 
 static bool map_set_subscript(Object* object, Value index, Value value, VM* vm)
 {
-    return table_put(vm, &AS_MAP(object)->table, index, value);
+    return Table_Put(vm, &AS_MAP(object)->table, index, value);
 }
 
 static void map_traverse(Object* object, GC* gc)
@@ -121,7 +121,7 @@ static void map_traverse(Object* object, GC* gc)
 
 static void map_free(Object* object, GC* gc)
 {
-    table_free(gc, &AS_MAP(object)->table);
+    Table_Free(gc, &AS_MAP(object)->table);
     Object_GenericFree(object, gc);
 }
 
@@ -162,11 +162,11 @@ void Map_PrepareType(ObjectType* type, VM* vm)
 ObjectMap* Map_New(VM* vm)
 {
     ObjectMap* map = ALLOCATE_MAP(vm);
-    table_init(&map->table);
+    Table_Init(&map->table);
     return map;
 }
 
 void Map_Insert(ObjectMap* map, Value key, Value value, VM* vm)
 {
-    table_put(vm, &map->table, key, value);
+    Table_Put(vm, &map->table, key, value);
 }

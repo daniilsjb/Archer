@@ -233,7 +233,7 @@ static Chunk* current_chunk(Compiler* compiler)
 
 static void emit_byte(Compiler* compiler, uint8_t byte)
 {
-    chunk_write(compiler->vm, current_chunk(compiler), byte, compiler->token.line);
+    Chunk_Write(compiler->vm, current_chunk(compiler), byte, compiler->token.line);
 }
 
 static void emit_bytes(Compiler* compiler, uint8_t a, uint8_t b)
@@ -263,7 +263,7 @@ static void emit_return(Compiler* compiler)
 
 static uint8_t make_constant(Compiler* compiler, Value value)
 {
-    int constant = chunk_add_constant(compiler->vm, current_chunk(compiler), value);
+    int constant = Chunk_AddConst(compiler->vm, current_chunk(compiler), value);
     if (constant > UINT8_MAX) {
         error(compiler, "Too many constants in one chunk.");
         return 0;
@@ -457,7 +457,7 @@ static int resolve_local(Compiler* compiler, Token* identifier)
     for (int i = compiler->localCount - 1; i >= 0; i--) {
         Local* local = &compiler->locals[i];
 
-        if (lexemes_equal(identifier, &local->identifier)) {
+        if (Token_LexemesEqual(identifier, &local->identifier)) {
             if (local->scopeDepth == -1) {
                 error(compiler, "Cannot read local variable in its own initializer.");
             }
@@ -522,7 +522,7 @@ static void declare_local_variable(Compiler* compiler, Token identifier)
             break;
         }
 
-        if (lexemes_equal(&identifier, &local->identifier)) {
+        if (Token_LexemesEqual(&identifier, &local->identifier)) {
             error(compiler, "Variable with this name already declared in this scope.");
         }
     }
@@ -646,12 +646,12 @@ void compile_class_decl(Compiler* compiler, Declaration* decl)
         compiler->token = superclass;
         named_variable(compiler, superclass, LOAD);
 
-        if (lexemes_equal(&identifier, &superclass)) {
+        if (Token_LexemesEqual(&identifier, &superclass)) {
             error(compiler, "A class cannot inherit from itself.");
         }
 
         begin_scope(compiler);
-        add_local(compiler, synthetic_token("super"));
+        add_local(compiler, Token_Synthetic("super"));
         define_variable(compiler, 0);
 
         named_variable(compiler, identifier, LOAD);
@@ -713,7 +713,7 @@ static void unpack_tuple(Compiler* compiler, Expression* tuple, size_t length)
 
 static void compile_multiple_variable_decl(Compiler* compiler, Declaration* decl, ParameterList* identifiers)
 {
-    size_t length = ast_parameter_list_length(identifiers);
+    size_t length = Ast_ParameterListLength(identifiers);
     if (length > 255) {
         error(compiler, "Cannot unpack into more than 255 variables.");
     }
@@ -841,9 +841,9 @@ static void for_in_declare_elements(Compiler* compiler, VariableTarget* target)
 static void for_in_store_elements(Compiler* compiler, VariableTarget* target)
 {
     if (target->type == VAR_UNPACK) {
-        uint8_t count = (uint8_t)ast_parameter_list_length(target->as.unpack);
+        uint8_t count = (uint8_t)Ast_ParameterListLength(target->as.unpack);
         emit_bytes(compiler, OP_TUPLE_UNPACK, count);
-        for (ParameterList* current = ast_parameter_list_end(target->as.unpack); current != NULL; current = current->prev) {
+        for (ParameterList* current = Ast_ParameterListEnd(target->as.unpack); current != NULL; current = current->prev) {
             named_variable(compiler, current->parameter, STORE);
             emit_byte(compiler, OP_POP);
         }
@@ -865,7 +865,7 @@ void compile_for_in_stmt(Compiler* compiler, Statement* stmt)
     Expression* collection = stmt->as.forInStmt.collection;
     compile_expression(compiler, collection);
     emit_byte(compiler, OP_ITERATOR);
-    add_local(compiler, empty_token());
+    add_local(compiler, Token_Empty());
     initialize_local(compiler);
 
     size_t loopStart = current_chunk(compiler)->count;
@@ -1116,12 +1116,12 @@ static void compile_super_invocation(Compiler* compiler, Expression* expr)
     compiler->token = method;
     uint8_t name = make_identifier_constant(compiler, method);
 
-    named_variable(compiler, synthetic_token("this"), LOAD);
+    named_variable(compiler, Token_Synthetic("this"), LOAD);
 
     ArgumentList* arguments = expr->as.callExpr.arguments;
     uint8_t argumentCount = (uint8_t)compile_argument_list(compiler, arguments);
 
-    named_variable(compiler, synthetic_token("super"), LOAD);
+    named_variable(compiler, Token_Synthetic("super"), LOAD);
     emit_bytes(compiler, OP_SUPER_INVOKE, name);
     emit_byte(compiler, argumentCount);
 }
@@ -1189,20 +1189,20 @@ void compile_super_expr(Compiler* compiler, Expression* expr)
     compiler->token = method;
     uint8_t name = make_identifier_constant(compiler, method);
 
-    named_variable(compiler, synthetic_token("this"), LOAD);
-    named_variable(compiler, synthetic_token("super"), LOAD);
+    named_variable(compiler, Token_Synthetic("this"), LOAD);
+    named_variable(compiler, Token_Synthetic("super"), LOAD);
     emit_bytes(compiler, OP_GET_SUPER, name);
 }
 
 static void compile_assignment_target(Compiler* compiler, AssignmentTarget* target)
 {
     if (target->type == VAR_UNPACK) {
-        uint8_t count = (uint8_t)ast_expression_list_length(target->as.unpack);
+        uint8_t count = (uint8_t)Ast_ExpressionListLength(target->as.unpack);
 
         emit_byte(compiler, OP_DUP);
         emit_bytes(compiler, OP_TUPLE_UNPACK, count);
 
-        for (ExpressionList* current = ast_expression_list_end(target->as.unpack); current != NULL; current = current->prev) {
+        for (ExpressionList* current = Ast_ExpressionListEnd(target->as.unpack); current != NULL; current = current->prev) {
             compile_expression(compiler, current->expression);
             emit_byte(compiler, OP_POP);
         }
@@ -1729,7 +1729,7 @@ void compile_range_expr(Compiler* compiler, Expression* expr)
 
 void compile_lambda_expr(Compiler* compiler, Expression* expr)
 {
-    compile_function(compiler, expr->as.lambdaExpr.function, TYPE_LAMBDA, empty_token(), false);
+    compile_function(compiler, expr->as.lambdaExpr.function, TYPE_LAMBDA, Token_Empty(), false);
 }
 
 void compile_list_expr(Compiler* compiler, Expression* expr)
@@ -1967,12 +1967,12 @@ size_t compile_declaration_list(Compiler* compiler, DeclarationList* list)
     return count;
 }
 
-ObjectFunction* compile(VM* vm, const char* source, ObjectModule* mod)
+ObjectFunction* Compiler_Compile(VM* vm, const char* source, ObjectModule* mod)
 {
     vm->compiler = NULL;
     vm->classCompiler = NULL;
 
-    AST* ast = parse(source);
+    AST* ast = Parser_Parse(source);
     if (!ast) {
         return NULL;
     }
@@ -1983,17 +1983,17 @@ ObjectFunction* compile(VM* vm, const char* source, ObjectModule* mod)
 
     Compiler compiler;
     compiler.vm = vm;
-    compiler_init(&compiler, vm, TYPE_SCRIPT, empty_token(), mod);
+    compiler_init(&compiler, vm, TYPE_SCRIPT, Token_Empty(), mod);
 
     compile_tree(&compiler, ast);
     ObjectFunction* function = finish_compilation(vm);
 
-    ast_delete_tree(ast);
+    Ast_DeleteTree(ast);
 
     return compiler.error ? NULL : function;
 }
 
-void mark_compiler_roots(VM* vm)
+void Compiler_MarkRoots(VM* vm)
 {
     GC* gc = &vm->gc;
     for (Compiler* compiler = vm->compiler; compiler != NULL; compiler = compiler->enclosing) {

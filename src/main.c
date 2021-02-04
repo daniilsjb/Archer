@@ -5,8 +5,8 @@
 #include "vm.h"
 #include "file_reader.h"
 
-void run_file(const char* fileName);
-void run_prompt();
+static void run_file(const char* fileName);
+static void run_prompt();
 
 int main(int argc, const char* argv[])
 {
@@ -25,10 +25,10 @@ int main(int argc, const char* argv[])
 void run_file(const char* fileName)
 {
     VM vm;
-    vm_init(&vm);
+    Vm_Init(&vm);
 
     char* source = Reader_ReadFile(fileName);
-    InterpretStatus status = vm_interpret(&vm, source, fileName);
+    InterpretStatus status = Vm_Interpret(&vm, source, fileName);
     free(source);
 
     if (status == INTERPRET_COMPILE_ERROR) {
@@ -38,13 +38,13 @@ void run_file(const char* fileName)
         exit(ERR_SOFTWARE);
     }
 
-    vm_free(&vm);
+    Vm_Free(&vm);
 }
 
 void run_prompt()
 {
     VM vm;
-    vm_init(&vm);
+    Vm_Init(&vm);
 
     char line[1024];
     while (true) {
@@ -55,8 +55,8 @@ void run_prompt()
             break;
         }
 
-        vm_interpret(&vm, line, "main.archer");
+        Vm_Interpret(&vm, line, "main.archer");
     }
 
-    vm_free(&vm);
+    Vm_Free(&vm);
 }

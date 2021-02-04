@@ -199,7 +199,7 @@ ParseRule rules[] = {
 
 static void parser_init(Parser* parser, const char* source)
 {
-    scanner_init(&parser->scanner, source);
+    Scanner_Init(&parser->scanner, source);
     parser->error = false;
     parser->panic = false;
 }
@@ -245,7 +245,7 @@ static bool check(Parser* parser, TokenType type)
 
 static bool next_token(Parser* parser)
 {
-    parser->current = scanner_scan_token(&parser->scanner);
+    parser->current = Scanner_ScanToken(&parser->scanner);
     return !check(parser, TOKEN_ERROR);
 }
 
@@ -285,7 +285,7 @@ static bool reached_end(Parser* parser)
 static void synchronize(Parser* parser)
 {
     parser->panic = false;
-    scanner_clear(&parser->scanner);
+    Scanner_Clear(&parser->scanner);
 
     while (!check(parser, TOKEN_EOF)) {
         switch (parser->previous.type) {
@@ -346,7 +346,7 @@ static Declaration* finish_coroutine(Parser* parser)
         return function_decl(parser, true);
     }
 
-    Declaration* coroutine = ast_new_statement_decl(ast_new_expression_stmt(coroutine_expr(parser)));
+    Declaration* coroutine = Ast_NewStatementDecl(Ast_NewExpressionStmt(coroutine_expr(parser)));
     consume(parser, TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
     return coroutine;
 }
@@ -376,16 +376,16 @@ Declaration* import_decl(Parser* parser)
         Token alias = parser->previous;
 
         consume(parser, TOKEN_SEMICOLON, "Expected ';' after import.");
-        return ast_new_import_as_decl(moduleName, alias);
+        return Ast_NewImportAsDecl(moduleName, alias);
     } else if (match(parser, TOKEN_FOR)) {
         ParameterList* names = parameters_rule(parser);
 
         consume(parser, TOKEN_SEMICOLON, "Expected ';' after import.");
-        return ast_new_import_for_decl(moduleName, names);
+        return Ast_NewImportForDecl(moduleName, names);
     }
 
     consume(parser, TOKEN_SEMICOLON, "Expected ';' after import.");
-    return ast_new_import_all_decl(moduleName);
+    return Ast_NewImportAllDecl(moduleName);
 }
 
 Declaration* class_decl(Parser* parser)
@@ -393,7 +393,7 @@ Declaration* class_decl(Parser* parser)
     consume(parser, TOKEN_IDENTIFIER, "Expected class name in declaration.");
     Token identifier = parser->previous;
 
-    Token superclass = empty_token();
+    Token superclass = Token_Empty();
     if (match(parser, TOKEN_LESS)) {
         consume(parser, TOKEN_IDENTIFIER, "Expected superclass name in declaration.");
         superclass = parser->previous;
@@ -402,16 +402,16 @@ Declaration* class_decl(Parser* parser)
     MethodList* body = NULL;
     consume(parser, TOKEN_L_BRACE, "Expected '{' before class body in declaration.");
     while (!check(parser, TOKEN_R_BRACE) && !check(parser, TOKEN_EOF)) {
-        ast_method_list_append(&body, method_rule(parser));
+        Ast_MethodListAppend(&body, method_rule(parser));
     }
     consume(parser, TOKEN_R_BRACE, "Expected '}' after class body in declaration.");
 
-    return ast_new_class_decl(identifier, superclass, body);
+    return Ast_NewClassDecl(identifier, superclass, body);
 }
 
 Declaration* function_decl(Parser* parser, bool coroutine)
 {
-    return ast_new_function_decl(named_function_rule(parser, coroutine));
+    return Ast_NewFunctionDecl(named_function_rule(parser, coroutine));
 }
 
 Declaration* variable_decl(Parser* parser)
@@ -426,18 +426,18 @@ Declaration* begin_variable_decl(Parser* parser)
         ParameterList* identifiers = NULL;
         do {
             consume(parser, TOKEN_IDENTIFIER, "Expected variable name in declaration.");
-            ast_parameter_list_append(&identifiers, parser->previous);
+            Ast_ParameterListAppend(&identifiers, parser->previous);
         } while (match(parser, TOKEN_COMMA));
 
         consume(parser, TOKEN_PIPE, "Expected '|' at the end of unpacking declaration.");
 
-        VariableTarget* target = ast_new_unpack_variable_target(identifiers);
-        return ast_new_variable_decl(target, NULL);
+        VariableTarget* target = Ast_NewUnpackVariableTarget(identifiers);
+        return Ast_NewVariableDecl(target, NULL);
     } else {
         consume(parser, TOKEN_IDENTIFIER, "Expected variable name in declaration.");
 
-        VariableTarget* target = ast_new_single_variable_target(parser->previous);
-        return ast_new_variable_decl(target, NULL);
+        VariableTarget* target = Ast_NewSingleVariableTarget(parser->previous);
+        return Ast_NewVariableDecl(target, NULL);
     }
 
     return NULL;
@@ -455,7 +455,7 @@ Declaration* end_variable_decl(Parser* parser, Declaration* declaration)
 
 Declaration* statement_decl(Parser* parser)
 {
-    return ast_new_statement_decl(statement(parser));
+    return Ast_NewStatementDecl(statement(parser));
 }
 
 Statement* statement(Parser* parser)
@@ -488,7 +488,7 @@ Statement* for_stmt(Parser* parser)
             initializer = end_variable_decl(parser, initializer);
         }
     } else if (!match(parser, TOKEN_SEMICOLON)) {
-        initializer = ast_new_statement_decl(expression_stmt(parser));
+        initializer = Ast_NewStatementDecl(expression_stmt(parser));
     }
 
     Expression* condition = NULL;
@@ -504,7 +504,7 @@ Statement* for_stmt(Parser* parser)
     }
 
     Statement* body = statement(parser);
-    return ast_new_for_stmt(initializer, condition, increment, body);
+    return Ast_NewForStmt(initializer, condition, increment, body);
 }
 
 Statement* for_in_stmt(Parser* parser, Declaration* declaration)
@@ -516,7 +516,7 @@ Statement* for_in_stmt(Parser* parser, Declaration* declaration)
     Expression* collection = expression(parser);
     consume(parser, TOKEN_R_PAREN, "Expected ')' after collection in 'for-in'.");
     Statement* body = statement(parser);
-    return ast_new_for_in_stmt(declaration, collection, body);
+    return Ast_NewForInStmt(declaration, collection, body);
 }
 
 Statement* while_stmt(Parser* parser)
@@ -526,7 +526,7 @@ Statement* while_stmt(Parser* parser)
     consume(parser, TOKEN_R_PAREN, "Expected ')' after condition in 'while'.");
 
     Statement* body = statement(parser);
-    return ast_new_while_stmt(condition, body);
+    return Ast_NewWhileStmt(condition, body);
 }
 
 Statement* do_while_stmt(Parser* parser)
@@ -539,19 +539,19 @@ Statement* do_while_stmt(Parser* parser)
     consume(parser, TOKEN_R_PAREN, "Expected ')' after condition in 'while'.");
     consume(parser, TOKEN_SEMICOLON, "Expected ';' after 'do-while' statement.");
 
-    return ast_new_do_while_stmt(body, condition);
+    return Ast_NewDoWhileStmt(body, condition);
 }
 
 Statement* break_stmt(Parser* parser)
 {
     consume(parser, TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
-    return ast_new_break_stmt(parser->previous);
+    return Ast_NewBreakStmt(parser->previous);
 }
 
 Statement* continue_stmt(Parser* parser)
 {
     consume(parser, TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
-    return ast_new_continue_stmt(parser->previous);
+    return Ast_NewContinueStmt(parser->previous);
 }
 
 Statement* when_stmt(Parser* parser)
@@ -572,7 +572,7 @@ Statement* when_stmt(Parser* parser)
 
     consume(parser, TOKEN_R_BRACE, "Expected '}' after 'when' body.");
 
-    return ast_new_when_stmt(control, entries, elseBranch);
+    return Ast_NewWhenStmt(control, entries, elseBranch);
 }
 
 Statement* if_stmt(Parser* parser)
@@ -587,7 +587,7 @@ Statement* if_stmt(Parser* parser)
         elseBranch = statement(parser);
     }
 
-    return ast_new_if_stmt(condition, thenBranch, elseBranch);
+    return Ast_NewIfStmt(condition, thenBranch, elseBranch);
 }
 
 Statement* return_stmt(Parser* parser)
@@ -599,26 +599,26 @@ Statement* return_stmt(Parser* parser)
     }
 
     consume(parser, TOKEN_SEMICOLON, "Expected ';' at the end of 'return'.");
-    return ast_new_return_stmt(keyword, expr);
+    return Ast_NewReturnStmt(keyword, expr);
 }
 
 Statement* print_stmt(Parser* parser)
 {
     Expression* expr = expression(parser);
     consume(parser, TOKEN_SEMICOLON, "Expected ';' at the end of 'print'.");
-    return ast_new_print_stmt(expr);
+    return Ast_NewPrintStmt(expr);
 }
 
 Statement* block_stmt(Parser* parser)
 {
-    return ast_new_block_stmt(block_rule(parser));
+    return Ast_NewBlockStmt(block_rule(parser));
 }
 
 Statement* expression_stmt(Parser* parser)
 {
     Expression* expr = expression(parser);
     consume(parser, TOKEN_SEMICOLON, "Expected ';' at the end of statement.");
-    return ast_new_expression_stmt(expr);
+    return Ast_NewExpressionStmt(expr);
 }
 
 Expression* expression(Parser* parser)
@@ -628,7 +628,7 @@ Expression* expression(Parser* parser)
 
 Expression* literal_expr(Parser* parser)
 {
-    return ast_new_literal_expr(parser->previous);
+    return Ast_NewLiteralExpr(parser->previous);
 }
 
 static void synchronize_interpolation(Parser* parser)
@@ -656,12 +656,12 @@ Expression* string_interp_expr(Parser* parser)
 {
     ExpressionList* values = NULL;
     if (parser->previous.length != 0) {
-        ast_expression_list_append(&values, ast_new_literal_expr(parser->previous));
+        Ast_ExpressionListAppend(&values, Ast_NewLiteralExpr(parser->previous));
     }
 
     while (parser->previous.type != TOKEN_STRING_INTERP_END && !reached_end(parser)) {
         Expression* expr = expression(parser);
-        ast_expression_list_append(&values, expr);
+        Ast_ExpressionListAppend(&values, expr);
 
         if (expr) {
             advance(parser);
@@ -670,11 +670,11 @@ Expression* string_interp_expr(Parser* parser)
         synchronize_interpolation(parser);
 
         if (parser->previous.length != 0) {
-            ast_expression_list_append(&values, ast_new_literal_expr(parser->previous));
+            Ast_ExpressionListAppend(&values, Ast_NewLiteralExpr(parser->previous));
         }
     }
 
-    return ast_new_string_interp_expr(values);
+    return Ast_NewStringInterpExpr(values);
 }
 
 Expression* lambda_expr(Parser* parser)
@@ -687,13 +687,13 @@ Expression* lambda_expr(Parser* parser)
 
     FunctionBody* body = NULL;
     if (match(parser, TOKEN_L_BRACE)) {
-        body = ast_new_block_function_body(block_rule(parser));
+        body = Ast_NewBlockFunctionBody(block_rule(parser));
     } else {
-        body = ast_new_expression_function_body(expression(parser));
+        body = Ast_NewExpressionFunctionBody(expression(parser));
     }
 
-    Function* function = ast_new_function(parameters, body);
-    return ast_new_lambda_expr(function);
+    Function* function = Ast_NewFunction(parameters, body);
+    return Ast_NewLambdaExpr(function);
 }
 
 Expression* list_expr(Parser* parser)
@@ -701,13 +701,13 @@ Expression* list_expr(Parser* parser)
     ExpressionList* elements = NULL;
     if (!check(parser, TOKEN_R_BRACKET)) {
         do {
-            ast_expression_list_append(&elements, expression(parser));
+            Ast_ExpressionListAppend(&elements, expression(parser));
         } while (match(parser, TOKEN_COMMA));
     }
 
     consume(parser, TOKEN_R_BRACKET, "Expected ']' after list expression.");
 
-    return ast_new_list_expr(elements);
+    return Ast_NewListExpr(elements);
 }
 
 Expression* map_expr(Parser* parser)
@@ -718,17 +718,17 @@ Expression* map_expr(Parser* parser)
             Expression* key = expression(parser);
             consume(parser, TOKEN_COLON, "Expected ':' after map key.");
             Expression* value = expression(parser);
-            ast_map_entry_list_append(&entries, ast_new_map_entry(key, value));
+            Ast_MapEntryListAppend(&entries, Ast_NewMapEntry(key, value));
         } while (match(parser, TOKEN_COMMA));
     }
     consume(parser, TOKEN_R_BRACE, "Expected '}' after map.");
 
-    return ast_new_map_expr(entries);
+    return Ast_NewMapExpr(entries);
 }
 
 Expression* identifier_expr(Parser* parser)
 {
-    return ast_new_identifier_expr(parser->previous, LOAD);
+    return Ast_NewIdentifierExpr(parser->previous, LOAD);
 }
 
 static void set_assignment_context(Parser* parser, Expression* expr)
@@ -749,14 +749,14 @@ Expression* prefix_inc_expr(Parser* parser)
     Token op = parser->previous;
     Expression* expr = parse_precedence(parser, PREC_UNARY);
     set_assignment_context(parser, expr);
-    return ast_new_prefix_inc_expr(op, expr);
+    return Ast_NewPrefixIncExpr(op, expr);
 }
 
 Expression* unary_expr(Parser* parser)
 {
     Token op = parser->previous;
     Expression* expr = parse_precedence(parser, PREC_UNARY);
-    return ast_new_unary_expr(op, expr);
+    return Ast_NewUnaryExpr(op, expr);
 }
 
 Expression* grouping_expr(Parser* parser)
@@ -764,14 +764,14 @@ Expression* grouping_expr(Parser* parser)
     Expression* expr = expression(parser);
     if (match(parser, TOKEN_COMMA)) {
         ExpressionList* elements = NULL;
-        ast_expression_list_append(&elements, expr);
+        Ast_ExpressionListAppend(&elements, expr);
 
         do {
-            ast_expression_list_append(&elements, expression(parser));
+            Ast_ExpressionListAppend(&elements, expression(parser));
         } while (match(parser, TOKEN_COMMA));
 
         consume(parser, TOKEN_R_PAREN, "Expected ')' after tuple expression.");
-        return ast_new_tuple_expr(elements);
+        return Ast_NewTupleExpr(elements);
     }
 
     consume(parser, TOKEN_R_PAREN, "Expected ')' after grouping expression.");
@@ -784,14 +784,14 @@ Expression* super_expr(Parser* parser)
     consume(parser, TOKEN_DOT, "Expected '.' after 'super'.");
     consume(parser, TOKEN_IDENTIFIER, "Expected superclass method name in 'super'.");
     Token method = parser->previous;
-    return ast_new_super_expr(keyword, method);
+    return Ast_NewSuperExpr(keyword, method);
 }
 
 Expression* coroutine_expr(Parser* parser)
 {
     Token keyword = parser->previous;
     Expression* expr = expression(parser);
-    return ast_new_coroutine_expr(keyword, expr);
+    return Ast_NewCoroutineExpr(keyword, expr);
 }
 
 Expression* yield_expr(Parser* parser)
@@ -802,7 +802,7 @@ Expression* yield_expr(Parser* parser)
         expr = expression(parser);
     }
 
-    return ast_new_yield_expr(keyword, expr);
+    return Ast_NewYieldExpr(keyword, expr);
 }
 
 Expression* unpack_assignment_expr(Parser* parser)
@@ -812,22 +812,22 @@ Expression* unpack_assignment_expr(Parser* parser)
         Expression* target = parse_precedence(parser, PREC_POSTFIX);
         set_assignment_context(parser, target);
 
-        ast_expression_list_append(&targets, target);
+        Ast_ExpressionListAppend(&targets, target);
     } while (match(parser, TOKEN_COMMA));
 
     consume(parser, TOKEN_PIPE, "Expected '|' at the end of unpacking assignment.");
-    AssignmentTarget* target = ast_new_unpack_assignment_target(targets);
+    AssignmentTarget* target = Ast_NewUnpackAssignmentTarget(targets);
 
     consume(parser, TOKEN_EQUAL, "Expected '=' in unpacking assignment.");
     Expression* value = expression(parser);
-    return ast_new_assignment_expr(target, value);
+    return Ast_NewAssignmentExpr(target, value);
 }
 
 Expression* call_expr(Parser* parser, Expression* prefix)
 {
     ArgumentList* arguments = arguments_rule(parser);
     consume(parser, TOKEN_R_PAREN, "Expected ')' after call arguments.");
-    return ast_new_call_expr(prefix, arguments);
+    return Ast_NewCallExpr(prefix, arguments);
 }
 
 Expression* range_expr(Parser* parser, Expression* prefix)
@@ -839,14 +839,14 @@ Expression* range_expr(Parser* parser, Expression* prefix)
         step = parse_precedence(parser, PREC_CONDITIONAL);
     }
 
-    return ast_new_range_expr(prefix, end, step);
+    return Ast_NewRangeExpr(prefix, end, step);
 }
 
 Expression* property_expr(Parser* parser, Expression* prefix)
 {
     bool safe = parser->previous.type == TOKEN_QUESTION_DOT;
     consume(parser, TOKEN_IDENTIFIER, "Expected property name.");
-    return ast_new_property_expr(prefix, parser->previous, LOAD, safe);
+    return Ast_NewPropertyExpr(prefix, parser->previous, LOAD, safe);
 }
 
 Expression* subscript_expr(Parser* parser, Expression* prefix)
@@ -854,14 +854,14 @@ Expression* subscript_expr(Parser* parser, Expression* prefix)
     bool safe = parser->previous.type == TOKEN_QUESTION_L_BRACKET;
     Expression* index = expression(parser);
     consume(parser, TOKEN_R_BRACKET, "Expected ']' after subscript.");
-    return ast_new_subscript_expr(prefix, index, LOAD, safe);
+    return Ast_NewSubscriptExpr(prefix, index, LOAD, safe);
 }
 
 Expression* postfix_inc_expr(Parser* parser, Expression* prefix)
 {
     set_assignment_context(parser, prefix);
     Token op = parser->previous;
-    return ast_new_postfix_inc_expr(op, prefix);
+    return Ast_NewPostfixIncExpr(op, prefix);
 }
 
 Expression* binary_expr(Parser* parser, Expression* prefix)
@@ -872,26 +872,26 @@ Expression* binary_expr(Parser* parser, Expression* prefix)
     Precedence precedence = (rule->associativity == ASSOC_RIGHT) ? rule->precedence : rule->precedence + 1;
 
     Expression* right = parse_precedence(parser, precedence);
-    return ast_new_binary_expr(prefix, op, right);
+    return Ast_NewBinaryExpr(prefix, op, right);
 }
 
 Expression* assignment_expr(Parser* parser, Expression* prefix)
 {
     set_assignment_context(parser, prefix);
 
-    AssignmentTarget* target = ast_new_single_assignment_target(prefix);
+    AssignmentTarget* target = Ast_NewSingleAssignmentTarget(prefix);
     Expression* value = parse_precedence(parser, PREC_ASSIGNMENT);
-    return ast_new_assignment_expr(target, value);
+    return Ast_NewAssignmentExpr(target, value);
 }
 
 Expression* compound_assignment_expr(Parser* parser, Expression* prefix)
 {
     set_assignment_context(parser, prefix);
 
-    AssignmentTarget* target = ast_new_single_assignment_target(prefix);
+    AssignmentTarget* target = Ast_NewSingleAssignmentTarget(prefix);
     Token op = parser->previous;
     Expression* value = parse_precedence(parser, PREC_ASSIGNMENT);
-    return ast_new_compound_assignment_expr(target, op, value);
+    return Ast_NewCompoundAssignmentExpr(target, op, value);
 }
 
 Expression* logical_expr(Parser* parser, Expression* prefix)
@@ -899,7 +899,7 @@ Expression* logical_expr(Parser* parser, Expression* prefix)
     Token op = parser->previous;
     ParseRule* rule = get_rule(op.type);
     Expression* right = parse_precedence(parser, rule->precedence);
-    return ast_new_logical_expr(prefix, op, right);
+    return Ast_NewLogicalExpr(prefix, op, right);
 }
 
 Expression* conditional_expr(Parser* parser, Expression* prefix)
@@ -907,34 +907,34 @@ Expression* conditional_expr(Parser* parser, Expression* prefix)
     Expression* thenBranch = expression(parser);
     consume(parser, TOKEN_COLON, "Expected ':' in conditional expression.");
     Expression* elseBranch = parse_precedence(parser, PREC_CONDITIONAL);
-    return ast_new_conditional_expr(prefix, thenBranch, elseBranch);
+    return Ast_NewConditionalExpr(prefix, thenBranch, elseBranch);
 }
 
 Expression* elvis_expr(Parser* parser, Expression* prefix)
 {
     Expression* right = expression(parser);
-    return ast_new_elvis_expr(prefix, right);
+    return Ast_NewElvisExpr(prefix, right);
 }
 
 WhenEntry* when_entry_rule(Parser* parser)
 {
     ExpressionList* cases = NULL;
     do {
-        ast_expression_list_append(&cases, expression(parser));
+        Ast_ExpressionListAppend(&cases, expression(parser));
     } while (match(parser, TOKEN_COMMA));
 
     consume(parser, TOKEN_R_ARROW, "Expected '->' after 'when' cases.");
 
     Statement* body = statement(parser);
 
-    return ast_new_when_entry(cases, body);
+    return Ast_NewWhenEntry(cases, body);
 }
 
 WhenEntryList* when_entries_rule(Parser* parser)
 {
     WhenEntryList* entries = NULL;
     while (!check(parser, TOKEN_ELSE) && !check(parser, TOKEN_R_BRACE) && !check(parser, TOKEN_EOF)) {
-        ast_when_entry_list_append(&entries, when_entry_rule(parser));
+        Ast_WhenEntryListAppend(&entries, when_entry_rule(parser));
     }
     return entries;
 }
@@ -943,10 +943,10 @@ Block* block_rule(Parser* parser)
 {
     DeclarationList* body = NULL;
     while (!check(parser, TOKEN_R_BRACE) && !check(parser, TOKEN_EOF)) {
-        ast_declaration_list_append(&body, declaration(parser));
+        Ast_DeclarationListAppend(&body, declaration(parser));
     }
     consume(parser, TOKEN_R_BRACE, "Expected '}' after block.");
-    return ast_new_block(body);
+    return Ast_NewBlock(body);
 }
 
 ArgumentList* arguments_rule(Parser* parser)
@@ -954,10 +954,10 @@ ArgumentList* arguments_rule(Parser* parser)
     ArgumentList* arguments = NULL;
     if (!check(parser, TOKEN_R_PAREN)) {
         do {
-            if (ast_argument_list_length(arguments) > 255) {
+            if (Ast_ArgumentListLength(arguments) > 255) {
                 error(parser, "Cannot have more than 255 arguments.");
             }
-            ast_argument_list_append(&arguments, expression(parser));
+            Ast_ArgumentListAppend(&arguments, expression(parser));
         } while (match(parser, TOKEN_COMMA));
     }
 
@@ -975,15 +975,15 @@ NamedFunction* named_function_rule(Parser* parser, bool coroutine)
 
     FunctionBody* body = NULL;
     if (match(parser, TOKEN_EQUAL)) {
-        body = ast_new_expression_function_body(expression(parser));
+        body = Ast_NewExpressionFunctionBody(expression(parser));
         consume(parser, TOKEN_SEMICOLON, "Expected ';' after expression function.");
     } else {
         consume(parser, TOKEN_L_BRACE, "Expected '{' before function body in declaration.");
-        body = ast_new_block_function_body(block_rule(parser));
+        body = Ast_NewBlockFunctionBody(block_rule(parser));
     }
 
-    Function* function = ast_new_function(parameters, body);
-    return ast_new_named_function(identifier, function, coroutine);
+    Function* function = Ast_NewFunction(parameters, body);
+    return Ast_NewNamedFunction(identifier, function, coroutine);
 }
 
 Method* method_rule(Parser* parser)
@@ -991,7 +991,7 @@ Method* method_rule(Parser* parser)
     bool isStatic = match(parser, TOKEN_STATIC);
     bool isCoroutine = match(parser, TOKEN_COROUTINE);
     NamedFunction* namedFunction = named_function_rule(parser, isCoroutine);
-    return ast_new_method(isStatic, namedFunction);
+    return Ast_NewMethod(isStatic, namedFunction);
 }
 
 ParameterList* parameters_rule(Parser* parser)
@@ -1000,13 +1000,13 @@ ParameterList* parameters_rule(Parser* parser)
     if (!check(parser, TOKEN_R_PAREN)) {
         do {
             consume(parser, TOKEN_IDENTIFIER, "Expected parameter name.");
-            ast_parameter_list_append(&parameters, parser->previous);
+            Ast_ParameterListAppend(&parameters, parser->previous);
         } while (match(parser, TOKEN_COMMA));
     }
     return parameters;
 }
 
-AST* parse(const char* source)
+AST* Parser_Parse(const char* source)
 {
     Parser parser;
     parser_init(&parser, source);
@@ -1015,13 +1015,13 @@ AST* parse(const char* source)
 
     DeclarationList* program = NULL;
     while (!match(&parser, TOKEN_EOF)) {
-        ast_declaration_list_append(&program, declaration(&parser));
+        Ast_DeclarationListAppend(&program, declaration(&parser));
     }
 
     if (parser.error) {
-        ast_delete_declaration_list(program);
+        Ast_DeleteDeclarationList(program);
         return NULL;
     }
 
-    return ast_new_tree(program);
+    return Ast_NewTree(program);
 }

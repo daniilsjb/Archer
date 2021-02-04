@@ -8,7 +8,7 @@
 
 #define TABLE_MAX_LOAD 0.75
 
-void table_init(Table* table)
+void Table_Init(Table* table)
 {
     table->size = 0;
     table->count = 0;
@@ -16,20 +16,20 @@ void table_init(Table* table)
     table->entries = NULL;
 }
 
-void table_free(GC* gc, Table* table)
+void Table_Free(GC* gc, Table* table)
 {
     FREE_ARRAY(gc, Entry, table->entries, table->capacityMask + 1);
-    table_init(table);
+    Table_Init(table);
 }
 
-size_t table_size(Table* table)
+size_t Table_Size(Table* table)
 {
     return table->size;
 }
 
 static Entry* find_entry(Entry* entries, int capacityMask, Value key)
 {
-    uint32_t index = value_hash(key) & capacityMask;
+    uint32_t index = Value_Hash(key) & capacityMask;
     Entry* tombstone = NULL;
 
     while (true) {
@@ -41,7 +41,7 @@ static Entry* find_entry(Entry* entries, int capacityMask, Value key)
             } else if (tombstone == NULL) {
                 tombstone = entry;
             }
-        } else if (values_equal(entry->key, key)) {
+        } else if (Value_Equal(entry->key, key)) {
             return entry;
         }
 
@@ -78,7 +78,7 @@ static void adjust_capacity(VM* vm, Table* table, int capacityMask)
     table->capacityMask = capacityMask;
 }
 
-bool table_get(Table* table, Value key, Value* value)
+bool Table_Get(Table* table, Value key, Value* value)
 {
     if (table->count == 0) {
         return false;
@@ -93,7 +93,7 @@ bool table_get(Table* table, Value key, Value* value)
     return true;
 }
 
-bool table_put(VM* vm, Table* table, Value key, Value value)
+bool Table_Put(VM* vm, Table* table, Value key, Value value)
 {
     if ((double)table->count + 1 > ((double)table->capacityMask + 1) * TABLE_MAX_LOAD) {
         int capacity = GROW_CAPACITY(table->capacityMask + 1) - 1;
@@ -113,17 +113,17 @@ bool table_put(VM* vm, Table* table, Value key, Value value)
     return isNewKey;
 }
 
-void table_put_from(VM* vm, Table* source, Table* destination)
+void Table_PutFrom(VM* vm, Table* source, Table* destination)
 {
     for (int i = 0; i <= source->capacityMask; i++) {
         Entry* entry = &source->entries[i];
         if (!IS_UNDEFINED(entry->key)) {
-            table_put(vm, destination, entry->key, entry->value);
+            Table_Put(vm, destination, entry->key, entry->value);
         }
     }
 }
 
-bool table_remove(Table* table, Value key)
+bool Table_Remove(Table* table, Value key)
 {
     if (table->count == 0) {
         return false;
@@ -146,7 +146,7 @@ static bool strings_equal(const char* chars, size_t length, uint32_t hash, Objec
     return string->length == length && string->hash == hash && memcmp(string->chars, chars, length) == 0;
 }
 
-ObjectString* table_find_string(Table* table, const char* chars, size_t length, uint32_t hash)
+ObjectString* Table_FindString(Table* table, const char* chars, size_t length, uint32_t hash)
 {
     if (table->count == 0) {
         return NULL;

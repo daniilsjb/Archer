@@ -56,21 +56,21 @@ typedef enum {
     INTERPRET_RUNTIME_ERROR
 } InterpretStatus;
 
-void vm_init(VM* vm);
-void vm_free(VM* vm);
+void Vm_Init(VM* vm);
+void Vm_Free(VM* vm);
 
-void vm_push(VM* vm, Value value);
-Value vm_pop(VM* vm);
-Value vm_peek(VM* vm, int distance);
+void Vm_Push(VM* vm, Value value);
+Value Vm_Pop(VM* vm);
+Value Vm_Peek(VM* vm, int distance);
 
-void vm_push_temporary(VM* vm, Value value);
-Value vm_pop_temporary(VM* vm);
-Value vm_peek_temporary(VM* vm, int distance);
+void Vm_PushTemporary(VM* vm, Value value);
+Value Vm_PopTemporary(VM* vm);
+Value Vm_PeekTemporary(VM* vm, int distance);
 
-InterpretStatus vm_interpret(VM* vm, const char* source, const char* path);
+InterpretStatus Vm_Interpret(VM* vm, const char* source, const char* path);
 
-bool call(VM* vm, ObjectClosure* closure, uint8_t argCount);
+bool Vm_Call(VM* vm, ObjectClosure* closure, uint8_t argCount);
 
-InterpretStatus runtime_error(VM* vm, const char* format, ...);
+InterpretStatus Vm_RuntimeError(VM* vm, const char* format, ...);
 
 #endif

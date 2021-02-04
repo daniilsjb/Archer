@@ -137,7 +137,7 @@ static void print_optional_expression(int indent, Expression* expr)
     }
 }
 
-void print_ast(AST* ast)
+void AstPrinter_Print(AST* ast)
 {
     print_tree(0, ast);
 }
@@ -725,7 +725,7 @@ void print_when_entry(int indent, WhenEntry* entry)
 
 void print_when_entry_list(int indent, WhenEntryList* list)
 {
-    if (ast_when_entry_list_length(list) == 0) {
+    if (Ast_WhenEntryListLength(list) == 0) {
         print_indented(indent, "<Empty>\n");
         return;
     }
@@ -752,7 +752,7 @@ void print_map_entry(int indent, MapEntry* entry)
 
 void print_map_entry_list(int indent, MapEntryList* list)
 {
-    if (ast_map_entry_list_length(list) == 0) {
+    if (Ast_MapEntryListLength(list) == 0) {
         print_indented(indent, "<Empty>\n");
         return;
     }
@@ -766,7 +766,7 @@ void print_map_entry_list(int indent, MapEntryList* list)
 
 void print_expression_list(int indent, ExpressionList* list)
 {
-    if (ast_expression_list_length(list) == 0) {
+    if (Ast_ExpressionListLength(list) == 0) {
         print_indented(indent, "<Empty>\n");
         return;
     }
@@ -780,7 +780,7 @@ void print_expression_list(int indent, ExpressionList* list)
 
 void print_argument_list(int indent, ArgumentList* list)
 {
-    if (ast_argument_list_length(list) == 0) {
+    if (Ast_ArgumentListLength(list) == 0) {
         print_indented(indent, "<Empty>\n");
         return;
     }
@@ -815,7 +815,7 @@ void print_function_body(int indent, FunctionBody* body)
 
 void print_parameter_list_inline(ParameterList* list)
 {
-    if (ast_parameter_list_length(list) == 0) {
+    if (Ast_ParameterListLength(list) == 0) {
         printf("<Empty>");
         return;
     }
@@ -854,7 +854,7 @@ void print_named_function(int indent, NamedFunction* namedFunction)
 
 void print_named_function_list(int indent, NamedFunctionList* list)
 {
-    if (ast_named_function_list_length(list) == 0) {
+    if (Ast_NamedFunctionListLength(list) == 0) {
         print_indented(indent, "<Empty>\n");
         return;
     }
@@ -879,7 +879,7 @@ void print_method(int indent, Method* method)
 
 void print_method_list(int indent, MethodList* list)
 {
-    if (ast_method_list_length(list) == 0) {
+    if (Ast_MethodListLength(list) == 0) {
         print_indented(indent, "<Empty>\n");
         return;
     }
@@ -893,7 +893,7 @@ void print_method_list(int indent, MethodList* list)
 
 void print_declaration_list(int indent, DeclarationList* list)
 {
-    if (ast_declaration_list_length(list) == 0) {
+    if (Ast_DeclarationListLength(list) == 0) {
         print_indented(indent, "<Empty>\n");
         return;
     }

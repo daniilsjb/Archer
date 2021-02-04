@@ -94,12 +94,12 @@ typedef struct {
 
 typedef VECTOR(Value) ValueArray;
 
-bool value_is_falsey(Value value);
-bool values_equal(Value a, Value b);
+bool Value_IsFalsey(Value value);
+bool Value_Equal(Value a, Value b);
 
-uint32_t hash_bits(uint64_t hash);
-uint32_t value_hash(Value value);
+uint32_t Value_HashBits(uint64_t hash);
+uint32_t Value_Hash(Value value);
 
-void print_value(Value value);
+void Value_Print(Value value);
 
 #endif

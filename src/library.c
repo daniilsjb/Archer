@@ -64,18 +64,18 @@ static bool typeof_native(VM* vm, Value* args)
 
 static void define_native(VM* vm, const char* name, NativeFn function, int arity)
 {
-    vm_push_temporary(vm, OBJ_VAL(String_FromCString(vm, name)));
-    vm_push_temporary(vm, OBJ_VAL(Native_New(vm, function, arity)));
-    table_put(vm, &vm->builtins, vm_peek_temporary(vm, 1), vm_peek_temporary(vm, 0));
-    vm_pop_temporary(vm);
-    vm_pop_temporary(vm);
+    Vm_PushTemporary(vm, OBJ_VAL(String_FromCString(vm, name)));
+    Vm_PushTemporary(vm, OBJ_VAL(Native_New(vm, function, arity)));
+    Table_Put(vm, &vm->builtins, Vm_PeekTemporary(vm, 1), Vm_PeekTemporary(vm, 0));
+    Vm_PopTemporary(vm);
+    Vm_PopTemporary(vm);
 }
 
 static void define_type(VM* vm, const char* name, ObjectType* type)
 {
-    vm_push_temporary(vm, OBJ_VAL(String_FromCString(vm, name)));
-    table_put(vm, &vm->builtins, vm_peek_temporary(vm, 0), OBJ_VAL(type));
-    vm_pop_temporary(vm);
+    Vm_PushTemporary(vm, OBJ_VAL(String_FromCString(vm, name)));
+    Table_Put(vm, &vm->builtins, Vm_PeekTemporary(vm, 0), OBJ_VAL(type));
+    Vm_PopTemporary(vm);
 }
 
 void Library_Init(VM* vm)
@@ -123,9 +123,9 @@ void Library_Init(VM* vm)
 
 void Library_DefineTypeMethod(ObjectType* type, VM* vm, const char* name, NativeFn function, int arity)
 {
-    vm_push_temporary(vm, OBJ_VAL(String_FromCString(vm, name)));
-    vm_push_temporary(vm, OBJ_VAL(Native_New(vm, function, arity)));
-    table_put(vm, &type->methods, vm_peek_temporary(vm, 1), vm_peek_temporary(vm, 0));
-    vm_pop_temporary(vm);
-    vm_pop_temporary(vm);
+    Vm_PushTemporary(vm, OBJ_VAL(String_FromCString(vm, name)));
+    Vm_PushTemporary(vm, OBJ_VAL(Native_New(vm, function, arity)));
+    Table_Put(vm, &type->methods, Vm_PeekTemporary(vm, 1), Vm_PeekTemporary(vm, 0));
+    Vm_PopTemporary(vm);
+    Vm_PopTemporary(vm);
 }

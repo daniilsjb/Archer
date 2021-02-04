@@ -45,28 +45,28 @@ static bool method_length(VM* vm, Value* args)
 
 static ObjectString* tuple_to_string(Object* object, VM* vm)
 {
-    vm_push(vm, OBJ_VAL(String_FromCString(vm, "(")));
+    Vm_Push(vm, OBJ_VAL(String_FromCString(vm, "(")));
     Value* accumulator = vm->coroutine->stackTop - 1;
 
     ObjectTuple* tuple = AS_TUPLE(object);
     size_t length = tuple->length;
 
     for (size_t i = 0; i < length; i++) {
-        vm_push(vm, OBJ_VAL(String_FromValue(vm, tuple->elements[i])));
-        *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(vm_peek(vm, 0))));
-        vm_pop(vm);
+        Vm_Push(vm, OBJ_VAL(String_FromValue(vm, tuple->elements[i])));
+        *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(Vm_Peek(vm, 0))));
+        Vm_Pop(vm);
 
         if (i != length - 1) {
-            vm_push(vm, OBJ_VAL(String_FromCString(vm, ", ")));
-            *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(vm_peek(vm, 0))));
-            vm_pop(vm);
+            Vm_Push(vm, OBJ_VAL(String_FromCString(vm, ", ")));
+            *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(Vm_Peek(vm, 0))));
+            Vm_Pop(vm);
         }
     }
-    vm_push(vm, OBJ_VAL(String_FromCString(vm, ")")));
-    *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(vm_peek(vm, 0))));
-    vm_pop(vm);
+    Vm_Push(vm, OBJ_VAL(String_FromCString(vm, ")")));
+    *accumulator = OBJ_VAL(String_Concatenate(vm, VAL_AS_STRING(*accumulator), VAL_AS_STRING(Vm_Peek(vm, 0))));
+    Vm_Pop(vm);
 
-    return VAL_AS_STRING(vm_pop(vm));
+    return VAL_AS_STRING(Vm_Pop(vm));
 }
 
 static void tuple_print(Object* object)
@@ -75,7 +75,7 @@ static void tuple_print(Object* object)
 
     printf("(");
     for (size_t i = 0; i < tuple->length; i++) {
-        print_value(tuple->elements[i]);
+        Value_Print(tuple->elements[i]);
 
         if (i != tuple->length - 1) {
             printf(", ");
@@ -88,14 +88,14 @@ static Value* tuple_at_index(ObjectTuple* tuple, int index, VM* vm)
 {
     if (index < 0) {
         if (abs(index) > tuple->length) {
-            runtime_error(vm, "Index out of bounds.");
+            Vm_RuntimeError(vm, "Index out of bounds.");
             return NULL;
         }
 
         return &tuple->elements[tuple->length + index];
     } else {
         if (index >= tuple->length) {
-            runtime_error(vm, "Index out of bounds.");
+            Vm_RuntimeError(vm, "Index out of bounds.");
             return NULL;
         }
 
@@ -106,7 +106,7 @@ static Value* tuple_at_index(ObjectTuple* tuple, int index, VM* vm)
 static bool tuple_get_subscript(Object* object, Value index, VM* vm, Value* result)
 {
     if (!IS_NUMBER(index)) {
-        runtime_error(vm, "Can only subscript lists with numbers.");
+        Vm_RuntimeError(vm, "Can only subscript lists with numbers.");
         return false;
     }
 
@@ -123,7 +123,7 @@ static bool tuple_get_subscript(Object* object, Value index, VM* vm, Value* resu
 static bool tuple_set_subscript(Object* object, Value index, Value value, VM* vm)
 {
     if (!IS_NUMBER(index)) {
-        runtime_error(vm, "Can only subscript lists with numbers.");
+        Vm_RuntimeError(vm, "Can only subscript lists with numbers.");
         return false;
     }
 
@@ -155,7 +155,7 @@ static void tuple_traverse(Object* object, GC* gc)
 static void tuple_free(Object* object, GC* gc)
 {
     ObjectTuple* tuple = AS_TUPLE(object);
-    table_free(gc, &tuple->base.fields);
+    Table_Free(gc, &tuple->base.fields);
     Mem_Deallocate(gc, tuple, sizeof(ObjectTuple) + sizeof(Value) * tuple->length);
 }
 

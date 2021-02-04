@@ -61,7 +61,7 @@ static void range_print(Object* object)
 static bool range_get_subscript(Object* object, Value index, VM* vm, Value* result)
 {
     if (!IS_NUMBER(index)) {
-        runtime_error(vm, "Can only subscript ranges with numbers.");
+        Vm_RuntimeError(vm, "Can only subscript ranges with numbers.");
         return false;
     }
 
@@ -70,7 +70,7 @@ static bool range_get_subscript(Object* object, Value index, VM* vm, Value* resu
 
     int totalElements = (int)((range->end - range->begin) / range->step);
     if (n < -totalElements || n >= totalElements) {
-        runtime_error(vm, "Range subscript out of range.");
+        Vm_RuntimeError(vm, "Range subscript out of range.");
         return false;
     }
 
